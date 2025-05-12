@@ -6,6 +6,7 @@
     "author": "SemanticEntity",
     "repo_url": "https://github.com/semanticentity/WingTip-Static-Site-Generator/",
     "og_image": "social-card.png",
+    "favicon": "https://raw.githubusercontent.com/semanticentity/WingTip-Static-Site-Generator/refs/heads/main/favicon.png",
     "twitter_handle": "@SemanticEntity",
     "github": {
         "repo": "semanticentity/WingTip-Static-Site-Generator",
