@@ -78,7 +78,7 @@ def generate_social_card(title, tagline, theme="light", font="Poppins"):
     
     try:
         # Load the custom logo
-        logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "wingtip-logo.png")
+        logo_path = "wingtip-logo.png"
         logo_img = Image.open(logo_path)
         
         # Convert to RGBA if needed
