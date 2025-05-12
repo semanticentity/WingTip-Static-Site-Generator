@@ -98,16 +98,53 @@ def write_sitemap_xml(pages):
             f.write(f'  <url><loc>{BASE_URL}/{rel_path}</loc></url>\n')
         f.write('</urlset>\n')
 
+def generate_syntax_css():
+    """Generate syntax highlighting CSS for both light and dark modes"""
+    from pygments.formatters import HtmlFormatter
+    from pygments.styles import get_style_by_name
+    
+    # Dark theme (monokai)
+    dark_formatter = HtmlFormatter(style='monokai')
+    dark_css = dark_formatter.get_style_defs('pre code')
+    
+    # Light theme - Set 1: Modern IDEs
+    light_themes = ['vs', 'xcode', 'solarized-light', 'gruvbox-light']
+    light_css = ''
+    for theme in light_themes:
+        try:
+            formatter = HtmlFormatter(style=theme)
+            css = formatter.get_style_defs('pre code')
+            light_css += f'/* {theme} */\n{css}\n\n'
+        except Exception as e:
+            print(f"Warning: Could not generate {theme} theme: {e}")
+    
+    # Write combined CSS with media queries
+    css_content = f'''
+/* Dark mode (default) */
+:root:not([data-theme="light"]) pre code {{
+{dark_css}
+}}
+
+/* Light mode */
+:root[data-theme="light"] pre code,
+@media (prefers-color-scheme: light) {{
+  pre code {{
+    background: #f8f8f8;
+    {light_css}
+  }}
+}}
+'''
+    
+    css_path = os.path.join(OUTPUT_DIR, 'syntax.css')
+    with open(css_path, 'w') as f:
+        f.write(css_content)
+
 def copy_static_files():
     """Copy static files to output directory"""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    # Copy pygments.css
-    source = os.path.join(os.path.dirname(__file__), "pygments.css")
-    dest = os.path.join(OUTPUT_DIR, "pygments.css")
-    if os.path.exists(source):
-        os.makedirs(OUTPUT_DIR, exist_ok=True)
-        with open(source, "rb") as fsrc, open(dest, "wb") as fdst:
-            fdst.write(fsrc.read())
+    
+    # Generate syntax highlighting CSS
+    generate_syntax_css()
     
     # Handle favicon
     favicon_dest = os.path.join(OUTPUT_DIR, "favicon.png")
