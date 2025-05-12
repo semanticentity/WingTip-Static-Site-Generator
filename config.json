@@ -5,7 +5,7 @@
     "description": "SEO-friendly Markdown-to-HTML static site generator for GitHub Pages",
     "author": "SemanticEntity",
     "repo_url": "https://github.com/semanticentity/wingtip",
-    "og_image": "https://semanticentity.github.io/wingtip/social-card.png",
+    "og_image": "social-card.png",
     "twitter_handle": "@SemanticEntity",
     "github": {
         "repo": "semanticentity/wingtip",
@@ -17,6 +17,6 @@
         "emoji": "🦉",              
         "theme": "light",  
         "font": "Poppins",
-        "image": "https://semanticentity.github.io/wingtip/social-card.png"      
+        "image": "social-card.png"      
     }
 }

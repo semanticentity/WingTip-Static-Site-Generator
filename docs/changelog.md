@@ -1,9 +1,9 @@
 # WingTip Changelog
 
-## v1.0.0 (2025-05-12)
+## v0.1.0
 
 ### ✨ Features
-- Beautiful responsive documentation site generator
+- Responsive documentation site generator
 - Dark/light mode with system theme detection
 - Slideout navigation with owl logo easter egg
 - Code syntax highlighting for both themes
