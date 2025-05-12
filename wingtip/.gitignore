@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# System files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Project specific
+devServer.pid
+wingtip/pygments.css
+
+# Keep docs/site for GitHub Pages
+docs/site/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project

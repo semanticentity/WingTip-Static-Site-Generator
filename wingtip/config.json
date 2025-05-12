@@ -1,0 +1,22 @@
+{
+    "base_url": "https://semanticentity.github.io/wingtip",
+    "project_name": "WingTip",
+    "version": "0.1.0",
+    "description": "SEO-friendly Markdown-to-HTML static site generator for GitHub Pages",
+    "author": "SemanticEntity",
+    "repo_url": "https://github.com/semanticentity/wingtip",
+    "og_image": "https://semanticentity.github.io/wingtip/social-card.png",
+    "twitter_handle": "@SemanticEntity",
+    "github": {
+        "repo": "semanticentity/wingtip",
+        "branch": "main"
+    },
+    "social_card": {
+        "title": "WingTip",
+        "tagline": "Make your docs fly.",
+        "emoji": "🦉",              
+        "theme": "light",  
+        "font": "Poppins",
+        "image": "https://semanticentity.github.io/wingtip/social-card.png"      
+    }
+}
