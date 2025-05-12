@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>$title · WingTip · Clean docs that soar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="$description">
+  <meta name="robots" content="index, follow">
+  
+  <link rel="canonical" href="$canonical_url">
+
+  <meta property="og:title" content="$title">
+  <meta property="og:description" content="$description">
+  <meta property="og:url" content="$page_url">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="$og_image">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="$title">
+  <meta name="twitter:description" content="$description">
+  <meta name="twitter:image" content="$og_image">
+
+  <meta name="author" content="$author">
+
+  <!-- Light/Dark mode via OS/browser -->
+  <link id="watercss-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/light.css">
+
+  <!-- Code highlighting -->
+  <link rel="stylesheet" href="pygments.css">
+
+  <!-- Custom favicon -->
+  <!-- Custom favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- Optional: Iconify for sun/moon toggle -->
+  <script src="https://code.iconify.design/1/1.0.4/iconify.min.js"></script>
+
+  <!-- Code syntax highlighting and copy -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.8/clipboard.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize clipboard.js
+      const clipboard = new ClipboardJS('.copy-btn');
+
+      clipboard.on('success', (e) => {
+        const btn = e.trigger;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = originalText, 2000);
+      });
+    });
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      line-height: 1.5;
+    }
+    /* Scroll offset for headers */
+    :target {
+      scroll-margin-top: 55px;
+    }
+
+    /* Slideout Nav */
+    #slideout-nav {
+      position: fixed;
+      left: -240px;
+      top: 50px;
+      width: 240px;
+      height: calc(100vh - 50px);
+      background: var(--nav-background);
+      padding: 1em;
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    #slideout-nav.active {
+      transform: translateX(240px);
+    }
+    #slideout-nav h2 {
+      margin: 0 0 1em;
+      font-size: 1.2em;
+      color: white !important;
+    }
+    #slideout-nav a {
+      color: white !important;
+      text-decoration: none;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+      font-size: 0.95em;
+    }
+    #slideout-nav a:hover {
+      opacity: 1;
+    }
+    #slideout-nav .close-btn {
+      position: absolute;
+      top: 1em;
+      right: 1em;
+      background: none;
+      border: none;
+      color: var(--text-bright);
+      font-size: 1.5em;
+      cursor: pointer;
+      padding: 0;
+    }
+    
+
+    .docs-index {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .navigation {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .navigation h2 {
+      margin-bottom: 15px;
+    }
+
+    .navigation ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .navigation li {
+      margin-bottom: 8px;
+    }
+
+    .navigation a {
+      color: var(--text-color);
+      text-decoration: none;
+    }
+
+    .navigation a:hover {
+      text-decoration: underline;
+    }
+
+    main {
+      margin-left: 0;
+      padding: 2rem 3rem 6rem;
+      max-width: 800px;
+      margin-bottom: 2rem;
+    }
+
+    /* Navigation styles */
+    .nav-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #161f27;
+      padding: 0.5em 1em;
+      z-index: 1200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1em;
+    }
+    .nav-links .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+    }
+    /* Hamburger styles */
+    #toc-hamburger {
+      position: fixed;
+      top: 1em;
+      left: 1em;
+      z-index: 1100;
+      width: 36px;
+      height: 36px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    #toc-hamburger span {
+      display: block;
+      width: 28px;
+      height: 4px;
+      margin: 3px 0;
+      background: #222;
+      border-radius: 2px;
+      transition: 0.3s;
+    }
+    nav#toc {
+      position: fixed;
+      right: 0;
+      top: 50px;
+      width: 240px;
+      height: calc(100vh - 50px);
+      background: #161f27;
+      color: #fff;
+      font-size: 0.95em;
+      max-width: 80vw;
+      overflow-y: auto;
+      padding: 2em 1em 1em 1em;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.15);
+      z-index: 1000;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    nav#toc:before {
+      content: "On this page:";
+      font-size: 0.8rem;
+      font-weight: 300;
+      margin-top: -5px;
+      display: block;
+      margin-bottom: 15px;
+      color: #ffbe85;
+    }
+    nav#toc.open {
+      transform: translateX(0);
+    }
+    nav#toc a {
+      color: #fff;
+      text-decoration: none;
+      display: block;
+      margin-bottom: 0.5em;
+    }
+    nav#toc .toc-close {
+      position: absolute;
+      top: 1em;
+      right: 1em;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5em;
+      cursor: pointer;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 0.5em;
+      text-align: left;
+    }
+    .codehilite {
+      position: relative;
+      background: none;
+    }
+    .codehilite .err {
+      border: none;
+    }
+    .codehilite pre > code {
+      padding: 30px;
+      box-shadow: inset 0 0 5em #0c151c;
+      color: #f8f8f2;
+      background: #0c151c;
+    }
+    .copy-btn {
+      background-color: #0c151c !important;
+      color: #fff !important;
+      box-shadow: 0 0 5px #090d0f !important;
+    }     
+    #theme-toggle {
+      display: flex;
+      align-items: center;
+      margin-left: 1em;
+      position: relative;
+    }
+    .light .codehilite code {
+      border: 1px solid #cccccc;
+      box-shadow: unset;
+      color: #272822;
+      background: #f8f8f2;
+    }
+    /* Syntax highlighting overrides */
+    .codehilite .nv { color: #66d9ef !important; } /* Name.Variable */
+    .codehilite .s { color: #e6db74 !important; } /* String */
+    .codehilite .k { color: #f92672 !important; } /* Keyword */
+    .codehilite .c1 { color: #75715e !important; } /* Comment */
+    .light .codehilite .nv { color: #0086b3 !important; }
+    .light .codehilite .s { color: #d14 !important; }
+    .light .codehilite .k { color: #a71d5d !important; }
+    .light .codehilite .c1 { color: #998 !important; }
+    .toggle-checkbox {
+      position: absolute;
+      opacity: 0;
+      height: 0;
+      width: 0;
+    }
+    .toggle-slot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #374151;
+      border-radius: 20px;
+      width: 60px;
+      height: 30px;
+      padding: 0 5px;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+      cursor: pointer;
+      position: relative;
+    }
+    .toggle-button {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background-color: #161f27;
+      box-shadow: 0 0 3px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+    }
+    .toggle-checkbox:checked ~ .toggle-slot .toggle-button {
+      transform: translateX(30px);
+      background-color: #161f27;
+    }
+    .sun-icon-wrapper,
+    .moon-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #fff;
+      width: 20px;
+      height: 20px;
+      z-index: 1;
+    }
+    .iconify {
+      font-size: 16px;
+    }
+    .toggle-slot {
+      transition: background-color 0.3s ease;
+    }
+    .toggle-button {
+      transition: transform 0.3s ease, background-color 0.3s ease;
+    }
+    .toggle-slot:hover {
+      background-color: #4b5563; /* slightly lighter gray on hover */
+    }
+
+    .prev-next-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background-color: #161f27;
+        border-top: 1px solid var(--border-color);
+        z-index: 100;
+    }
+
+    .prev-next-nav a {
+        text-decoration: none;
+        transition: all 0.2s;
+        color: #ffbe85;
+    }
+
+    .prev-next-nav span {
+        color: #718096;
+        font-size: 0.8rem;
+    }
+
+    /* Code block styles */
+    .code-wrapper {
+        position: relative;
+        margin: 1em 0;
+    }
+
+    .copy-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        color: #718096;
+        background: #2d3748;
+        border: 1px solid #4a5568;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        opacity: 0;
+    }
+
+    .code-wrapper:hover .copy-btn {
+        opacity: 1;
+    }
+
+    .copy-btn:hover {
+        background: #4a5568;
+        color: #fff;
+    }
+
+    .copy-btn:active {
+        transform: translateY(1px);
+    }
+
+    .prev-next-nav span a {
+        color: #ffbe85;
+        text-decoration: none;
+    }
+
+    .prev-next-nav a:hover,
+    .prev-next-nav span a:hover {
+        color: #ffd5b3;
+        text-decoration: none;
+    }
+
+    @media (max-width: 899px) {
+        body {
+            font-size: 0.9rem;
+        }
+        .prev-next-nav {
+            flex-direction: column;
+            padding: 0.5rem;
+            gap: 0.5rem;
+        }
+        .prev-next-nav span {
+            order: 3;
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+
+      main {
+        /* padding-right: 0; */
+        padding-top: 3.5rem;
+      }
+      .nav-container {
+        flex-direction: row;
+        padding: 0.5em;
+      }
+      .nav-links {
+        margin-top: 0.5em;
+      }
+      h1 {
+        font-size: 1.4rem;
+      }
+      .edit-link {
+        margin-top: 2rem;
+        text-align: center;
+      }
+      .prev-next-nav .prev, 
+      .prev-next-nav .next {
+        margin: 0;
+      }
+    }
+    @media (min-width: 900px) {
+      #toc-hamburger {
+        display: none;
+      }
+      nav#toc {
+        transform: translateX(0);
+        position: fixed;
+        right: 0;
+        top: 50px;
+        width: 240px;
+        height: auto;
+        min-height: calc(100vh - 50px);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.15);
+        background: #161f27;
+        padding: 2em 1em;
+        z-index: 100;
+      }
+      nav#toc .toc-close {
+        display: none;
+      }
+      #content-wrapper {
+        margin-left: var(--sidebar-width);
+      }
+      main {
+        margin: 0 auto;
+        /* margin-left: -2.5rem; */
+        width: 80%;
+      }
+    }
+    pre code.hljs {
+      background: #161f27;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .codehilite a[download] {
+      left: -70px;
+      position: relative;
+      top: 7px;
+    }
+    @media (prefers-color-scheme: light) {
+      .nav-container {
+        background: #f8f9fa;
+        color: #000;
+      }
+    }
+    :root {
+      --nav-background: #161f27;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --nav-background: #161f27;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-container" class="nav-container">
+    <div class="nav-links">
+      <div class="brand">
+        <img src="favicon.png" alt="WingTip" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">
+        <span style="color: white !important; font-size: 1.5em; font-weight: 500;">$project</span>
+      </div>
+      <div style="display:none;"> 
+        <a aria-label="README" href="index.html">README</a>
+        <a aria-label="Navigation" href="#navigation">Navigation</a>
+      </div>
+    </div>
+
+    <!-- Slideout Navigation -->
+    <nav id="slideout-nav">
+      <button style="display:none;" class="close-btn" aria-label="Close navigation">×</button>
+      <div id="slideout-links"></div>
+    </nav>
+
+    <label id="theme-toggle" style="margin-left:auto;">
+      <input class="toggle-checkbox" type="checkbox">
+      <div class="toggle-slot">
+        <div class="sun-icon-wrapper">
+          <div class="iconify sun-icon" data-icon="feather-sun" data-inline="false"></div>
+        </div>
+        <div class="toggle-button"></div>
+        <div class="moon-icon-wrapper">
+          <div class="iconify moon-icon" data-icon="feather-moon" data-inline="false"></div>
+        </div>
+      </div>
+    </label> 
+  </div>
+
+  <button id='toc-hamburger' aria-label='Open Table of Contents'>
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+  <div id="content-wrapper">
+    <main>
+      $content
+      <nav id='toc'></nav>
+      $navigation
+    </main>
+    <nav class="prev-next-nav">
+      $prev_link
+      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a></span>
+      $next_link
+    </nav>
+  </div>
+  <script>
+    // TOC toggle
+    const toc = document.getElementById('toc');
+    const hamburger = document.getElementById('toc-hamburger');
+    const navLogo = document.querySelector('.nav-links img');
+    const slideoutNav = document.getElementById('slideout-nav');
+    const closeBtn = slideoutNav.querySelector('.close-btn');
+    const slideoutLinks = document.getElementById('slideout-links');
+    
+    function toggleToc() {
+      if (toc.classList.contains('open')) {
+        closeToc();
+      } else {
+        openToc();
+      }
+    }
+    
+    function openToc() {
+      toc.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    function closeToc() {
+      toc.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    
+    // Toggle slideout on logo click
+    navLogo.addEventListener('click', (e) => {
+      e.preventDefault();
+      slideoutNav.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+    navLogo.style.cursor = 'pointer';
+
+    // Close slideout on button click
+    closeBtn.addEventListener('click', () => {
+      slideoutNav.classList.remove('active');
+      document.body.style.overflow = '';
+    });
+
+    // Close slideout on ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && slideoutNav.classList.contains('active')) {
+        slideoutNav.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    });
+
+    // Close slideout on outside click
+    document.addEventListener('click', (e) => {
+      if (slideoutNav.classList.contains('active') && 
+          !slideoutNav.contains(e.target) && 
+          !navLogo.contains(e.target)) {
+        slideoutNav.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    });
+
+    // Populate slideout nav
+    const navLinks = document.querySelector('.navigation ul').cloneNode(true);
+    slideoutLinks.appendChild(navLinks);
+    
+    // Close on ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && toc.classList.contains('open')) {
+        closeToc();
+      }
+    });
+    
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (toc.classList.contains('open') && 
+          !toc.contains(e.target) && 
+          !navLogo.contains(e.target)) {
+        closeToc();
+      }
+    });
+    
+
+
+    // Build TOC links
+    const headers = Array.from(document.querySelectorAll('h2,h3')).filter(h => h.innerText !== 'Documentation');
+    headers.forEach(function(h){
+      const id = h.innerText.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+      h.id = id;
+      const link = document.createElement('a');
+      link.href = '#' + id;
+      link.innerText = h.innerText;
+      link.style.display = 'block';
+      link.style.marginLeft = h.tagName === 'H3' ? '1em' : '0';
+      toc.appendChild(link);
+    });
+    
+    // Auto-show TOC on desktop
+    function checkWidth() {
+      if (window.innerWidth >= 900) {
+        toc.classList.add('open');
+        hamburger.style.display = 'none';
+      } else {
+        toc.classList.remove('open');
+        hamburger.style.display = 'flex';
+      }
+    }
+    window.addEventListener('resize', checkWidth);
+    checkWidth();
+
+    // Theme toggle
+    const toggle = document.querySelector("#theme-toggle .toggle-checkbox");
+    const themeLink = document.getElementById("watercss-theme");
+
+    function setTheme(mode) {
+      if (mode === "dark") {
+        themeLink.href = "https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css";
+        document.documentElement.classList.add("dark");
+        document.documentElement.classList.remove("light");
+      } else {
+        themeLink.href = "https://cdn.jsdelivr.net/npm/water.css@2/out/light.css";
+        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light");
+      }
+      localStorage.setItem("wingtip-theme", mode);
+    }
+
+    // On page load
+    const saved = localStorage.getItem("wingtip-theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initial = saved || (prefersDark ? "dark" : "light");
+    setTheme(initial);
+    toggle.checked = initial === "dark";
+
+    // On toggle click
+    toggle.addEventListener("change", () => {
+      const newTheme = toggle.checked ? "dark" : "light";
+      setTheme(newTheme);
+    });
+
+    // Live reload (only in development)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      const ws = new WebSocket('ws://' + window.location.host + '/livereload');
+      ws.onmessage = () => location.reload();
+    }
+    
+
+
+  </script>
+
+</body>
+</html>
