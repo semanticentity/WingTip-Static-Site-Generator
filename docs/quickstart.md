@@ -14,9 +14,9 @@ pip install -r WingTip/requirements.txt
 
 ```
 your-project/
-├── README.md         # Your existing README becomes the index
-└── docs/            # Create this directory
-    └── guide.md     # Add .md files for documentation
+├── README.md         # Becomes the homepage
+└── docs/             # Add .md files for documentation
+    └── guide.md
 ```
 
 ## 3. Configure (Optional, 30s)
@@ -25,43 +25,39 @@ Create `config.json` in your project root:
 
 ```json
 {
-    "project": "Your Project",
-    "description": "Your project description",
-    "github": {
-        "repo": "username/repo",
-        "branch": "main"
-    }
+  "project": "Your Project",
+  "description": "Your project description",
+  "github": {
+    "repo": "username/repo",
+    "branch": "main"
+  }
 }
 ```
 
-## 4. Generate & Preview (10s)
+## 4. Generate and Preview (10s)
 
 ```bash
-# Generate the site
-python wingtip/main.py
-
-# Start dev server with live reload
-python wingtip/server.py
+python wingtip/main.py          # Build the site
+python wingtip/serve.py         # Start local dev server with live reload
 ```
 
-Your site is now live at `http://localhost:8000` 🚀
+Visit `http://localhost:8000` in your browser.
 
 ## 5. Deploy to GitHub Pages (1 min)
 
 1. Push your changes to GitHub
-2. Go to repo Settings > Pages
+2. Go to **Settings → Pages**
 3. Set branch to `main` and folder to `/docs/site`
-4. Your docs are live at `username.github.io/repo`!
+4. Your documentation will be published to `https://username.github.io/repo`
 
-***That's it!***
+---
 
-Your documentation now has:
-- ✨ Beautiful responsive design
-- 🌓 Dark/light mode
-- 📱 Mobile-friendly navigation
-- 🔍 SEO optimization
-- ⚡️ Fast load times
-- 🔄 Live preview as you write
-- 📝 GitHub edit links
+Your docs now include:
 
-No complex build chain. No configuration needed. Just write Markdown and ship.
+* Responsive layout with light/dark mode
+* Mobile-friendly sidebar and TOC
+* SEO-optimized output and social cards
+* GitHub "Edit this page" links
+* Instant preview with live reload
+
+No build tools. No config lock-in. Just Markdown in, HTML out.

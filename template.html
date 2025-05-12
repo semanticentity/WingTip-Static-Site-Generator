@@ -69,6 +69,17 @@
       scroll-margin-top: 55px;
     }
 
+    /* Selection color default */
+    ::selection {
+      background-color: #ffbe85;
+      color: #0c151c;
+    }
+    /* Selection color light */
+    .light::selection {
+      background-color: #0c151c;
+      color: #ffbe85;
+    }
+    
     /* Slideout Nav */
     #slideout-nav {
       position: fixed;
@@ -153,6 +164,33 @@
       padding: 2rem 3rem 6rem;
       max-width: 800px;
       margin-bottom: 2rem;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      box-shadow: inset 0 0 15px #0c151c;
+    }
+
+    .table-responsive table {
+      min-width: 600px;
+      border-collapse: collapse;
+      margin-bottom: 0;
+    }
+
+    .table-responsive th,
+    .table-responsive td {
+      min-width: 120px;  /* tweak as needed */
+      padding: 0.5em;
+    }
+
+    .light tbody tr:nth-child(2n) {
+        background-color: color(srgb 0.94 0.94 0.94 / 0.2);
+    }
+
+    .light .table-responsive {
+        box-shadow: inset -0 0 10px rgba(92,92,92,0.4);
     }
 
     /* Navigation styles */
@@ -493,8 +531,8 @@
       }
       main {
         margin: 0 auto;
-        /* margin-left: -2.5rem; */
-        width: 80%;
+        margin-left: 0;
+        width: 75vw;
       }
     }
     pre code.hljs {

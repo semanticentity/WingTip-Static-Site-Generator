@@ -1,56 +1,56 @@
 # WingTip Roadmap
 
-## Feature Parity
+## Feature Comparison
 
-Comparing WingTip with popular static doc generators:
+| Feature               | WingTip v1                 | MkDocs | Docusaurus | VitePress |
+| --------------------- | -------------------------- | ------ | ---------- | --------- |
+| **Markdown Support**  | Basic+                     | Good   | Advanced   | Advanced  |
+| **Code Highlighting** | Pygments (themed)          | Good   | Advanced   | Advanced  |
+| **Dark Mode**         | Auto + toggle              | Basic  | Advanced   | Advanced  |
+| **Live Reload**       | Full (w/ scroll restore)   | Good   | Advanced   | Advanced  |
+| **Auto Sidebar**      | Yes                        | Yes    | Advanced   | Advanced  |
+| **Search**            | Planned                    | Basic  | Advanced   | Good      |
+| **TOC Navigation**    | Yes                        | Good   | Advanced   | Good      |
+| **Prev/Next Links**   | Yes                        | Basic  | Good       | Good      |
+| **Social Cards**      | Built-in (Pillow)          | None   | Basic      | None      |
+| **SEO**               | Canonical + sitemap + meta | Basic  | Advanced   | Good      |
+| **Analytics**         | Not yet                    | Basic  | Advanced   | Good      |
+| **Versioning**        | Not yet                    | No     | Yes        | No        |
 
-| Feature | WingTip v1 | MkDocs | Docusaurus | VitePress |
-|---------|------------|---------|------------|------------|
-| **Core** |
-| Markdown Support | ✅ Good | ✅ Good | ✅ Advanced | ✅ Advanced |
-| Code Highlighting | ✅ Good | ✅ Good | ✅ Advanced | ✅ Advanced |
-| Dark Mode | ✅ Auto | ✅ Basic | ✅ Advanced | ✅ Advanced |
-| Live Reload | ✅ Basic | ✅ Good | ✅ Advanced | ✅ Advanced |
-| **Navigation** |
-| Auto Sidebar | ✅ Good | ✅ Good | ✅ Advanced | ✅ Advanced |
-| Search | ❌ | ✅ Basic | ✅ Advanced | ✅ Good |
-| ToC | ✅ Good | ✅ Good | ✅ Advanced | ✅ Good |
-| Prev/Next | ✅ Good | ✅ Basic | ✅ Good | ✅ Good |
-| **Extras** |
-| Social Cards | ✅ Advanced | ❌ | ✅ Basic | ❌ |
-| SEO | ✅ Good | ✅ Basic | ✅ Advanced | ✅ Good |
-| Analytics | ❌ | ✅ Basic | ✅ Advanced | ✅ Good |
-| Versioning | ❌ | ❌ | ✅ Advanced | ❌ |
+## Planned Features
 
-## v2 Roadmap
+### Navigation
 
-### 1. Navigation (Priority)
-- [ ] Add nested sidebar sections
-- [ ] Add search (local JSON index)
-- [ ] Add section collapsing
-- [ ] Add keyboard shortcuts
+* Nested sidebar sections (grouping by folder or heading)
+* Search with local JSON index
+* Collapsible sidebar sections
+* Keyboard shortcuts for navigation and toggles
 
-### 2. Markdown Extras
-- [ ] Support admonitions (:::note)
-- [ ] Support mermaid diagrams
-- [ ] Add math equations
-- [ ] Add image captions
+### Markdown Enhancements
 
-### 3. Dev Experience
-- [ ] Add proper HMR (no full reload)
-- [ ] Show build errors in browser
-- [ ] Add CLI for new projects
-- [ ] Support local theme overrides
+* Admonition support (`:::note`, etc.)
+* Mermaid diagram rendering
+* LaTeX/math support via KaTeX
+* Image captioning syntax
 
-### 4. SEO & Polish
-- [ ] Add JSON-LD structured data
-- [ ] Support article dates/authors
-- [ ] Add RSS feed
-- [ ] Add copy button animation
-- [ ] Add 404 page
+### Developer Experience
 
-### 5. Later
-- [ ] Support versioned docs
-- [ ] Add i18n support
-- [ ] Add offline mode
-- [ ] Support plugins
+* True HMR (hot module reload) without full page refresh
+* Build errors shown in browser overlay
+* CLI scaffolding (`wingtip new my-docs`)
+* Local theme overrides via custom CSS
+
+### SEO & Output Polish
+
+* JSON-LD structured data for articles
+* Author/date metadata in frontmatter
+* RSS feed generation
+* Animated copy-to-clipboard feedback
+* Custom 404 page
+
+### Longer-Term Ideas
+
+* Versioned documentation support
+* i18n / localization
+* Offline mode (PWA shell)
+* Plugin system (before/after hooks, Markdown extensions)

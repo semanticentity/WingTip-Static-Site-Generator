@@ -300,8 +300,15 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # Add copy buttons to code blocks
     html = add_codeblock_copy_buttons(html)
 
-    # Get the title from the first h1 in the markdown
+    # Wrap all tables in a responsive div
     soup = BeautifulSoup(html, 'html.parser')
+    for table in soup.find_all('table'):
+        wrapper = soup.new_tag('div', attrs={'class': 'table-responsive'})
+        table.insert_before(wrapper)
+        wrapper.append(table)
+    # Serialize soup back to HTML for further processing
+    html = str(soup)
+
     h1 = soup.find('h1')
     title = h1.text if h1 else os.path.basename(input_path)
 
