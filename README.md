@@ -1,130 +1,211 @@
 # WingTip
 
-Clean docs that soar. A minimal static site generator for beautiful documentation.
+A minimal static site generator for documentation.
 
 ![social-card](social-card.png)
 
-## Features
+Live demo: [semanticentity.github.io/WingTip-Static-Site-Generator](https://semanticentity.github.io/WingTip-Static-Site-Generator)
 
-- Converts `README.md` → `docs/site/index.html`
-- Converts all `.md` files in `docs/` → individual `.html` pages
-- Adds GitHub "Edit this page" links (customizable)
-- Builds sitemap.xml for SEO
-- Generates a two-column docs index from your Markdown files
-- Supports fenced code blocks with Pygments syntax highlighting
-- Adds copy-to-clipboard buttons for each code block
-- Light/dark mode toggle with system theme detection
-- Responsive navigation with collapsible TOC
-- Alt+D keyboard shortcut for TOC toggle
-- Automatic scroll position restoration after reload
-- Optional live server with auto-regeneration + reload on save
+WingTip turns a `README.md` and a `docs/` folder into a polished static site — no config required. Write in Markdown, hit build, and ship to GitHub Pages in minutes.
 
 ---
 
-## Getting Started
+## Features
 
-### 1. Install WingTip
+* Converts `README.md` → `index.html`
+* Converts `docs/*.md` → standalone `.html` pages
+* Adds GitHub "Edit this page" links
+* Responsive sidebar + TOC toggle
+* Pygments syntax highlighting for code blocks
+* Copy-to-clipboard on all code snippets
+* SEO optimized with canonical URLs + sitemap.xml
+* Open Graph and Twitter meta support
+* Dark/light mode toggle with auto detection
+* Live dev server with auto-reload (`serve.py`)
+* Built-in Open Graph image generator
+* GitHub Actions deployment support
 
-```bash
-# Clone WingTip into your project
-git clone https://github.com/SemanticEntity/WingTip.git
+---
 
-# Install dependencies
-pip install markdown beautifulsoup4 watchdog
-```
-
-### 2. Set Up Your Docs
-
-```
-your-project/
-├── README.md           # This becomes your index page
-├── docs/              # Create this directory
-│   ├── guide.md      # Add your documentation pages
-│   └── api.md        # Each .md file becomes a page
-└── config.json       # Optional: customize your site
-```
-
-Example `config.json`:
-```json
-{
-    "project": "Your Project",
-    "description": "Your project description",
-    "github": {
-        "repo": "username/repo",
-        "branch": "main"
-    }
-}
-```
-
-### 3. Generate & Preview
+## Quickstart
 
 ```bash
-# Generate site from Markdown
+pip install markdown beautifulsoup4 livereload pillow
 python wingtip/main.py
+python wingtip/serve.py
 ```
 
-```bash
-# Start live dev server (with auto rebuild + reload)
-python wingtip/server.py
-```
-
-Your site will be generated in `docs/site/` and served at `http://localhost:8000`
-
-### 4. Deploy to GitHub Pages
-
-1. Push your changes to GitHub
-2. Go to repo Settings > Pages
-3. Set branch to `main` and folder to `/docs/site`
-4. Your docs will be live at `username.github.io/repo`!
+Then open [http://localhost:8000](http://localhost:8000)
 
 ---
 
 ## File Structure
 
 ```
-.
-├── README.md
-├── docs/
-│   ├── getting-started.md
-│   ├── api-guide.md
-│   └── ...
-├── wingtip/
-│   ├── main.py          # Static site generator
-│   ├── serve.py        # Live server with auto-regeneration
-│   ├── killDocs.sh      # Kills local server (port 8000)
-│   ├── template.html    # HTML wrapper template
-│   └── pygments.css     # Code highlight theme
+your-project/
+├── README.md            # Becomes index.html
+├── docs/                # Additional Markdown files
+│   ├── guide.md
+│   └── api.md
+├── wingtip/             # Generator source
+│   ├── main.py
+│   ├── serve.py
+│   ├── generate_card.py
+│   ├── template.html
+│   └── pygments.css
+└── config.json          # Required for SEO deployment
 ```
 
 ---
 
-## Output
+## Configuration
+
+To generate SEO-friendly output and enable GitHub deployment, add a `config.json` file in the project root:
+
+```json
+{
+  "base_url": "https://yourusername.github.io/yourrepo",
+  "project_name": "WingTip",
+  "version": "0.1.0",
+  "description": "Minimal static site generator for GitHub Pages",
+  "author": "Your Name",
+  "repo_url": "https://github.com/yourusername/yourrepo",
+  "og_image": "social-card.png",
+  "favicon": "https://yourcdn.com/favicon.png",
+  "twitter_handle": "@yourhandle",
+  "github": {
+    "repo": "yourusername/yourrepo",
+    "branch": "main"
+  },
+  "social_card": {
+    "title": "WingTip",
+    "tagline": "Make your docs fly.",
+    "theme": "light",
+    "font": "Poppins",
+    "image": "social-card.png"
+  }
+}
+```
+
+---
+
+## GitHub Pages Deployment (via Actions)
+
+WingTip includes a GitHub Actions workflow that builds and deploys your site automatically when you push to the `main` branch.
+
+### Setup
+
+1. Push your repository to GitHub
+2. Ensure Pages is enabled under **Settings > Pages**
+3. Add your `config.json` with a correct `base_url`
+4. Your documentation will deploy to:
+   `https://yourusername.github.io/yourrepo/`
+
+### Included Workflow
+
+`.github/workflows/pages.yml`:
+
+```yaml
+name: Deploy static content to Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: Pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install markdown Pygments Pillow beautifulsoup4
+
+      - name: Build site
+        run: python main.py
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+---
+
+## Social Card
+
+Generate a shareable Open Graph image:
+
+```bash
+python wingtip/main.py --regen-card
+```
+
+* Output: `docs/site/social-card.png`
+* Values pulled from `config.json`
+* Supports title, tagline, theme, font, and emoji or image
+
+---
+
+## Theming and UX
+
+* Auto light/dark theme based on system preference
+* Manual toggle in navigation bar
+* Sidebar navigation with collapsible TOC
+* Scroll position preserved during live reload
+
+---
+
+## Build Output
 
 ```
 .
-├── sitemap.txt
+├── sitemap.xml
+├── robots.txt
 └── docs/site/
     ├── index.html
-    ├── getting-started.html
-    ├── api-guide.html
-    └── ...
+    ├── guide.html
+    ├── api.html
+    └── social-card.png
 ```
 
 ---
 
-## Light/Dark Theming
+## Requirements
 
-* Default styles: [Water.css](https://watercss.kognise.dev)
-* Auto-detects system theme
-* Toggle via 🌓 switch in the top nav
-* Theme state is saved in `localStorage`
+```bash
+pip install markdown beautifulsoup4 pillow livereload
+```
 
----
-
-## Syntax Highlighting
-
-Highlighting is powered by [Pygments](https://pygments.org/) and `codehilite`.
-To regenerate the CSS:
+To regenerate code highlight styles:
 
 ```bash
 pygmentize -S default -f html > wingtip/pygments.css
@@ -134,8 +215,4 @@ pygmentize -S default -f html > wingtip/pygments.css
 
 ## License
 
-MIT. Use freely, modify ruthlessly.
-
----
-
-> WingTip: Clean docs that soar. Markdown in → HTML out.
+MIT. Use freely. Modify ruthlessly.
