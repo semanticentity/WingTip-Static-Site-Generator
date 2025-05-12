@@ -109,12 +109,14 @@ def copy_static_files():
         with open(source, "rb") as fsrc, open(dest, "wb") as fdst:
             fdst.write(fsrc.read())
     
-    # Copy favicon
-    favicon_source = os.path.join(os.path.dirname(__file__), "static", "images", "favicon.png")
+    # Handle favicon
     favicon_dest = os.path.join(OUTPUT_DIR, "favicon.png")
-    if os.path.exists(favicon_source):
-        with open(favicon_source, "rb") as fsrc, open(favicon_dest, "wb") as fdst:
-            fdst.write(fsrc.read())
+    if CONFIG.get("favicon"):
+        try:
+            import urllib.request
+            urllib.request.urlretrieve(CONFIG["favicon"], favicon_dest)
+        except Exception as e:
+            print(f"Warning: Failed to download favicon: {e}")
 
 def extract_title(md):
     match = re.search(r"^# (.+)", md, re.MULTILINE)
