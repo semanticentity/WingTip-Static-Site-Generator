@@ -287,6 +287,9 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     page_url = make_url(os.path.basename(output_filename))
 
     # Build page using global template
+    # Handle favicon URL - if base_url is '.', use relative path
+    favicon_url = 'favicon.png' if BASE_URL == '.' else f'{BASE_URL}/favicon.png'
+
     page = TEMPLATE.substitute(
         title=title,
         canonical_url=page_url,
@@ -303,7 +306,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         navigation=nav_links,
         prev_link=prev_link,
         next_link=next_link,
-        base_url=BASE_URL
+        base_url=BASE_URL,
+        favicon_url=favicon_url
     )
 
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
