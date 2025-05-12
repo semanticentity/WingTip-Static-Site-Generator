@@ -32,10 +32,12 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 ```bash
 pip install markdown beautifulsoup4 livereload pillow
 python wingtip/main.py
-python wingtip/serve.py
+python wingtip/serve.py  # (Use this, not python serve.py)
 ```
 
 Then open [http://localhost:8000](http://localhost:8000)
+
+You can change the output folder with `--output`. See `python wingtip/main.py --help` for all CLI options.
 
 ---
 
@@ -53,12 +55,14 @@ your-project/
 │   ├── generate_card.py
 │   ├── template.html
 │   └── pygments.css
-└── config.json          # Required for SEO deployment
+└── config.json          # Required if using social cards or favicon (see below)
 ```
 
 ---
 
 ## Configuration
+
+A `config.json` file is required if you use social cards or a custom favicon. It is also recommended for SEO and deployment. Fields marked optional can be omitted if not needed.
 
 To generate SEO-friendly output and enable GitHub deployment, add a `config.json` file in the project root:
 
@@ -169,9 +173,10 @@ Generate a shareable Open Graph image:
 python wingtip/main.py --regen-card
 ```
 
-* Output: `docs/site/social-card.png`
-* Values pulled from `config.json`
-* Supports title, tagline, theme, font, and emoji or image
+- This command requires a properly configured `config.json` (with a `social_card` section and related fields).
+- Output: `docs/site/social-card.png`
+- If no `og_image` is set in your config, the social card will also be copied to `./social-card.png` in the project root.
+- Values pulled from `config.json`: supports title, tagline, theme, font, and emoji or image.
 
 ---
 
@@ -181,6 +186,12 @@ python wingtip/main.py --regen-card
 * Manual toggle in navigation bar
 * Sidebar navigation with collapsible TOC
 * Scroll position preserved during live reload
+
+---
+
+## Limitations & Roadmap
+
+- Mermaid diagrams, math rendering, and some advanced Markdown features are not yet supported (planned for a future release).
 
 ---
 

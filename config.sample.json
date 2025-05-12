@@ -1,0 +1,22 @@
+{
+    "base_url": "https://yourusername.github.io/yourrepo",
+    "project_name": "WingTip",
+    "version": "0.1.0",
+    "description": "Minimal Markdown to HTML static site generator for GitHub Pages",
+    "author": "Your Name",
+    "repo_url": "https://github.com/yourusername/yourrepo",
+    "og_image": "social-card.png",
+    "favicon": "https://yourcdn.com/favicon.png",
+    "twitter_handle": "@yourhandle",
+    "github": {
+      "repo": "yourusername/yourrepo",
+      "branch": "main"
+    },
+    "social_card": {
+      "title": "WingTip",
+      "tagline": "Make your docs fly.",
+      "theme": "light",
+      "font": "Poppins",
+      "image": "social-card.png"
+    }
+}
