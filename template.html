@@ -30,7 +30,7 @@
 
   <!-- Custom favicon -->
   <!-- Custom favicon -->
-  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="icon" type="image/png" href="${base_url + '/' if base_url != '.' else ''}favicon.png">
 
   <!-- Optional: Iconify for sun/moon toggle -->
   <script src="https://code.iconify.design/1/1.0.4/iconify.min.js"></script>
@@ -527,7 +527,7 @@
   <div id="nav-container" class="nav-container">
     <div class="nav-links">
       <div class="brand">
-        <img src="favicon.png" alt="WingTip" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">
+        <img src="${base_url + '/' if base_url != '.' else ''}favicon.png" alt="WingTip" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">
         <span style="color: white !important; font-size: 1.5em; font-weight: 500;">$project</span>
       </div>
       <div style="display:none;"> 
