@@ -1,14 +1,14 @@
 {
-    "base_url": "https://semanticentity.github.io/wingtip",
+    "base_url": "https://semanticentity.github.io/WingTip-Static-Site-Generator",
     "project_name": "WingTip",
     "version": "0.1.0",
     "description": "SEO-friendly Markdown-to-HTML static site generator for GitHub Pages",
     "author": "SemanticEntity",
-    "repo_url": "https://github.com/semanticentity/wingtip",
+    "repo_url": "https://github.com/semanticentity/WingTip-Static-Site-Generator/",
     "og_image": "social-card.png",
     "twitter_handle": "@SemanticEntity",
     "github": {
-        "repo": "semanticentity/wingtip",
+        "repo": "semanticentity/WingTip-Static-Site-Generator",
         "branch": "main"
     },
     "social_card": {
