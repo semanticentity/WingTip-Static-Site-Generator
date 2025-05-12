@@ -2,7 +2,7 @@
 
 Clean docs that soar. A minimal static site generator for beautiful documentation.
 
-![social-card](https://github.com/user-attachments/assets/4d656003-af8e-4a4c-9460-c8f5ce1cb1fe)
+![social-card](social-card.png)
 
 ## Features
 
@@ -90,7 +90,7 @@ Your site will be generated in `docs/site/` and served at `http://localhost:8000
 │   └── ...
 ├── wingtip/
 │   ├── main.py          # Static site generator
-│   ├── server.py        # Live server with auto-regeneration
+│   ├── serve.py        # Live server with auto-regeneration
 │   ├── killDocs.sh      # Kills local server (port 8000)
 │   ├── template.html    # HTML wrapper template
 │   └── pygments.css     # Code highlight theme
