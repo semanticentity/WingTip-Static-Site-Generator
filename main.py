@@ -302,7 +302,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         repo_url=CONFIG["repo_url"],
         navigation=nav_links,
         prev_link=prev_link,
-        next_link=next_link
+        next_link=next_link,
+        base_url=BASE_URL
     )
 
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
