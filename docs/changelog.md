@@ -29,4 +29,4 @@
 - Full quickstart and config guide
 - GitHub Pages deployment with prebuilt `pages.yml`
 - Example `config.json` for SEO and appearance
-- Theme toggle, TOC keyboard shortcut (`Alt+D`), and favicon support
+- Theme toggle and favicon support

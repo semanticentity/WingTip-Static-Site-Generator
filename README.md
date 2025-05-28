@@ -31,9 +31,20 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 
 ```bash
 pip install markdown beautifulsoup4 livereload pillow
+# Alternatively, using uv (a fast Python package installer)
+uv pip install markdown beautifulsoup4 livereload pillow
 python wingtip/main.py
-python wingtip/serve.py  # (Use this, not python serve.py)
+python wingtip/serve.py
 ```
+
+To stop the development server, press `Ctrl+C` in the terminal where it's running.
+
+If you encounter issues stopping the server or suspect orphaned processes, a utility script `killDocs.sh` is provided in the `wingtip` directory. From your project root, you can run it using:
+
+```bash
+bash wingtip/killDocs.sh
+```
+This script will attempt to forcefully stop any processes related to the WingTip development server.
 
 Then open [http://localhost:8000](http://localhost:8000)
 
@@ -54,7 +65,7 @@ your-project/
 │   ├── serve.py
 │   ├── generate_card.py
 │   ├── template.html
-│   └── pygments.css
+├── pygments.css
 └── config.json          # Required if using social cards or favicon (see below)
 ```
 
@@ -107,7 +118,7 @@ WingTip includes a GitHub Actions workflow that builds and deploys your site aut
 
 ### Included Workflow
 
-`.github/workflows/pages.yml`:
+`.github/workflows/static.yml`:
 
 ```yaml
 name: Deploy static content to Pages
@@ -148,7 +159,7 @@ jobs:
           pip install markdown Pygments Pillow beautifulsoup4
 
       - name: Build site
-        run: python main.py
+        run: python wingtip/main.py
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -180,6 +191,19 @@ python wingtip/main.py --regen-card
 
 ---
 
+## Custom 404 Page
+
+WingTip supports a custom "Page Not Found" page. To use this feature:
+
+1.  Create a `404.md` file in the root of your project directory (the same directory where your `README.md` and `config.json` are located).
+2.  Write your desired content for the 404 page in Markdown format within this file.
+    *   The title for the generated `404.html` page will be taken from the first H1 heading (e.g., `# My Custom 404 Page`) in your `404.md`. If no H1 heading is found, the title will default to "404.md".
+3.  When you build your site, WingTip will automatically detect `404.md` and convert it into a `404.html` file in your output directory (e.g., `docs/site/404.html`).
+
+This `404.html` file can then be configured with your web hosting provider (like GitHub Pages, Netlify, Vercel, etc.) to be served whenever a visitor tries to access a non-existent page on your site.
+
+---
+
 ## Theming and UX
 
 * Auto light/dark theme based on system preference
@@ -205,6 +229,7 @@ python wingtip/main.py --regen-card
     ├── index.html
     ├── guide.html
     ├── api.html
+    ├── 404.html
     └── social-card.png
 ```
 
@@ -218,9 +243,7 @@ pip install markdown beautifulsoup4 pillow livereload
 
 To regenerate code highlight styles:
 
-```bash
-pygmentize -S default -f html > wingtip/pygments.css
-```
+The file `syntax.css` is generated in `docs/site/` by `main.py` and is the one used by the site. The `pygments.css` file in the root directory might be for reference or manual generation using a command like `pygmentize -S monokai -f html -O full,cssclass=highlight > pygments.css` (using monokai as an example, to match one of the themes).
 
 ---
 

@@ -11,7 +11,17 @@ echo "Checking for processes on port 8000..."
 PORT_PIDS=$(lsof -ti:8000)
 if [ ! -z "$PORT_PIDS" ]; then
   echo "Found processes: $PORT_PIDS"
-  kill -9 $PORT_PIDS
+  echo "Attempting graceful shutdown of processes on port 8000: $PORT_PIDS..."
+  kill $PORT_PIDS
+  sleep 1 # Wait a moment for processes to shut down
+  # Check if processes are still alive
+  ALIVE_PIDS=$(lsof -ti:8000) # Re-check PIDs on port
+  if [ ! -z "$ALIVE_PIDS" ]; then
+    echo "Processes still alive on port 8000: $ALIVE_PIDS. Forcing shutdown..."
+    kill -9 $ALIVE_PIDS
+  else
+    echo "Processes on port 8000 shut down gracefully."
+  fi
   
   # Wait for port to be released (max 5 seconds)
   echo "Waiting for port 8000 to be released..."
@@ -29,15 +39,18 @@ echo "Checking for serve.py processes..."
 SERVE_PIDS=$(pgrep -f "python.*serve\.py")
 if [ ! -z "$SERVE_PIDS" ]; then
   echo "Found processes: $SERVE_PIDS"
-  kill -9 $SERVE_PIDS
+  echo "Attempting graceful shutdown of serve.py processes: $SERVE_PIDS..."
+  kill $SERVE_PIDS
+  sleep 1 # Wait a moment
+  # Re-check if serve.py processes are still running
+  STILL_SERVE_PIDS=$(pgrep -f "python.*serve\.py")
+  if [ ! -z "$STILL_SERVE_PIDS" ]; then
+    echo "Some serve.py processes still alive: $STILL_SERVE_PIDS. Forcing shutdown..."
+    kill -9 $STILL_SERVE_PIDS # Force kill any remaining ones
+  else
+    echo "serve.py processes shut down gracefully."
+  fi
   sleep 1  # Give a moment for processes to die
-fi
-
-# Clean up PID file if it exists
-PID_FILE="devServer.pid"
-if [ -f "$PID_FILE" ]; then
-  rm "$PID_FILE"
-  echo "Removed stale PID file"
 fi
 
 # Final verification
