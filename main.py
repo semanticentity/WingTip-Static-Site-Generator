@@ -32,7 +32,7 @@ OUTPUT:
   ./README.md          -> ./docs/site/index.html
   ./docs/*.md          -> ./docs/site/*.html
   ./docs/site/index.html    -> generated doc index
-  ./sitemap.txt        -> plain sitemap for all .html files
+  ./sitemap.xml        -> XML sitemap for all .html files
 
 REQUIREMENTS:
   pip install markdown beautifulsoup4
@@ -43,9 +43,6 @@ NOTES:
   - Adds light/dark mode toggle
   - Adds TOC, .md link rewrite, GitHub edit link
   - Adds copy buttons to all code blocks
-  - Adds sitemap.xml generation:
-    - export WINGTIP_BASE_URL=https://yourusername.github.io/yourrepo
-    - sitemap.xml will be generated in ./docs/site/sitemap.xml
 """
     print(show_help.__doc__)
 
@@ -60,7 +57,7 @@ DEFAULT_CONFIG = {
     "version": "0.1.0",
     "repo_url": "",
 }
-CFG_PATH = pathlib.Path(__file__).parent / "config.json"
+CFG_PATH = pathlib.Path("config.json")
 CONFIG = DEFAULT_CONFIG.copy()
 if CFG_PATH.exists():
     CONFIG.update(json.loads(CFG_PATH.read_text()))
@@ -222,7 +219,7 @@ def build_navigation(current_file: str) -> str:
     nav_html.append('<li><a href="index.html">README</a></li>')
     
     # Add links to all docs
-    docs_dir = os.path.join(os.path.dirname(__file__), 'docs')
+    docs_dir = "docs"
     if os.path.isdir(docs_dir):
         for name in sorted(os.listdir(docs_dir)):
             if name.endswith('.md'):
@@ -358,61 +355,6 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     with open(output_filename, "w", encoding="utf8") as f:
         f.write(page)
 
-def write_docs_index(doc_files):
-    # Convert README to HTML
-    if os.path.exists("README.md"):
-        with open("README.md", "r", encoding="utf8") as f:
-            readme_md = f.read()
-        content = markdown.markdown(readme_md, extensions=["fenced_code", "codehilite", "tables"])
-    else:
-        content = "<p>No README.md found.</p>"
-
-    # Add navigation section
-    nav_html = ['<div class="navigation">']  
-    nav_html.append('<h2>Navigation</h2>')
-    nav_html.append('<ul>')
-    
-    # Add link to README/index
-    nav_html.append('<li><a href="index.html">README</a></li>')
-    
-    # Add links to all docs
-    docs_dir = "docs"
-    if os.path.isdir(docs_dir):
-        for name in os.listdir(docs_dir):
-            if name.endswith(".md"):
-                base = os.path.splitext(name)[0]
-                nav_html.append(f'<li><a href="{base}.html">{base}</a></li>')
-    
-    nav_html.append('</ul>')
-    nav_html.append('</div>')
-    content += '\n' + '\n'.join(nav_html)
-
-    # Create the index page content
-    content = f"""
-    <div class="docs-index">
-        <div class="left-col">
-            {content}
-        </div>
-    </div>
-    """
-
-    # Write the index page
-    page = TEMPLATE.substitute(
-        title="Navigation",
-        canonical_url=f"{BASE_URL}/docs/",
-        page_url="docs/",
-        content=content,
-        project=CONFIG["project"],
-        description=CONFIG["description"],
-        author=CONFIG["author"],
-        og_image=CONFIG["og_image"],
-        twitter_handle=CONFIG["twitter_handle"],
-    )
-
-    os.makedirs(os.path.join(OUTPUT_DIR, "docs"), exist_ok=True)
-    with open(os.path.join(OUTPUT_DIR, "docs", "index.html"), "w", encoding="utf8") as f:
-        f.write(page)
-
 def get_page_nav(pages, current_index):
     """Get previous and next page links"""
     prev_page = pages[current_index - 1] if current_index > 0 else None
@@ -489,7 +431,19 @@ def main():
                             prev_page=prev_page, next_page=next_page)
         pages.append(f"{OUTPUT_DIR}/{html_file}")
 
-
+    # Process 404.md if it exists
+    fourofour_md_path = pathlib.Path("404.md")
+    if fourofour_md_path.exists():
+        fourofour_html_path = pathlib.Path(OUTPUT_DIR) / "404.html"
+        # Title will be extracted by convert_markdown_file from H1 or default to filename
+        convert_markdown_file(
+            input_path=str(fourofour_md_path),
+            output_filename=str(fourofour_html_path),
+            add_edit_link=False,  # Typically no "edit this page" for a 404
+            prev_page=None,
+            next_page=None
+        )
+        pages.append(str(fourofour_html_path))
 
     write_sitemap_xml(pages)
     write_robots_txt()

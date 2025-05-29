@@ -12,21 +12,19 @@ from livereload import Server
 
 # Get absolute paths
 BASE_DIR = Path(__file__).parent
-SITE_DIR = BASE_DIR / "docs" / "site"
+SITE_DIR = Path("docs") / "site"
 PORT = 8000
 
 def build_site():
     """Build the site and return True if successful"""
     print("\n🔨 Building site...")
-    # Always run from the correct directory
-    os.chdir(str(BASE_DIR))
     
     try:
         # Try building in a temporary directory first
-        tmp_dir = "docs/site_tmp"
+        tmp_dir = "docs_site_tmp"
         os.makedirs(tmp_dir, exist_ok=True)
         result = subprocess.run(
-            ["python", "main.py", "--output", tmp_dir],
+            ["python", str(BASE_DIR / "main.py"), "--output", tmp_dir],
             capture_output=True,
             text=True
         )
@@ -35,7 +33,7 @@ def build_site():
             print("  ✓ Build successful")
             # If successful, rebuild for real
             result = subprocess.run(
-                ["python", "main.py"],
+                ["python", str(BASE_DIR / "main.py")],
                 capture_output=True,
                 text=True
             )
@@ -66,8 +64,8 @@ if __name__ == "__main__":
     # Watch for changes
     server.watch("README.md", build_site)
     server.watch("docs/*.md", build_site)
-    server.watch("template.html", build_site)
-    server.watch("main.py", build_site)
+    server.watch(str(BASE_DIR / "template.html"), build_site)
+    server.watch(str(BASE_DIR / "main.py"), build_site)
     
     # Serve the site
     print(f"\n🌐 Starting server at http://localhost:{PORT}")
