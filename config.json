@@ -1,7 +1,7 @@
 {
     "base_url": "https://semanticentity.github.io/WingTip-Static-Site-Generator",
     "project_name": "WingTip",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "SEO-friendly Markdown-to-HTML static site generator for GitHub Pages",
     "author": "SemanticEntity",
     "repo_url": "https://github.com/semanticentity/WingTip-Static-Site-Generator/",
