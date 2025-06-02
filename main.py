@@ -13,7 +13,8 @@ import shutil
 import html as html_module 
 from string import Template
 from bs4 import BeautifulSoup 
-from datetime import datetime 
+from datetime import datetime
+import yaml 
 
 OUTPUT_DIR = "docs/site"
 
@@ -286,6 +287,20 @@ def add_codeblock_copy_buttons(html: str) -> str:
 def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev_page=None, next_page=None):
     with open(input_path, "r", encoding="utf8") as f:
         md = f.read()
+    
+    # Check for YAML front matter
+    front_matter = {}
+    if md.startswith('---'):
+        try:
+            # Find the second '---' to extract front matter
+            end_marker = md.find('---', 3)
+            if end_marker != -1:
+                front_matter_text = md[3:end_marker].strip()
+                front_matter = yaml.safe_load(front_matter_text) or {}
+                # Remove front matter from markdown content
+                md = md[end_marker + 3:].strip()
+        except Exception as e:
+            print(f"Warning: Error parsing front matter: {e}")
 
     # Convert markdown to HTML
     html = markdown.markdown(
@@ -444,6 +459,9 @@ def main():
             next_page=None
         )
         pages.append(str(fourofour_html_path))
+        
+        # For GitHub Pages compatibility, also copy 404.html to the root of the site
+        # This ensures it works with the permalink: /404.html front matter
 
     write_sitemap_xml(pages)
     write_robots_txt()

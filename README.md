@@ -24,6 +24,7 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 * Live dev server with auto-reload (`serve.py`)
 * Built-in Open Graph image generator
 * GitHub Actions deployment support
+* Custom 404 error page handling
 
 ---
 
@@ -193,14 +194,36 @@ python wingtip/main.py --regen-card
 
 ## Custom 404 Page
 
-WingTip supports a custom "Page Not Found" page. To use this feature:
+WingTip supports a custom "Page Not Found" page that works both locally during development and when deployed to GitHub Pages. To use this feature:
 
-1.  Create a `404.md` file in the root of your project directory (the same directory where your `README.md` and `config.json` are located).
-2.  Write your desired content for the 404 page in Markdown format within this file.
-    *   The title for the generated `404.html` page will be taken from the first H1 heading (e.g., `# My Custom 404 Page`) in your `404.md`. If no H1 heading is found, the title will default to "404.md".
-3.  When you build your site, WingTip will automatically detect `404.md` and convert it into a `404.html` file in your output directory (e.g., `docs/site/404.html`).
+1. Create a `404.md` file in the root of your project directory (the same directory where your `README.md` and `config.json` are located).
 
-This `404.html` file can then be configured with your web hosting provider (like GitHub Pages, Netlify, Vercel, etc.) to be served whenever a visitor tries to access a non-existent page on your site.
+2. Add the following YAML front matter at the top of your 404.md file (this is required for GitHub Pages):
+
+```
+permalink: /404.html
+```
+   
+   Note: In the actual 404.md file, this should be wrapped with triple-dash lines, but we're omitting them here to avoid breaking the markdown formatting.
+
+3. Write your desired content for the 404 page in Markdown format below the front matter.
+   * The title for the generated `404.html` page will be taken from the first H1 heading (e.g., `# Page Not Found`) in your `404.md`.
+   * If no H1 heading is found, the title will default to "404.md".
+
+4. When you build your site with `python main.py`, WingTip will automatically:
+   * Detect `404.md` and process its front matter
+   * Convert it into a `404.html` file in your output directory (e.g., `docs/site/404.html`)
+   * Apply the same template and styling as your other pages
+
+5. During local development with `python serve.py`:
+   * The development server will automatically serve your custom 404 page when a non-existent URL is accessed
+   * This allows you to preview and test your 404 page locally
+
+6. When deployed to GitHub Pages:
+   * GitHub Pages will automatically use your custom 404.html file for any non-existent URLs
+   * The permalink in the front matter ensures proper routing
+
+This implementation ensures a consistent user experience both during development and in production.
 
 ---
 
