@@ -28,7 +28,8 @@ Thumbs.db
 
 # Project specific
 devServer.pid
-wingtip/pygments.css
+pygments.css
+.browser_opened
 
 # Keep docs/site for GitHub Pages
 docs/site/
