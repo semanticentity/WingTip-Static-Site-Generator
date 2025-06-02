@@ -31,9 +31,9 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 ## Quickstart
 
 ```bash
-pip install markdown beautifulsoup4 livereload pillow
+pip install markdown beautifulsoup4 livereload pillow PyYAML
 # Alternatively, using uv (a fast Python package installer)
-uv pip install markdown beautifulsoup4 livereload pillow
+uv pip install markdown beautifulsoup4 livereload pillow PyYAML
 python wingtip/main.py
 python wingtip/serve.py
 ```
@@ -157,10 +157,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install markdown Pygments Pillow beautifulsoup4
+          pip install markdown Pygments Pillow beautifulsoup4 PyYAML
 
       - name: Build site
-        run: python wingtip/main.py
+        run: python main.py
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -261,7 +261,7 @@ This implementation ensures a consistent user experience both during development
 ## Requirements
 
 ```bash
-pip install markdown beautifulsoup4 pillow livereload
+pip install markdown beautifulsoup4 pillow livereload PyYAML
 ```
 
 To regenerate code highlight styles:
