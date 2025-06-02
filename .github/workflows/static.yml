@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install markdown Pygments Pillow beautifulsoup4
+          pip install markdown Pygments Pillow beautifulsoup4 PyYAML
 
       - name: Build site
         run: python main.py
