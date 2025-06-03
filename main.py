@@ -55,6 +55,7 @@ DEFAULT_CONFIG = {
     "author": "SemanticEntity",
     "og_image": "social-card.png",
     "twitter_handle": "",
+    "concat_docs_filename": "wingtip.txt",
     "version": "0.1.0",
     "repo_url": "",
 }
@@ -346,6 +347,14 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # Handle favicon URL - if base_url is '.', use relative path
     favicon_url = 'favicon.png' if BASE_URL == '.' else f'{BASE_URL}/favicon.png'
 
+    # Construct URL for the concatenated docs file
+    concat_docs_filename = CONFIG.get("concat_docs_filename", "concatenated_docs.txt")
+    concat_docs_url = make_url(concat_docs_filename)
+
+    # Determine raw markdown content to pass to template
+    # For 404 page (where add_edit_link is False), pass empty string
+    raw_markdown_for_template = md if add_edit_link else ""
+
     page = TEMPLATE.substitute(
         title=title,
         canonical_url=page_url,
@@ -363,7 +372,9 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         prev_link=prev_link,
         next_link=next_link,
         base_url=BASE_URL,
-        favicon_url=favicon_url
+        favicon_url=favicon_url,
+        concat_docs_url=concat_docs_url,
+        raw_markdown_content=raw_markdown_for_template
     )
 
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
@@ -375,6 +386,47 @@ def get_page_nav(pages, current_index):
     prev_page = pages[current_index - 1] if current_index > 0 else None
     next_page = pages[current_index + 1] if current_index < len(pages) - 1 else None
     return prev_page, next_page
+
+def generate_concatenated_markdown():
+    """Generates a single Markdown file from README.md and docs/*.md (excluding 404.md)."""
+    all_markdown_content = []
+    files_to_process = []
+
+    # Add README.md if it exists
+    if os.path.exists("README.md"):
+        files_to_process.append("README.md")
+
+    # Add files from docs/ directory, excluding 404.md
+    docs_dir = "docs"
+    if os.path.isdir(docs_dir):
+        for name in sorted(os.listdir(docs_dir)):
+            if name.endswith(".md") and name != "404.md":
+                files_to_process.append(os.path.join(docs_dir, name))
+
+    for filepath in files_to_process:
+        try:
+            with open(filepath, "r", encoding="utf8") as f:
+                content = f.read()
+            all_markdown_content.append(f"\n---\nFile: {filepath}\n---\n\n{content}")
+        except Exception as e:
+            print(f"Warning: Could not read or process file {filepath}: {e}")
+
+    if not all_markdown_content:
+        print("No Markdown files found to concatenate.")
+        return
+
+    concatenated_content = "".join(all_markdown_content)
+
+    output_filename = CONFIG.get("concat_docs_filename", "concatenated_docs.txt")
+    full_output_path = os.path.join(OUTPUT_DIR, output_filename)
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    try:
+        with open(full_output_path, "w", encoding="utf8") as f:
+            f.write(concatenated_content)
+        print(f"Generated concatenated docs: {full_output_path}")
+    except Exception as e:
+        print(f"Error writing concatenated Markdown file: {e}")
 
 def main():
     parser = argparse.ArgumentParser(description=show_help.__doc__ or "Minimal Markdown to HTML static site generator")
@@ -388,6 +440,7 @@ def main():
         OUTPUT_DIR = args.output
 
     copy_static_files()
+    generate_concatenated_markdown() # Call the new function here
     pages = []
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
