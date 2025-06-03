@@ -565,9 +565,10 @@
     /* Source Buttons Styling */
     .source-buttons {
         display: flex;
-        justify-content: flex-end; /* Aligns buttons to the right */
-        gap: 0.5em; /* Space between buttons */
-        margin-bottom: 1em; /* Space below the container */
+        justify-content: flex-end; 
+        gap: 0.5em; 
+        padding-top: 2.5em;
+        margin-bottom: 1em; 
     }
 
     #view-source-btn,
@@ -577,6 +578,8 @@
         border-radius: 4px;
         font-size: 0.85em;
         cursor: pointer;
+        background-color: var(--nav-background);
+
         transition: background-color 0.2s, color 0.2s;
     }
 
@@ -743,7 +746,7 @@
     // Build TOC links
     const headers = Array.from(document.querySelectorAll('h2,h3')).filter(h => h.innerText !== 'Documentation');
     headers.forEach(function(h){
-      const id = h.innerText.toLowerCase().replace(/[^a-z0-G_]+g,'-');
+      const id = h.innerText.toLowerCase().replace(/[^a-z0-9_]+/g, '-');
       h.id = id;
       const link = document.createElement('a');
       link.href = '#' + id;
