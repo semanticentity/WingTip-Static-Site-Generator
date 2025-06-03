@@ -349,11 +349,22 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
 
     # Construct URL for the concatenated docs file
     concat_docs_filename = CONFIG.get("concat_docs_filename", "concatenated_docs.txt")
-    concat_docs_url = make_url(concat_docs_filename)
+    # For local development (BASE_URL is '.'), use a relative path
+    if BASE_URL == '.':
+        concat_docs_url = concat_docs_filename
+    else:
+        concat_docs_url = f"{BASE_URL}/{concat_docs_filename}"
 
     # Determine raw markdown content to pass to template
-    # For 404 page (where add_edit_link is False), pass empty string
-    raw_markdown_for_template = md if add_edit_link else ""
+    # For all pages except 404 page, pass the original markdown content
+    # Read the original markdown file to get the raw content
+    raw_markdown_for_template = ""
+    if add_edit_link:
+        try:
+            with open(input_path, 'r', encoding='utf8') as f:
+                raw_markdown_for_template = f.read()
+        except Exception as e:
+            print(f"Warning: Could not read raw markdown from {input_path}: {e}")
 
     page = TEMPLATE.substitute(
         title=title,

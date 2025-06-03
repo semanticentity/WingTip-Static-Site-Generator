@@ -105,7 +105,7 @@ def make_app():
     site_path = str(SITE_DIR.absolute())
     return tornado.web.Application([
         # Serve static files directly
-        (r"/(.+\.(css|js|png|jpg|jpeg|gif|ico))", tornado.web.StaticFileHandler, {"path": site_path}),
+        (r"/(.+\.(css|js|png|jpg|jpeg|gif|ico|txt))", tornado.web.StaticFileHandler, {"path": site_path}),
         # Main handler for HTML files and 404s
         (r"/(.*)", MainHandler, {"root_path": site_path}),
     ], debug=True)

@@ -649,8 +649,8 @@
   <div id="content-wrapper">
     <main>
       <div class="source-buttons">
-            <button id="view-source-btn" type="button" title="View raw Markdown source">View Source</button>
-            <button id="copy-source-btn" type="button" title="Copy raw Markdown source to clipboard">Copy Source</button>
+            <button id="view-source-btn" type="button" title="View raw Markdown source">View Markdown</button>
+            <button id="copy-source-btn" type="button" title="Copy raw Markdown source to clipboard">Copy Markdown</button>
       </div>
       $content
       <nav id='toc'></nav>
@@ -658,7 +658,7 @@
     </main>
     <nav class="prev-next-nav">
       $prev_link
-      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a> - <a href="$concat_docs_url">View All Docs (Raw)</a></span>
+      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a> - <a href="wingtip.txt">View All Docs (Raw)</a></span>
       $next_link
     </nav>
   </div>
@@ -827,7 +827,15 @@
         viewSourceBtn.addEventListener('click', () => {
           // Use textContent directly as it's already decoded by the browser from the script tag
           const currentMarkdownContent = rawMarkdownContainer.textContent;
-          window.open('data:text/plain;charset=utf-8,' + encodeURIComponent(currentMarkdownContent));
+          // Create a blob and create an object URL for it
+          const blob = new Blob([currentMarkdownContent], {type: 'text/plain;charset=utf-8'});
+          const url = URL.createObjectURL(blob);
+          // Open in a new window
+          const newWindow = window.open(url, '_blank');
+          // Clean up the URL object after the window loads
+          if (newWindow) {
+            newWindow.onload = () => URL.revokeObjectURL(url);
+          }
         });
 
         copySourceBtn.addEventListener('click', () => {
