@@ -561,6 +561,46 @@
         --nav-background: #161f27;
       }
     }
+
+    /* Source Buttons Styling */
+    .source-buttons {
+        display: flex;
+        justify-content: flex-end; /* Aligns buttons to the right */
+        gap: 0.5em; /* Space between buttons */
+        margin-bottom: 1em; /* Space below the container */
+    }
+
+    #view-source-btn,
+    #copy-source-btn {
+        padding: 0.3em 0.8em;
+        border: 1px solid; /* Border color will be mode-specific */
+        border-radius: 4px;
+        font-size: 0.85em;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    /* Light Mode styles for new buttons */
+    html.light .source-buttons button {
+        background-color: #f0f0f0;
+        border-color: #cccccc;
+        color: #333333;
+    }
+    html.light .source-buttons button:hover {
+        background-color: #e0e0e0;
+    }
+
+    /* Dark Mode styles for new buttons (applied if html.light is not present, or if html.dark is present) */
+    html:not(.light) .source-buttons button,
+    html.dark .source-buttons button {
+        background-color: #3a3a3a;
+        border-color: #555555;
+        color: #f0f0f0;
+    }
+    html:not(.light) .source-buttons button:hover,
+    html.dark .source-buttons button:hover {
+        background-color: #4a4a4a;
+    }
   </style>
 </head>
 <body>
@@ -605,13 +645,17 @@
   </button>
   <div id="content-wrapper">
     <main>
+      <div class="source-buttons">
+            <button id="view-source-btn" type="button" title="View raw Markdown source">View Source</button>
+            <button id="copy-source-btn" type="button" title="Copy raw Markdown source to clipboard">Copy Source</button>
+      </div>
       $content
       <nav id='toc'></nav>
       $navigation
     </main>
     <nav class="prev-next-nav">
       $prev_link
-      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a></span>
+      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a> - <a href="$concat_docs_url">View All Docs (Raw)</a></span>
       $next_link
     </nav>
   </div>
@@ -699,7 +743,7 @@
     // Build TOC links
     const headers = Array.from(document.querySelectorAll('h2,h3')).filter(h => h.innerText !== 'Documentation');
     headers.forEach(function(h){
-      const id = h.innerText.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+      const id = h.innerText.toLowerCase().replace(/[^a-z0-G_]+g,'-');
       h.id = id;
       const link = document.createElement('a');
       link.href = '#' + id;
@@ -757,6 +801,55 @@
 
 
   </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const rawMarkdownContainer = document.getElementById('raw-markdown-data');
+      const viewSourceBtn = document.getElementById('view-source-btn');
+      const copySourceBtn = document.getElementById('copy-source-btn');
+      const sourceButtonsContainer = document.querySelector('.source-buttons');
 
+      if (!rawMarkdownContainer || !sourceButtonsContainer || !viewSourceBtn || !copySourceBtn) {
+        // If essential elements are missing, hide buttons container if it exists and exit
+        if (sourceButtonsContainer) {
+            sourceButtonsContainer.style.display = 'none';
+        }
+        return;
+      }
+
+      const markdownContent = rawMarkdownContainer.textContent.trim();
+
+      if (markdownContent !== '') {
+        sourceButtonsContainer.style.display = ''; // Ensure it's visible
+
+        viewSourceBtn.addEventListener('click', () => {
+          // Use textContent directly as it's already decoded by the browser from the script tag
+          const currentMarkdownContent = rawMarkdownContainer.textContent;
+          window.open('data:text/plain;charset=utf-8,' + encodeURIComponent(currentMarkdownContent));
+        });
+
+        copySourceBtn.addEventListener('click', () => {
+          const currentMarkdownContent = rawMarkdownContainer.textContent;
+          navigator.clipboard.writeText(currentMarkdownContent).then(() => {
+            const originalText = copySourceBtn.textContent;
+            copySourceBtn.textContent = 'Copied!';
+            setTimeout(() => {
+              copySourceBtn.textContent = originalText;
+            }, 2000);
+          }).catch(err => {
+            console.error('Failed to copy source: ', err);
+            // Optionally, provide user feedback for error
+            const originalText = copySourceBtn.textContent;
+            copySourceBtn.textContent = 'Error!';
+            setTimeout(() => {
+              copySourceBtn.textContent = originalText;
+            }, 2000);
+          });
+        });
+      } else {
+        sourceButtonsContainer.style.display = 'none';
+      }
+    });
+  </script>
+  <script id="raw-markdown-data" type="text/markdown">$raw_markdown_content</script>
 </body>
 </html>

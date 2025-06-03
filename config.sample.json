@@ -8,6 +8,7 @@
     "og_image": "social-card.png",
     "favicon": "https://yourcdn.com/favicon.png",
     "twitter_handle": "@yourhandle",
+    "concat_docs_filename": "wingtip_docs.txt",
     "github": {
       "repo": "yourusername/yourrepo",
       "branch": "main"
