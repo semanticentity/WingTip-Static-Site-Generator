@@ -9,7 +9,7 @@
 | **Dark Mode**         | Auto + toggle              | Basic  | Advanced   | Advanced  |
 | **Live Reload**       | Full (w/ scroll restore)   | Good   | Advanced   | Advanced  |
 | **Auto Sidebar**      | Yes                        | Yes    | Advanced   | Advanced  |
-| **Search**            | Planned                    | Basic  | Advanced   | Good      |
+| **Search**            | Client-side (JSON)         | Basic  | Advanced   | Good      |
 | **TOC Navigation**    | Yes                        | Good   | Advanced   | Good      |
 | **Prev/Next Links**   | Yes                        | Basic  | Good       | Good      |
 | **Social Cards**      | Built-in (Pillow)          | None   | Basic      | None      |
@@ -22,7 +22,7 @@
 ### Navigation
 
 * Nested sidebar sections (grouping by folder or heading)
-* Search with local JSON index
+* ~~Search with local JSON index~~ (Implemented in v0.3.0)
 * Collapsible sidebar sections
 * Keyboard shortcuts for navigation and toggles
 
