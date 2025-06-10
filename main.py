@@ -371,10 +371,24 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         except Exception as e:
             print(f"Warning: Error parsing front matter: {e}")
 
-    # Convert markdown to HTML
+    # Create a custom link pattern processor
+    class LinkRewriter(markdown.treeprocessors.Treeprocessor):
+        def run(self, root):
+            for element in root.iter('a'):
+                href = element.get('href')
+                if href and href.endswith('.md'):
+                    # Convert .md links to .html
+                    element.set('href', href[:-3] + '.html')
+            return root
+    
+    class LinkRewriterExtension(markdown.Extension):
+        def extendMarkdown(self, md):
+            md.treeprocessors.register(LinkRewriter(md), 'link_rewriter', 7)
+    
+    # Convert markdown to HTML with link rewriting
     html = markdown.markdown(
         md,
-        extensions=["fenced_code", "codehilite", "tables"],
+        extensions=["fenced_code", "codehilite", "tables", LinkRewriterExtension()],
         output_format="html5"
     )
 
