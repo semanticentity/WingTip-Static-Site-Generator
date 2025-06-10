@@ -745,14 +745,19 @@ html.dark #search-input:focus {
 
 /* Search Results Container Styling */
 #search-results-container {
-  /* Positioning/layout styles are kept inline: position, top, left, right, z-index, display, max-height, overflow-y */
+  position: fixed;
+  z-index: 1500;
+  max-height: 400px;
+  overflow-y: auto;
+  left: 1em;  /* Default */
+  right: 1em; /* Default */
   padding: 1em;
   background-color: var(--background-color, #ffffff);
   border: 1px solid var(--border, #ccc);
   color: var(--text-color, #333);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   border-radius: 0 0 4px 4px;
-  margin-top: -1px; /* Align with bottom of search input if it has a border */
+  /* margin-top: -1px; /* Removed for fixed positioning */
 }
 
 html.dark #search-results-container {
@@ -824,7 +829,7 @@ html.dark #search-results-container li a:hover {
   #search-results-container {
     left: 0.5em;
     right: 0.5em;
-    top: 55px; /* Adjust if nav height changes on mobile */
+    /* top: 55px; /* Removed as JS now handles this */
   }
 }
 
@@ -938,6 +943,35 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   color: var(--dark-active-search-result-snippet-text, #dddddd);
 }
 
+@media (max-width: 429px) {
+  .nav-container {
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+  }
+
+  .search-wrapper {
+    margin-left: 0.25em;
+    margin-right: 0.25em;
+  }
+
+  #search-input {
+    padding-right: 1.5em; /* Reduced from 2.2em */
+    font-size: 0.85em; /* Slightly reduce font size of search input */
+  }
+
+  #search-clear-btn {
+    font-size: 1.2em; /* Reduced from 1.6em */
+    right: 0.3em;   /* Adjusted from 0.5em */
+  }
+
+  .nav-links .brand span {
+    font-size: 1.3em; /* Reduce brand text font-size from 1.5em */
+  }
+
+  .nav-links .brand img {
+    height: 2.2em; /* Reduce logo height from 2.5em */
+  }
+}
   </style>
 </head>
 <body>
@@ -982,7 +1016,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   </div>
 
   <!-- Search Results Container (New) -->
-  <div id="search-results-container" style="position: absolute; top: 60px; /* Adjust based on actual nav height */ left: 1em; right: 1em; z-index: 1500; display: none; max-height: 400px; overflow-y: auto;"></div>
+  <div id="search-results-container" style="display: none;"></div>
 
   <button id='toc-hamburger' aria-label='Open Table of Contents'>
     <span></span>

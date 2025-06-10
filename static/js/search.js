@@ -5,6 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchIndex = [];
   let activeResultIndex = -1;
 
+  function updateResultsPosition() {
+    const navContainer = document.getElementById('nav-container');
+    // resultsContainer is already defined in the outer scope
+    if (navContainer && resultsContainer) {
+      const navHeight = navContainer.offsetHeight;
+      resultsContainer.style.top = navHeight + 'px';
+    }
+  }
+
   if (resultsContainer && searchInput && searchInput.value.trim().length >= 2) {
     resultsContainer.innerHTML = '<p>Loading search...</p>';
     resultsContainer.style.display = 'block';
@@ -131,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         resultsContainer.innerHTML = '<p>No results found. Try different keywords or check your spelling.</p>';
       }
+      updateResultsPosition(); // Call after results are processed
     });
 
     if (searchClearBtn) {
@@ -214,4 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     console.warn('Search input field or results container not found in the DOM.');
   }
+
+  // Initial call and event listener for window resize
+  updateResultsPosition();
+  window.addEventListener('resize', updateResultsPosition);
 });
