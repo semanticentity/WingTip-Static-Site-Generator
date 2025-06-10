@@ -1,5 +1,17 @@
 # WingTip Changelog
 
+## [v0.3.0]
+
+### ✨ Features
+- Added client-side search functionality to allow users to quickly find relevant documentation. See [Search Features](./search-features.md) for more details.
+- Implemented various improvements to mobile responsiveness for a better user experience on smaller devices.
+
+### 🛠 Fixes & Improvements
+- General stability and performance improvements.
+
+### 📚 Documentation
+- Updated roadmap and changelog to reflect recent feature additions and version changes.
+
 ## [v0.2.0]
 
 ### ✨ Features
