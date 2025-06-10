@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsContainer.style.display = 'none';
   }
 
-  fetch('search_index.json')
+  fetch('/search_index.json')
     .then(response => {
       if (!response.ok) {
         throw new Error('Network response was not ok for search_index.json');
