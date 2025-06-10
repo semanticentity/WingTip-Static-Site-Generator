@@ -82,11 +82,23 @@ def make_url(rel_path):
     return f"{BASE_URL}/{rel_path}".rstrip("/")
 
 def write_robots_txt():
-    lines = ["User-agent: *", "Allow: /"]
-    if BASE_URL:
-        lines.append(f"Sitemap: {BASE_URL}/sitemap.xml")
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /search_index.json"
+    ]
+
+    # Determine Sitemap URL
+    # Ensure base_url is taken from CONFIG and handled if it's '.' or missing
+    base_url_for_sitemap = CONFIG.get("base_url", "").rstrip('/')
+    if base_url_for_sitemap and base_url_for_sitemap != '.':
+        lines.append(f"Sitemap: {base_url_for_sitemap}/sitemap.xml")
+    else:
+        # For local preview (base_url = '.') or missing base_url, use a root-relative path
+        lines.append(f"Sitemap: /sitemap.xml")
+
     with open(os.path.join(OUTPUT_DIR, "robots.txt"), "w", encoding="utf8") as f:
-        f.write("\n".join(lines))
+        f.write("\n".join(lines) + "\n") # Add trailing newline
 
 def write_sitemap_xml(pages):
     with open(os.path.join(OUTPUT_DIR, "sitemap.xml"), "w", encoding="utf8") as f:
@@ -153,6 +165,27 @@ def copy_static_files():
             urllib.request.urlretrieve(CONFIG["favicon"], favicon_dest)
         except Exception as e:
             print(f"Warning: Failed to download favicon: {e}")
+
+    # Copy the entire 'static' directory if it exists
+    static_src_dir = "static"
+    if os.path.isdir(static_src_dir): # Source must be a directory
+        static_dest_dir = os.path.join(OUTPUT_DIR, "static")
+
+        # Handle existing destination: remove if it's a file or a directory
+        if os.path.exists(static_dest_dir):
+            if os.path.isdir(static_dest_dir):
+                shutil.rmtree(static_dest_dir)
+            else:
+                os.remove(static_dest_dir) # Remove if it's a file
+
+        try:
+            shutil.copytree(static_src_dir, static_dest_dir)
+            print(f"Copied static assets from '{static_src_dir}' to '{static_dest_dir}'")
+        except FileNotFoundError:
+             print(f"Warning: Source static directory '{static_src_dir}' not found. Skipping copy.")
+        except Exception as e:
+            print(f"Warning: Could not copy static assets from '{static_src_dir}': {e}")
+
 
 def extract_title(md):
     match = re.search(r"^# (.+)", md, re.MULTILINE)
@@ -284,6 +317,41 @@ def add_codeblock_copy_buttons(html: str) -> str:
         code['id'] = f'code-{i}'
     
     return str(soup)
+
+def remove_frontmatter(md_text):
+    """Removes frontmatter from markdown text."""
+    if md_text.startswith("---"):
+        parts = md_text.split("---", 2)
+        if len(parts) > 2:
+            return parts[2].strip()
+    return md_text
+
+def generate_search_index(pages_data, output_dir):
+    """Generates search_index.json from pages data."""
+    search_index = []
+    for page_item in pages_data:
+        title = page_item["title"]
+        content_md = page_item["content_md"]
+        url = page_item["url"]
+
+        # Convert markdown to HTML
+        html_content = markdown.markdown(content_md)
+
+        # Strip HTML tags to get plain text
+        soup = BeautifulSoup(html_content, "html.parser")
+        text_content = soup.get_text(separator=' ').strip()
+
+        search_index.append({
+            "title": title,
+            "text": text_content,
+            "url": url
+        })
+
+    output_path = os.path.join(output_dir, "search_index.json")
+    os.makedirs(output_dir, exist_ok=True)
+    with open(output_path, "w", encoding="utf8") as f:
+        json.dump(search_index, f, indent=2)
+    print(f"Generated search index: {output_path}")
 
 def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev_page=None, next_page=None):
     with open(input_path, "r", encoding="utf8") as f:
@@ -453,6 +521,7 @@ def main():
     copy_static_files()
     generate_concatenated_markdown() # Call the new function here
     pages = []
+    search_data_for_index = []
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     social = CONFIG.get("social_card", {})
@@ -487,8 +556,15 @@ def main():
     # Start with README if it exists
     if os.path.exists("README.md"):
         with open("README.md", "r", encoding="utf8") as f:
-            title = extract_title(f.read())
-        nav_pages.append((title, "index.html", "README.md"))
+            readme_content_raw = f.read()
+        readme_title = extract_title(readme_content_raw)
+        readme_md_content_no_frontmatter = remove_frontmatter(readme_content_raw)
+        search_data_for_index.append({
+            "title": readme_title,
+            "content_md": readme_md_content_no_frontmatter,
+            "url": "index.html"
+        })
+        nav_pages.append((readme_title, "index.html", "README.md"))
     
     # Then collect all .md files from docs directory
     if os.path.isdir(docs_dir):
@@ -496,7 +572,17 @@ def main():
             if name.endswith(".md"):
                 md_path = os.path.join(docs_dir, name)
                 with open(md_path, "r", encoding="utf8") as f:
-                    title = extract_title(f.read())
+                    md_content_raw = f.read()
+                title = extract_title(md_content_raw)
+
+                if name != "404.md":
+                    md_content_no_frontmatter = remove_frontmatter(md_content_raw)
+                    html_filename = f"{os.path.splitext(name)[0]}.html"
+                    search_data_for_index.append({
+                        "title": title,
+                        "content_md": md_content_no_frontmatter,
+                        "url": html_filename
+                    })
                 base = os.path.splitext(name)[0]
                 nav_pages.append((title, f"{base}.html", md_path))
     
@@ -527,6 +613,7 @@ def main():
         # For GitHub Pages compatibility, also copy 404.html to the root of the site
         # This ensures it works with the permalink: /404.html front matter
 
+    generate_search_index(search_data_for_index, OUTPUT_DIR)
     write_sitemap_xml(pages)
     write_robots_txt()
 

@@ -150,6 +150,99 @@
       margin-bottom: 8px;
     }
 
+    /* Search styles */
+    .search-container {
+      position: relative;
+      margin: 1em 0;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.5em 2.5em 0.5em 1em;
+      border: 2px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--background-color);
+      color: var(--text-main);
+      font-size: 1em;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--links);
+      box-shadow: 0 0 0 2px rgba(var(--links-rgb), 0.2);
+      outline: none;
+    }
+
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--background-color);
+      border: 2px solid var(--border-color);
+      border-radius: 4px;
+      margin-top: 0.5em;
+      max-height: 400px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .search-results ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .search-results li {
+      padding: 0;
+      margin: 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .search-results li:last-child {
+      border-bottom: none;
+    }
+
+    .search-results a {
+      display: block;
+      padding: 0.75em 1em;
+      color: var(--text-main);
+      text-decoration: none;
+      transition: background-color 0.2s;
+    }
+
+    .search-results a:hover,
+    .search-results .active-search-result a {
+      background-color: var(--selection-background);
+      color: var(--selection-text);
+    }
+
+    .search-result-title {
+      font-weight: bold;
+      margin-bottom: 0.25em;
+      color: var(--links);
+    }
+
+    .search-result-snippet {
+      font-size: 0.9em;
+      margin: 0;
+      opacity: 0.8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .search-results mark {
+      background-color: var(--selection-background);
+      color: var(--selection-text);
+      padding: 0.1em 0.2em;
+      border-radius: 2px;
+    }
+
     .navigation a {
       color: var(--text-color);
       text-decoration: none;
@@ -585,12 +678,12 @@
 
     /* Light Mode styles for new buttons */
     html.light .source-buttons button {
-        background-color: #f0f0f0;
-        border-color: #cccccc;
-        color: #333333;
+        background-color: #f0f0f0 !important;
+        border-color: #cccccc !important;
+        color: #333333 !important;
     }
     html.light .source-buttons button:hover {
-        background-color: #e0e0e0;
+        background-color: #e0e0e0 !important;
     }
 
     /* Dark Mode styles for new buttons (applied if html.light is not present, or if html.dark is present) */
@@ -604,6 +697,247 @@
     html.dark .source-buttons button:hover {
         background-color: #4a4a4a;
     }
+
+/* Search Input Styling */
+.search-wrapper {
+  margin-right: 1em; 
+  margin-left: 1em;
+  margin-top: 6px;
+  background: #161f27;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+#search-input {
+  padding: 0.4em 0.6em;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 3px;
+  width: 200px;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+}
+
+#search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+#search-input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  outline: none;
+  width: 250px;
+}
+
+#search-input:focus {
+  outline: none;
+  border-color: var(--text-bright, #007bff); /* Using --text-bright as accent */
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.25); /* Fallback accent shadow */
+  /* Consider var(--accent-color-translucent) if defined by Water.css or define a new var */
+}
+
+/* Update focus shadow for dark mode if needed */
+html.dark #search-input:focus {
+  box-shadow: 0 0 0 2px rgba(135, 206, 250, 0.3); /* Lighter shadow for dark bg */
+}
+
+
+/* Search Results Container Styling */
+#search-results-container {
+  /* Positioning/layout styles are kept inline: position, top, left, right, z-index, display, max-height, overflow-y */
+  padding: 1em;
+  background-color: var(--background-color, #ffffff);
+  border: 1px solid var(--border, #ccc);
+  color: var(--text-color, #333);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-radius: 0 0 4px 4px;
+  margin-top: -1px; /* Align with bottom of search input if it has a border */
+}
+
+html.dark #search-results-container {
+  background-color: #161f27;
+}
+
+html.light #search-results-container {
+  background-color: #ffffff;
+  border-color: #949494;
+}
+
+#search-results-container ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#search-results-container li a {
+  display: block;
+  padding: 0.6em 0.8em;
+  text-decoration: none;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border, #eee); /* --border or a lighter variant */
+  transition: background-color 0.2s ease;
+}
+
+html.light #search-results-container li a {
+    border-bottom: 1px solid #efefef; /* Lighter border for light mode */
+}
+html.dark #search-results-container li a {
+    border-bottom: 1px solid #333; /* Darker border for dark mode */
+}
+
+
+#search-results-container li:last-child a {
+  border-bottom: none;
+}
+
+#search-results-container li a:hover {
+  background-color: var(--text-muted, #f0f0f0); /* Using --text-muted as a hover bg */
+  color: var(--text-bright);
+}
+html.light #search-results-container li a:hover {
+  background-color: #e9e9e9;
+}
+html.dark #search-results-container li a:hover {
+  background-color: #383838;
+}
+
+
+#search-results-container p {
+  padding: 0.8em;
+  margin: 0;
+  text-align: center;
+  color: var(--text-muted, #666);
+}
+
+/* Responsive adjustments for search */
+@media (max-width: 600px) {
+  .search-wrapper {
+    flex-grow: 1;
+    margin-left: 0.5em; /* Give a bit of space from nav-links brand */
+    margin-right: 0.5em;
+  }
+  #search-input {
+    width: 100%;
+    max-width: none; /* Allow full width */
+  }
+  #search-results-container {
+    left: 0.5em;
+    right: 0.5em;
+    top: 55px; /* Adjust if nav height changes on mobile */
+  }
+}
+
+/* Search Result Item Styling */
+#search-results-container li { /* Style for the <li> itself */
+  margin-bottom: 0.5em;
+}
+
+#search-results-container li a { /* Style for the <a> tag wrapping title */
+  text-decoration: none; /* Remove underline from link if desired */
+  display: block; /* Make the whole area clickable if snippet is outside 'a' */
+  /* padding: 0; Reverted from previous as padding is on title/snippet now */
+}
+
+.search-result-title {
+  font-weight: bold;
+  color: var(--text-bright, #1e90ff); /* Brighter color for title */
+  margin-bottom: 0.25em;
+}
+
+#search-results-container li a:hover .search-result-title {
+  text-decoration: underline; /* Underline title on hover for visual feedback */
+}
+
+.search-result-snippet {
+  font-size: 0.85em;
+  color: var(--text-muted, #555555);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Highlight Styling */
+mark, .search-highlight { /* Using <mark> as it's semantic */
+  background-color: var(--highlight-bg-color, #fcf8e3);
+  color: var(--highlight-text-color, #333333); /* Darker text for light yellow bg */
+  padding: 0.15em 0.2em;
+  border-radius: 3px;
+  font-weight: normal; /* Reset bolding if mark is inside bold title */
+}
+
+html.dark mark, html.dark .search-highlight {
+  background-color: var(--dark-highlight-bg-color, #5c5838); /* Darker yellow/olive for dark mode */
+  color: var(--dark-highlight-text-color, #f0f0f0); /* Lighter text for dark highlight bg */
+}
+
+/* Ensure snippet text color is not overridden by link color if snippet is inside <a> */
+#search-results-container li a .search-result-snippet {
+    color: var(--text-muted, #555555); /* Keep snippet color consistent */
+}
+html.dark #search-results-container li a .search-result-snippet {
+    color: var(--text-muted, #aaaaaa); /* Lighter muted for dark mode */
+}
+
+/* Clear Search Button Styling */
+.search-wrapper {
+  /* position: relative; -- Now set inline for simplicity, but can be here */
+  display: inline-flex; /* Helps align input and button if button were outside */
+  align-items: center;
+}
+
+#search-input {
+  /* Existing styles ... */
+  padding-right: 2.2em; /* Make space for the clear button */
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 0.5em;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.6em;
+  color: var(--text-muted, #777777);
+  cursor: pointer;
+  padding: 0 0.3em;
+  /* display: none; -- Handled by inline style initially */
+  line-height: 1;
+}
+
+.search-clear-btn:hover {
+  color: var(--text-color, #333333);
+}
+html.dark .search-clear-btn:hover {
+  color: var(--text-bright, #ffffff);
+}
+
+/* Active Search Result Styling */
+#search-results-container li.active-search-result { /* Target the li for full background change */
+  background-color: var(--active-search-result-bg, #e0e0e0);
+}
+
+#search-results-container li.active-search-result a .search-result-title {
+  color: var(--active-search-result-text, #000000); /* Ensure title text is readable */
+}
+
+#search-results-container li.active-search-result .search-result-snippet {
+  color: var(--active-search-result-snippet-text, #333333); /* Ensure snippet text is readable */
+}
+
+html.dark #search-results-container li.active-search-result {
+  background-color: var(--dark-active-search-result-bg, #4a4a4a);
+  background-color: #202b38;
+}
+
+html.dark #search-results-container li.active-search-result a .search-result-title {
+  color: var(--dark-active-search-result-text, #ffffff);
+}
+
+html.dark #search-results-container li.active-search-result .search-result-snippet {
+  color: var(--dark-active-search-result-snippet-text, #dddddd);
+}
+
   </style>
 </head>
 <body>
@@ -627,6 +961,12 @@
       <div id="slideout-links"></div>
     </nav>
 
+    <!-- Search Bar (New) -->
+    <div class="search-wrapper" style="margin-right: 1em; position: relative; /* For positioning clear button */">
+      <input type="search" id="search-input" placeholder="Search docs..." aria-label="Search documentation">
+      <span id="search-clear-btn" class="search-clear-btn" role="button" aria-label="Clear search" style="display: none;">&times;</span>
+    </div>
+
     <label id="theme-toggle" style="margin-left:auto;">
       <input class="toggle-checkbox" type="checkbox">
       <div class="toggle-slot">
@@ -640,6 +980,9 @@
       </div>
     </label> 
   </div>
+
+  <!-- Search Results Container (New) -->
+  <div id="search-results-container" style="position: absolute; top: 60px; /* Adjust based on actual nav height */ left: 1em; right: 1em; z-index: 1500; display: none; max-height: 400px; overflow-y: auto;"></div>
 
   <button id='toc-hamburger' aria-label='Open Table of Contents'>
     <span></span>
@@ -862,5 +1205,6 @@
     });
   </script>
   <script id="raw-markdown-data" type="text/markdown">$raw_markdown_content</script>
+  <script src="static/js/search.js" defer></script>
 </body>
 </html>

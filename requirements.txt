@@ -4,3 +4,4 @@ Pillow>=8.0.0
 beautifulsoup4>=4.9.0
 livereload>=2.6.3
 watchdog>=2.1.0
+PyYAML>=5.0
