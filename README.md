@@ -6,7 +6,7 @@ A minimal static site generator for documentation.
 
 Live demo: [semanticentity.github.io/WingTip-Static-Site-Generator](https://semanticentity.github.io/WingTip-Static-Site-Generator)
 
-WingTip turns a `README.md` and a `docs/` folder into a polished static site — no config required. Write in Markdown, hit build, and ship to GitHub Pages in minutes.
+WingTip turns a `README.md` and a `docs/` folder into a polished static site — no config required, now with built-in client-side search. Write in Markdown, hit build, and ship to GitHub Pages in minutes.
 
 ---
 
@@ -25,6 +25,7 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 * Built-in Open Graph image generator
 * GitHub Actions deployment support
 * Custom 404 error page handling
+* Built-in client-side search ([learn more](docs/search-features.md))
 
 ---
 
