@@ -64,6 +64,10 @@
       line-height: 1.5;
       max-width: 1040px;
     }
+    #content-wrapper, 
+    #nav-container {
+        min-width: 320px;
+    }
     /* Scroll offset for headers */
     :target {
       scroll-margin-top: 55px;
@@ -92,6 +96,11 @@
       transition: transform 0.3s ease;
       z-index: 1000;
       overflow-y: auto;
+    }
+    @media (max-width: 407px) {
+      #slideout-nav {
+        top: 90px;
+      }
     }
     #slideout-nav.active {
       transform: translateX(240px);
@@ -225,7 +234,7 @@
     }
 
     .search-result-snippet {
-      font-size: 0.9em;
+      font-size: 0.95em;
       margin: 0;
       opacity: 0.8;
       overflow: hidden;
@@ -588,6 +597,7 @@
         margin-top: 0.5em;
       }
       h1 {
+        max-width: 400px;
         font-size: 1.4rem;
       }
       .edit-link {
@@ -660,8 +670,13 @@
         display: flex;
         justify-content: flex-end; 
         gap: 0.5em; 
-        padding-top: 2.5em;
-        margin-bottom: 1em; 
+        padding-top: 3.5em;
+        margin-bottom: -4.5em; 
+    }
+    @media (max-width: 680px) {
+        .source-buttons {
+            margin-bottom: 0;
+        }
     }
 
     #view-source-btn,
@@ -850,10 +865,10 @@ html.dark #search-results-container li a:hover {
 }
 
 .search-result-snippet {
-  font-size: 0.85em;
+  font-size: 0.95em;
   color: var(--text-muted, #555555);
   margin-top: 4px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 /* Highlight Styling */
@@ -883,11 +898,6 @@ html.dark #search-results-container li a .search-result-snippet {
   /* position: relative; -- Now set inline for simplicity, but can be here */
   display: inline-flex; /* Helps align input and button if button were outside */
   align-items: center;
-}
-
-#search-input {
-  /* Existing styles ... */
-  padding-right: 2.2em; /* Make space for the clear button */
 }
 
 .search-clear-btn {
@@ -964,7 +974,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     <!-- Search Bar (New) -->
     <div class="search-wrapper" style="margin-right: 1em; position: relative; /* For positioning clear button */">
       <input type="search" id="search-input" placeholder="Search docs..." aria-label="Search documentation">
-      <span id="search-clear-btn" class="search-clear-btn" role="button" aria-label="Clear search" style="display: none;">&times;</span>
+      <!-- <span id="search-clear-btn" class="search-clear-btn" role="button" aria-label="Clear search" style="display: none;">&times;</span> -->
     </div>
 
     <label id="theme-toggle" style="margin-left:auto;">
@@ -982,7 +992,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   </div>
 
   <!-- Search Results Container (New) -->
-  <div id="search-results-container" style="position: absolute; top: 60px; /* Adjust based on actual nav height */ left: 1em; right: 1em; z-index: 1500; display: none; max-height: 400px; overflow-y: auto;"></div>
+  <div id="search-results-container" style="position: fixed; top: 60px; /* Adjust based on actual nav height */ left: 1em; right: 1em; z-index: 1500; display: none; max-height: 400px; overflow-y: auto;"></div>
 
   <button id='toc-hamburger' aria-label='Open Table of Contents'>
     <span></span>
