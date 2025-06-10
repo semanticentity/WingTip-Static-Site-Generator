@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsContainer.style.display = 'none';
   }
 
-  fetch('/search_index.json')
+  const searchIndexPath = (window.SITE_BASE_URL && window.SITE_BASE_URL !== '.' ? window.SITE_BASE_URL : '') + '/search_index.json';
+  fetch(searchIndexPath)
     .then(response => {
       if (!response.ok) {
         throw new Error('Network response was not ok for search_index.json');
