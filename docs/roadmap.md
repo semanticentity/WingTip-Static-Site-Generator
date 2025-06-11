@@ -54,3 +54,32 @@
 * i18n / localization
 * Offline mode (PWA shell)
 * Plugin system (before/after hooks, Markdown extensions)
+
+## Accessibility
+
+*   Enhanced ARIA attributes for all interactive elements.
+*   WCAG 2.1 AA compliance audit and necessary improvements.
+*   Keyboard navigation improvements for all UI components.
+
+## Performance Optimization
+
+*   Advanced asset optimization (e.g., image compression, code splitting).
+*   Lazy loading for images and other offscreen content.
+*   Performance budget and monitoring.
+
+## Security Considerations
+
+*   Implement Content Security Policy (CSP) by default.
+*   Regular dependency audits and updates for security vulnerabilities.
+*   Guidance on securing user-generated content if applicable.
+
+## Community & Contribution
+
+*   Detailed `CONTRIBUTING.md` guide.
+*   Automated PR checks for linting and tests.
+*   Consider a "Good first issue" program for new contributors.
+
+## Deployment
+
+*   Guides for deploying to popular platforms (e.g., GitHub Pages, Netlify, Vercel).
+*   CLI command or integration for easier deployment.
