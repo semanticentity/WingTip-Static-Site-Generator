@@ -18,25 +18,35 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 * Responsive sidebar + TOC toggle
 * Pygments syntax highlighting for code blocks
 * Copy-to-clipboard on all code snippets
+* **Full GitHub-Flavored Markdown (GFM) support** (tables, task lists, strikethrough, etc.)
+* **LaTeX-style math rendering** (via KaTeX)
+* **Admonition blocks** (notes, warnings, tips, etc.)
 * SEO optimized with canonical URLs + sitemap.xml
 * Open Graph and Twitter meta support
-* Dark/light mode toggle with auto detection
+* **Comprehensive dark/light mode:** Auto-detects system preference with manual toggle, now with full support for GFM elements, admonitions, and math rendering (KaTeX) in both themes.
 * Live dev server with auto-reload (`serve.py`)
 * Built-in Open Graph image generator
 * GitHub Actions deployment support
 * Custom 404 error page handling
 * Built-in client-side search ([learn more](docs/search-features.md))
+* **Document versioning support**
+* **Basic plugin system** for custom extensions
 
 ---
 
 ## Quickstart
 
+WingTip now uses `markdown-it-py` for Markdown processing. Ensure all dependencies are installed:
 ```bash
-pip install markdown beautifulsoup4 livereload pillow PyYAML
+pip install -r requirements.txt
 # Alternatively, using uv (a fast Python package installer)
-uv pip install markdown beautifulsoup4 livereload pillow PyYAML
-python wingtip/main.py
-python wingtip/serve.py
+uv pip install -r requirements.txt
+
+# To build the default documentation (often from ./docs into ./docs/site):
+python main.py
+
+# To serve locally (usually serves content from ./docs/site):
+python serve.py
 ```
 
 To stop the development server, press `Ctrl+C` in the terminal where it's running.
@@ -239,7 +249,74 @@ This implementation ensures a consistent user experience both during development
 
 ## Limitations & Roadmap
 
-- Mermaid diagrams, math rendering, and some advanced Markdown features are not yet supported (planned for a future release).
+- Mermaid diagrams are not yet supported (planned for a future release).
+- Advanced plugin features (e.g., event bus, more hook points) are under consideration.
+
+Many initial roadmap items like GFM, Math Rendering, Versioning, basic Plugins, and Admonitions have now been implemented!
+
+---
+
+## Key Features Details
+
+### GitHub-Flavored Markdown (GFM)
+
+WingTip uses `markdown-it-py` with relevant plugins to provide comprehensive GFM support, including:
+- Tables
+- Task lists (e.g., `- [x] Done`, `- [ ] ToDo`)
+- Strikethrough (e.g., `~~deleted text~~`)
+- Autolinks
+- And more.
+
+### Math Rendering (KaTeX)
+
+Embed LaTeX-style mathematical expressions directly into your Markdown.
+- **Inline math:** Wrap your math with single dollar signs: `$E = mc^2$` renders as $E = mc^2$.
+- **Display math:** Wrap your math with double dollar signs: `$$\sum_{i=1}^n i = \frac{n(n+1)}{2}$$` renders as:
+  $$\sum_{i=1}^n i = \frac{n(n+1)}{2}$$
+KaTeX is fast and supports a large subset of LaTeX.
+
+### Admonitions
+
+Highlight special sections of your documentation using admonition blocks. Syntax:
+
+```markdown
+!!! note
+    This is a note. Useful for highlighting important information.
+
+::: warning Title of Warning
+This is a warning with a custom title. Use this for cautionary advice.
+
+!!! danger "Danger Zone"
+    Critical information or actions that could have negative consequences.
+
+!!! tip
+    A helpful tip or suggestion.
+
+!!! info
+    General information block.
+```
+Supported types typically include `note`, `warning`, `danger`, `error`, `tip`, `hint`, `info`, `seealso`, and more, each with distinct styling.
+
+### Document Versioning
+
+WingTip supports building and browsing multiple versions of your documentation.
+- **Structure:** Place different versions of your Markdown source files in subdirectories, e.g., `docs_src_versions/v1.0/`, `docs_src_versions/v0.9/`.
+- **Build Process:** The `build_all_versions.py` script orchestrates the build. It scans for version directories, then calls `main.py` for each version, specifying input and output paths (e.g., outputting to `docs/site/v1.0/`, `docs/site/v0.9/`).
+- **Version Selector:** The UI includes a dropdown menu to easily switch between built versions.
+- **"Latest" Version:** `build_all_versions.py` creates a redirect at the site root (`docs/site/index.html`) to point to the most recent version.
+- See `docs/versioning.md` for more details. (This file will be created in a subsequent step).
+
+### Plugin System
+
+Extend WingTip's functionality with custom Python code.
+- **Directory:** Place your plugin files (e.g., `my_plugin.py`) in the `plugins/` directory at the project root.
+- **Hooks:** Plugins can implement specific functions (hooks) that WingTip will call at different stages of the build process:
+    - `before_markdown_conversion(md_content, metadata, filepath)`
+    - `after_html_generation(html_content, metadata, filepath)`
+    - `after_full_page_assembly(final_html, metadata, output_filepath)`
+- **Sample:** A `plugins/sample_banner_plugin.py` is provided to demonstrate how to add a banner to every page.
+- See `docs/plugins.md` for more details. (This file will be created in a subsequent step).
+
 
 ---
 
@@ -261,9 +338,11 @@ This implementation ensures a consistent user experience both during development
 
 ## Requirements
 
+Install all dependencies using:
 ```bash
-pip install markdown beautifulsoup4 pillow livereload PyYAML
+pip install -r requirements.txt
 ```
+Core dependencies include `markdown-it-py`, `mdit-py-plugins`, `Pygments`, `BeautifulSoup4`, `PyYAML`, `Pillow`, and `livereload`.
 
 To regenerate code highlight styles:
 

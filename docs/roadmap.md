@@ -15,22 +15,33 @@
 | **Social Cards**      | Built-in (Pillow)          | None   | Basic      | None      |
 | **SEO**               | Canonical + sitemap + meta | Basic  | Advanced   | Good      |
 | **Analytics**         | Not yet                    | Basic  | Advanced   | Good      |
-| **Versioning**        | Not yet                    | No     | Yes        | No        |
+| **Versioning**        | Yes (Basic)                | No     | Yes        | No        |
+| **Plugin System**     | Yes (Basic)                | Basic  | Yes        | Yes       |
+| **Admonitions**       | Yes                        | Yes    | Yes        | Yes       |
+| **Math (KaTeX)**      | Yes                        | No     | Yes        | Yes       |
+| **GFM Support**       | Enhanced                   | Good   | Advanced   | Advanced  |
+
+
+## Recently Added
+
+*   **Full GitHub-Flavored Markdown (GFM) Support:** Enhanced Markdown parsing using `markdown-it-py` including tables, task lists, strikethrough, etc.
+*   **LaTeX-style Math Rendering:** Integrated KaTeX for client-side rendering of math expressions.
+*   **Document Versioning:** Support for building multiple documentation versions from different source directories, with a UI selector.
+*   **Basic Plugin System:** Introduced a plugin architecture with hooks for `before_markdown_conversion`, `after_html_generation`, and `after_full_page_assembly`.
+*   **Admonition Blocks:** Support for common admonition types (note, warning, danger, etc.) with CSS styling.
+*   **Client-Side Search:** Implemented in v0.3.0 using a local JSON index.
 
 ## Planned Features
 
 ### Navigation
 
 * Nested sidebar sections (grouping by folder or heading)
-* ~~Search with local JSON index~~ (Implemented in v0.3.0)
 * Collapsible sidebar sections
 * Keyboard shortcuts for navigation and toggles
 
 ### Markdown Enhancements
 
-* Admonition support (`:::note`, etc.)
 * Mermaid diagram rendering
-* LaTeX/math support via KaTeX
 * Image captioning syntax
 
 ### Developer Experience
@@ -46,14 +57,13 @@
 * Author/date metadata in frontmatter
 * RSS feed generation
 * Animated copy-to-clipboard feedback
-* Custom 404 page
+* Custom 404 page (Basic version implemented, could be enhanced)
 
 ### Longer-Term Ideas
 
-* Versioned documentation support
 * i18n / localization
 * Offline mode (PWA shell)
-* Plugin system (before/after hooks, Markdown extensions)
+* Advanced plugin features (event bus, more hooks, UI interactions)
 
 ## Accessibility
 

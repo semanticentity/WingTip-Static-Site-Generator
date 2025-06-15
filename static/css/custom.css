@@ -1,0 +1,348 @@
+ul.task-list {
+    list-style-type: none; /* Remove default bullets */
+    padding-left: 0; /* Remove default padding */
+}
+
+li.task-list-item {
+    list-style-type: none; /* Ensure no bullets for items */
+    margin-left: 1.5em; /* Indent task list items slightly */
+}
+
+li.task-list-item input[type="checkbox"] {
+    margin-right: 0.5em;
+    vertical-align: middle; /* Align checkbox with text */
+}
+
+/* Basic styling for tables for better presentation */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1rem;
+    border: 1px solid #ddd; /* Add border to table */
+}
+
+th, td {
+    text-align: left;
+    padding: 8px;
+    border: 1px solid #ddd; /* Add border to cells */
+}
+
+th {
+    background-color: #f2f2f2; /* Light grey background for headers */
+}
+
+/* Add some spacing for footnotes */
+.footnote-ref a {
+    text-decoration: none;
+}
+
+.footnote-item {
+    margin-bottom: 0.5em;
+}
+
+/* Strikethrough styling (though usually handled by <s> or <del>) */
+s, del {
+    text-decoration: line-through;
+}
+
+/* Basic admonition styling */
+.admonition {
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    border-left: 0.25rem solid #ccc;
+    border-radius: 0.2rem;
+    background-color: #f8f8f8;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.admonition-title {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: block; /* Ensure title is on its own line */
+}
+
+/* Type-specific styling */
+.admonition.note {
+    border-left-color: #448aff; /* Blue */
+    background-color: #e3f2fd;
+}
+.admonition.note .admonition-title {
+    color: #1e5bc6; /* Darker blue for title for better contrast */
+}
+.admonition.note .admonition-title::before {
+    content: "Note: "; /* Optional: Add prefix to title */
+}
+
+
+.admonition.warning {
+    border-left-color: #ff9100; /* Orange */
+    background-color: #fff3e0;
+}
+.admonition.warning .admonition-title {
+    color: #c56000; /* Darker orange */
+}
+.admonition.warning .admonition-title::before {
+    content: "Warning: ";
+}
+
+.admonition.danger, .admonition.error {
+    border-left-color: #f44336; /* Red */
+    background-color: #ffebee;
+}
+.admonition.danger .admonition-title,
+.admonition.error .admonition-title {
+    color: #c62828; /* Darker red */
+}
+.admonition.danger .admonition-title::before {
+    content: "Danger: ";
+}
+.admonition.error .admonition-title::before {
+    content: "Error: ";
+}
+
+
+.admonition.tip, .admonition.hint {
+    border-left-color: #4caf50; /* Green */
+    background-color: #e8f5e9;
+}
+.admonition.tip .admonition-title,
+.admonition.hint .admonition-title {
+    color: #2e7d32; /* Darker green */
+}
+.admonition.tip .admonition-title::before {
+    content: "Tip: ";
+}
+.admonition.hint .admonition-title::before {
+    content: "Hint: ";
+}
+
+.admonition.info, .admonition.seealso {
+    border-left-color: #2196f3; /* Another Blue variant for info */
+    background-color: #e3f2fd;
+}
+.admonition.info .admonition-title,
+.admonition.seealso .admonition-title {
+    color: #1565c0; /* Darker info blue */
+}
+.admonition.info .admonition-title::before {
+    content: "Info: ";
+}
+.admonition.seealso .admonition-title::before {
+    content: "See Also: ";
+}
+
+/* Style for admonitions without explicit titles - use default from type */
+.admonition.note:not(:has(.admonition-title))::before,
+.admonition.warning:not(:has(.admonition-title))::before,
+.admonition.danger:not(:has(.admonition-title))::before,
+.admonition.error:not(:has(.admonition-title))::before,
+.admonition.tip:not(:has(.admonition-title))::before,
+.admonition.hint:not(:has(.admonition-title))::before,
+.admonition.info:not(:has(.admonition-title))::before,
+.admonition.seealso:not(:has(.admonition-title))::before {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.admonition.note:not(:has(.admonition-title))::before { content: "Note"; color: #1e5bc6; }
+.admonition.warning:not(:has(.admonition-title))::before { content: "Warning"; color: #c56000; }
+.admonition.danger:not(:has(.admonition-title))::before { content: "Danger"; color: #c62828; }
+.admonition.error:not(:has(.admonition-title))::before { content: "Error"; color: #c62828; }
+.admonition.tip:not(:has(.admonition-title))::before { content: "Tip"; color: #2e7d32; }
+.admonition.hint:not(:has(.admonition-title))::before { content: "Hint"; color: #2e7d32; }
+.admonition.info:not(:has(.admonition-title))::before { content: "Info"; color: #1565c0; }
+.admonition.seealso:not(:has(.admonition-title))::before { content: "See Also"; color: #1565c0; }
+
+
+/* Dark Mode Overrides for GFM Elements and Admonitions */
+
+/* Tables */
+html.dark table,
+html.dark th,
+html.dark td {
+    border-color: #555; /* Lighter border for dark mode */
+    color: #ccc; /* Light text for table content in dark mode */
+}
+
+html.dark th {
+    background-color: #2a2a2a; /* Darker header for tables */
+    color: #eee; /* Ensure header text is light */
+}
+
+/* Basic striping for table rows in dark mode */
+html.dark tr:nth-child(even) {
+    background-color: #252525;
+}
+html.dark tr:nth-child(odd) {
+    background-color: #202020;
+}
+html.dark table tbody tr:hover { /* Hover effect for rows */
+    background-color: #333;
+}
+
+
+/* Task Lists */
+/* Assuming text color is inherited from Water.css dark theme (usually body color) */
+/* No specific dark mode style needed for checkboxes if using browser defaults and they adapt well. */
+/* If custom checkbox styling were added, it would need dark mode variants here. */
+html.dark li.task-list-item {
+    color: #ccc; /* Ensure task list item text is light */
+}
+
+/* Footnotes */
+html.dark .footnote-ref a,
+html.dark .footnote-item a { /* Assuming links within footnote items too */
+    color: #8ab4f8; /* Light blue for links */
+}
+
+html.dark .footnote-item, /* For text directly in footnote-item if not in <p> */
+html.dark .footnote-item p { /* Assuming footnote content is often in a <p> */
+    color: #bbb; /* Light gray text for footnote items */
+}
+
+html.dark hr.footnotes-sep { /* Standard <hr> used by footnote plugin often has this class */
+    border-top: 1px solid #555;
+}
+html.dark .footnotes-sep { /* If it's a div or other element with this class */
+    border-top-color: #555;
+}
+
+
+/* Admonitions - Dark Mode */
+html.dark .admonition {
+    color: #d0d0d0; /* Default light text for admonitions in dark mode */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3); /* Slightly adjusted shadow for dark */
+}
+
+html.dark .admonition.note {
+    background-color: #1c2a3e; /* Darker blue background */
+    border-left-color: #6699ff; /* Brighter blue border */
+}
+html.dark .admonition.note .admonition-title,
+html.dark .admonition.note:not(:has(.admonition-title))::before {
+    color: #6699ff;
+}
+
+html.dark .admonition.warning {
+    background-color: #3e2p00; /* Darker orange/brown background */
+    border-left-color: #ffab40; /* Brighter orange border */
+}
+html.dark .admonition.warning .admonition-title,
+html.dark .admonition.warning:not(:has(.admonition-title))::before {
+    color: #ffab40;
+}
+
+html.dark .admonition.danger,
+html.dark .admonition.error {
+    background-color: #3c1f1f; /* Darker red background */
+    border-left-color: #ff6b6b; /* Brighter red border */
+}
+html.dark .admonition.danger .admonition-title,
+html.dark .admonition.error .admonition-title,
+html.dark .admonition.danger:not(:has(.admonition-title))::before,
+html.dark .admonition.error:not(:has(.admonition-title))::before {
+    color: #ff6b6b;
+}
+
+html.dark .admonition.tip,
+html.dark .admonition.hint {
+    background-color: #1e3620; /* Darker green background */
+    border-left-color: #76ff7b; /* Brighter green border */
+}
+html.dark .admonition.tip .admonition-title,
+html.dark .admonition.hint .admonition-title,
+html.dark .admonition.tip:not(:has(.admonition-title))::before,
+html.dark .admonition.hint:not(:has(.admonition-title))::before {
+    color: #76ff7b;
+}
+
+html.dark .admonition.info,
+html.dark .admonition.seealso {
+    background-color: #1b2c40; /* Darker info blue background */
+    border-left-color: #64b5f6; /* Brighter info blue border */
+}
+html.dark .admonition.info .admonition-title,
+html.dark .admonition.seealso .admonition-title,
+html.dark .admonition.info:not(:has(.admonition-title))::before,
+html.dark .admonition.seealso:not(:has(.admonition-title))::before {
+    color: #64b5f6;
+}
+
+
+/* Dark Mode for KaTeX Math Elements */
+
+/*
+  KaTeX elements often use `color: inherit` or very specific classes.
+  The primary goal is to ensure that any default black/dark colors
+  are inverted for dark mode. Water.css dark theme might handle most
+  text color inheritance correctly. These are supplemental rules.
+*/
+
+/* General text color for KaTeX if inheritance is not sufficient.
+   Test this by enabling it if math text is hard to read in dark mode. */
+/*
+html.dark .katex {
+    color: #ddd;
+}
+*/
+
+/* Fraction lines */
+html.dark .katex .frac-line {
+    border-bottom-color: #aaa !important; /* Use !important if KaTeX inline styles are too strong */
+    border-top-color: #aaa !important;    /* Some lines might use top border */
+}
+
+/* Square root symbols and lines */
+/* These selectors target common ways KaTeX renders square roots. */
+html.dark .katex .sqrt .vlist > .sqrt-sign, /* The main radical symbol part */
+html.dark .katex .sqrt .vlist > .vlist > .vlist-t > .vlist-r > .vlist > span > .vlist-r > .vlist > .vlist-tline /* The top line of the radical */ {
+    border-color: #ccc !important; /* If borders are used */
+}
+
+/* More generic selectors for SVG elements if KaTeX uses them within .sqrt */
+html.dark .katex .sqrt svg path,
+html.dark .katex .sqrt svg line {
+    stroke: #ccc !important;
+}
+
+/* General rule for SVG paths and lines if KaTeX uses them extensively for other symbols */
+html.dark .katex svg g path, /* Paths nested in groups */
+html.dark .katex svg g line, /* Lines nested in groups */
+html.dark .katex svg > path, /* Paths directly under svg */
+html.dark .katex svg > line  /* Lines directly under svg */
+{
+    stroke: #ccc !important; /* A light color for SVG strokes */
+}
+
+/* Color for text within KaTeX, if not inheriting properly.
+   This is a broad rule; more specific selectors might be needed if it causes issues. */
+html.dark .katex .mord,
+html.dark .katex .mn, /* Math numbers */
+html.dark .katex .mi, /* Math identifiers (variables) */
+html.dark .katex .mo, /* Math operators */
+html.dark .katex .msupsub .vlist > span /* Superscripts/subscripts text */
+{
+    color: #ddd !important; /* Ensure text is light; use !important cautiously */
+}
+
+/* Delimiters and large operators - ensure they are not black */
+html.dark .katex .delimcenter svg path,
+html.dark .katex .op-symbol svg path {
+    fill: #ddd !important; /* If they are SVG paths filled with black */
+}
+
+html.dark .katex .accent .accent-body > svg path { /* Accents like hats, tildes */
+    stroke: #ddd !important;
+    fill: #ddd !important;
+}
+
+/* Lines for environments like `array` or `matrix` (vertical or horizontal) */
+html.dark .katex .col-align-c .vlist-individual-hitlam {,
+html.dark .katex .arraycolsep {
+    /* These are typically spaces or borders, ensure borders are light if visible */
+    border-color: #555 !important;
+}
+html.dark .katex .hline {
+    border-bottom-color: #555 !important;
+}

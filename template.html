@@ -28,8 +28,14 @@
   <!-- Light/Dark mode via OS/browser -->
   <link id="watercss-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/light.css">
 
+  <!-- KaTeX CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU07VBNEmcJyHLct0ZQ9PSiMr6nsZYpwoTRcOKpGMoJhXdJobZAHRJ3" crossorigin="anonymous">
+
   <!-- Code highlighting -->
   <link rel="stylesheet" href="syntax.css">
+
+  <!-- Custom GFM Styles -->
+  <link rel="stylesheet" href="static/css/custom.css">
 
   <!-- Custom favicon -->
   <link rel="icon" type="image/png" href="${favicon_url}">
@@ -981,6 +987,8 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
       <input type="search" id="search-input" placeholder="Search docs..." aria-label="Search documentation">
     </div>
 
+    $version_selector_html
+
     <label id="theme-toggle" style="margin-left:auto;">
       <input class="toggle-checkbox" type="checkbox">
       <div class="toggle-slot">
@@ -1223,5 +1231,22 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     window.SITE_BASE_URL = '$base_url';
   </script>
   <script src="static/js/search.js" defer></script>
+
+  <!-- KaTeX JS and auto-render extension -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUbKyJ//1" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyKL8DENiPC3QwFfaFUgRUoB" crossorigin="anonymous"></script>
+  <script>
+      document.addEventListener("DOMContentLoaded", function() {
+          renderMathInElement(document.body, {
+              delimiters: [
+                  {left: "$$", right: "$$", display: true},
+                  {left: "$", right: "$", display: false},
+                  {left: "\\(", right: "\\)", display: false},
+                  {left: "\\[", right: "\\]", display: true}
+              ],
+              throwOnError: false // Recommended to prevent halting page rendering on errors
+          });
+      });
+  </script>
 </body>
 </html>
