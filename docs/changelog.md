@@ -1,5 +1,26 @@
 # WingTip Changelog
 
+## [v0.4.0] - YYYY-MM-DD (Replace YYYY-MM-DD with actual date)
+
+### ✨ Features
+- **GitHub-Flavored Markdown (GFM) Support:** Implemented comprehensive GFM features including tables, task lists, strikethrough, and more, using `markdown-it-py` and its plugins.
+- **LaTeX-style Math Rendering:** Added support for math rendering using KaTeX. Inline math (`$math$`) and display math (`$$math$$`) are now supported.
+- **Document Versioning:** Introduced a system for building and browsing multiple versions of documentation. Includes a build script (`build_all_versions.py`) and a version selector in the UI. See [Versioning](./versioning.md) for details.
+- **Basic Plugin System:** Implemented a plugin architecture allowing users to extend functionality via Python scripts in a `plugins/` directory. Supports `before_markdown_conversion`, `after_html_generation`, and `after_full_page_assembly` hooks. See [Plugin System](./plugins.md) for details.
+- **Admonition Blocks:** Added support for admonition blocks (e.g., `!!! note`, `::: warning`) with various types and custom titles, styled with CSS.
+
+### 🛠 Fixes & Improvements
+- Core Markdown processing updated to `markdown-it-py`.
+- Dependencies updated to include `markdown-it-py` and `mdit-py-plugins`.
+- **Enhanced Dark Mode:** Improved dark mode compatibility for GFM elements (tables, task lists, footnotes), admonitions, and KaTeX math rendering with new CSS styles.
+
+### 📚 Documentation
+- Updated `README.md` to reflect all new features and dependencies.
+- Updated `roadmap.md` to mark implemented features.
+- Added `docs/versioning.md` explaining the document versioning system.
+- Added `docs/plugins.md` explaining the plugin system and hooks.
+- Added a note to `docs/configuration.md` regarding plugin development and sensitive data.
+
 ## [v0.3.0]
 
 ### ✨ Features

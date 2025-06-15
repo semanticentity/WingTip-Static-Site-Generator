@@ -103,3 +103,13 @@ If no `og_image` is set, the PNG is also copied to `./social-card.png`.
 | `og_image` unset      | Falls back to generated `docs/site/social-card.png` and copies to project root |
 | `favicon` unset       | Default browser icon will be used                                              |
 
+---
+
+## Advanced Considerations
+
+### Plugins and Sensitive Data
+
+The [plugin system](./plugins.md) allows you to extend WingTip's functionality. If you develop plugins that require sensitive information (e.g., API keys, tokens):
+-   **Avoid hardcoding secrets** directly in your plugin files.
+-   **Do not store secrets directly in `config.json`** if you commit `config.json` to your repository, as it's often public.
+-   Prefer using environment variables or other secure methods to provide secrets to your plugins during the build process, especially in CI/CD environments. WingTip itself does not currently have a dedicated secrets management system that plugins can tap into, so this responsibility lies with the plugin developer and the build environment setup.
