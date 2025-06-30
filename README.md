@@ -26,6 +26,7 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 * GitHub Actions deployment support
 * Custom 404 error page handling
 * Built-in client-side search ([learn more](docs/search-features.md))
+* Basic theme overrides for fonts and colors via `theme.json` ([learn more](docs/theming.md))
 
 ---
 
