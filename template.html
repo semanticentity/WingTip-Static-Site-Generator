@@ -32,7 +32,7 @@
   ${custom_theme_variables_style}
 
   <!-- Code highlighting -->
-  <link rel="stylesheet" href="syntax.css">
+  <link rel="stylesheet" href="${base_url}/syntax.css">
   <link rel="stylesheet" href="${base_url}/static/css/custom.css">
   <link rel="stylesheet" href="${base_url}/static/css/search.css">
   <link rel="stylesheet" href="${base_url}/static/css/admonitions.css">
@@ -973,13 +973,13 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   <div id="nav-container" class="nav-container">
     <div class="nav-links">
       <div class="brand">
-        <a href="index.html" style="text-decoration: none;">
+        <a href="${base_url}/index.html" style="text-decoration: none;">
           <img src="$favicon_url" alt="$project" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">
           <span style="color: white !important; font-size: 1.5em; font-weight: 500;">$project</span>
         </a>
       </div>
       <div style="display:none;"> 
-        <a aria-label="README" href="index.html">README</a>
+        <a aria-label="README" href="${base_url}/index.html">README</a>
         <a aria-label="Navigation" href="#navigation">Navigation</a>
       </div>
     </div>
@@ -1029,7 +1029,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     </main>
     <nav class="prev-next-nav">
       $prev_link
-      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a> - <a href="wingtip.txt">View All Docs (Raw)</a></span>
+      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a> - <a href="${base_url}/wingtip.txt">View All Docs (Raw)</a></span>
       $next_link
     </nav>
   </div>
@@ -1236,7 +1236,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   <script>
     window.SITE_BASE_URL = '$base_url';
   </script>
-  <script src="static/js/search.js" defer></script>
+  <script src="${base_url}/static/js/search.js" defer></script>
 
   <!-- KaTeX JS and auto-render extension -->
   <script defer src="https://unpkg.com/katex@0.16.9/dist/katex.min.js"></script>
