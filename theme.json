@@ -1,16 +1,16 @@
 {
   "fonts": {
-    "sans_serif": "\"Comic Sans MS\", cursive, sans-serif",
-    "monospace": "\"Courier New\", monospace"
+    "sans_serif": "\"-apple-system\", BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+    "monospace": "\"SF Mono\", Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace"
   },
   "light_mode": {
-    "background_body": "#FFF0F5",
-    "links_or_primary": "#FF00FF",
-    "text_main": "#5C3317"
+    "background_body": "#ffffff",
+    "links_or_primary": "#0366d6",
+    "text_main": "#24292e"
   },
   "dark_mode": {
-    "background_body": "#000080",
-    "links_or_primary": "#00FF00",
-    "text_main": "#FFFFE0"
+    "background_body": "#0d1117",
+    "links_or_primary": "#58a6ff",
+    "text_main": "#c9d1d9"
   }
 }
