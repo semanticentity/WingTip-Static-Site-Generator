@@ -402,6 +402,10 @@ def generate_search_index(pages_data, output_dir):
         soup = BeautifulSoup(html_content, "html.parser")
         text_content = soup.get_text(separator=' ').strip()
 
+        # Ensure URL is absolute by prepending base_url if needed
+        if not url.startswith(('http://', 'https://', '/')):
+            url = f"{BASE_URL}/{url}"
+
         search_index.append({
             "title": title,
             "text": text_content,
