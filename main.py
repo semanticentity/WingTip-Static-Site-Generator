@@ -88,17 +88,21 @@ DEFAULT_SANS_SERIF_FONT_STACK = "system-ui, -apple-system, BlinkMacSystemFont, '
 DEFAULT_MONOSPACE_FONT_STACK = "Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"
 
 def generate_theme_css(theme_config):
-    """Generates CSS string for theme overrides."""
+    """Generates style tag with theme CSS variables."""
+    if not theme_config:  # If no theme config, return empty style tag with comment
+        return '<style id="custom-theme-variables">\n    /* No custom theme styles */\n</style>'
+    
     css_parts = []
+    css_parts.append('<style id="custom-theme-variables">\n    /* Theme overrides */')
 
     fonts = theme_config.get("fonts", {})
     sans_serif = fonts.get("sans_serif", DEFAULT_SANS_SERIF_FONT_STACK)
     monospace = fonts.get("monospace", DEFAULT_MONOSPACE_FONT_STACK)
 
-    css_parts.append(":root {")
-    css_parts.append(f"  --theme-font-family-sans-serif: {sans_serif};")
-    css_parts.append(f"  --theme-font-family-monospace: {monospace};")
-    css_parts.append("}\n")
+    css_parts.append("\n    :root {")
+    css_parts.append(f"      --theme-font-family-sans-serif: {sans_serif};")
+    css_parts.append(f"      --theme-font-family-monospace: {monospace};")
+    css_parts.append("    }")
 
     # Water.css variable mappings
     water_css_map = {
@@ -112,22 +116,23 @@ def generate_theme_css(theme_config):
     }
 
     if "light_mode" in theme_config:
-        css_parts.append("html.light:root, :root[data-theme='light'] {") # Target both JS class and potential data-attribute
+        css_parts.append("\n    html.light:root, :root[data-theme='light'] {") # Target both JS class and potential data-attribute
         for key, value in theme_config["light_mode"].items():
             if key in water_css_map:
-                css_parts.append(f"  {water_css_map[key]}: {value};")
+                css_parts.append(f"      {water_css_map[key]}: {value};")
             # Allow defining other --theme-color-*-light variables as well
-            css_parts.append(f"  --theme-color-{key.replace('_', '-')}-light: {value};")
-        css_parts.append("}\n")
+            css_parts.append(f"      --theme-color-{key.replace('_', '-')}-light: {value};")
+        css_parts.append("    }")
 
     if "dark_mode" in theme_config:
-        css_parts.append("html.dark:root, :root[data-theme='dark'] {") # Target both JS class and potential data-attribute
+        css_parts.append("\n    html.dark:root, :root[data-theme='dark'] {") # Target both JS class and potential data-attribute
         for key, value in theme_config["dark_mode"].items():
             if key in water_css_map:
-                css_parts.append(f"  {water_css_map[key]}: {value};")
-            css_parts.append(f"  --theme-color-{key.replace('_', '-')}-dark: {value};")
-        css_parts.append("}\n")
+                css_parts.append(f"      {water_css_map[key]}: {value};")
+            css_parts.append(f"      --theme-color-{key.replace('_', '-')}-dark: {value};")
+        css_parts.append("    }")
 
+    css_parts.append("\n</style>")
     return "\n".join(css_parts)
 
 # Helper to build canonical URLs
@@ -544,7 +549,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             print(f"Warning: Could not read raw markdown from {input_path}: {e}")
 
     # Generate custom theme CSS
-    custom_theme_styles = generate_theme_css(THEME_CONFIG)
+    custom_theme_variables_style = generate_theme_css(THEME_CONFIG)
 
     page = TEMPLATE.substitute(
         title=title,
@@ -566,7 +571,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         favicon_url=favicon_url,
         concat_docs_url=concat_docs_url,
         raw_markdown_content=raw_markdown_for_template,
-        custom_theme_styles=custom_theme_styles
+        custom_theme_variables_style=custom_theme_variables_style
     )
 
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
