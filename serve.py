@@ -112,7 +112,7 @@ def make_app():
 
 def watch_files():
     """Watch files for changes and rebuild the site"""
-    for pattern in ["README.md", "docs/*.md", "template.html", "main.py", "404.md"]:
+    for pattern in ["README.md", "docs/*.md", "template.html", "main.py", "404.md", "theme.json", "config.json"]:
         tornado.autoreload.watch(pattern)
     
     # Add a callback to rebuild the site

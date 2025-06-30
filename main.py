@@ -64,6 +64,14 @@ CONFIG = DEFAULT_CONFIG.copy()
 if CFG_PATH.exists():
     CONFIG.update(json.loads(CFG_PATH.read_text()))
 
+THEME_CFG_PATH = pathlib.Path("theme.json")
+THEME_CONFIG = {}
+if THEME_CFG_PATH.exists():
+    try:
+        THEME_CONFIG = json.loads(THEME_CFG_PATH.read_text())
+    except json.JSONDecodeError as e:
+        print(f"Warning: Could not parse theme.json: {e}. Using default theme.")
+
 BASE_URL = CONFIG["base_url"].rstrip("/") or "."
 
 # Load and format template
@@ -73,6 +81,52 @@ def load_template():
     return Template(raw)
 
 TEMPLATE = load_template()
+
+DEFAULT_SANS_SERIF_FONT_STACK = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif"
+DEFAULT_MONOSPACE_FONT_STACK = "Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"
+
+def generate_theme_css(theme_config):
+    """Generates CSS string for theme overrides."""
+    css_parts = []
+
+    fonts = theme_config.get("fonts", {})
+    sans_serif = fonts.get("sans_serif", DEFAULT_SANS_SERIF_FONT_STACK)
+    monospace = fonts.get("monospace", DEFAULT_MONOSPACE_FONT_STACK)
+
+    css_parts.append(":root {")
+    css_parts.append(f"  --theme-font-family-sans-serif: {sans_serif};")
+    css_parts.append(f"  --theme-font-family-monospace: {monospace};")
+    css_parts.append("}\n")
+
+    # Water.css variable mappings
+    water_css_map = {
+        "background_body": "--background-body",
+        "background_element": "--background",
+        "text_main": "--text-main",
+        "text_bright": "--text-bright",
+        "links_or_primary": "--links",
+        "border": "--border",
+        # Add more mappings if needed, e.g. for --button-base, --code, etc.
+    }
+
+    if "light_mode" in theme_config:
+        css_parts.append("html.light:root, :root[data-theme='light'] {") # Target both JS class and potential data-attribute
+        for key, value in theme_config["light_mode"].items():
+            if key in water_css_map:
+                css_parts.append(f"  {water_css_map[key]}: {value};")
+            # Allow defining other --theme-color-*-light variables as well
+            css_parts.append(f"  --theme-color-{key.replace('_', '-')}-light: {value};")
+        css_parts.append("}\n")
+
+    if "dark_mode" in theme_config:
+        css_parts.append("html.dark:root, :root[data-theme='dark'] {") # Target both JS class and potential data-attribute
+        for key, value in theme_config["dark_mode"].items():
+            if key in water_css_map:
+                css_parts.append(f"  {water_css_map[key]}: {value};")
+            css_parts.append(f"  --theme-color-{key.replace('_', '-')}-dark: {value};")
+        css_parts.append("}\n")
+
+    return "\n".join(css_parts)
 
 # Helper to build canonical URLs
 def make_url(rel_path):
@@ -438,15 +492,16 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         concat_docs_url = f"{BASE_URL}/{concat_docs_filename}"
 
     # Determine raw markdown content to pass to template
-    # For all pages except 404 page, pass the original markdown content
-    # Read the original markdown file to get the raw content
     raw_markdown_for_template = ""
-    if add_edit_link:
+    if add_edit_link: # Only try to read if it's a page that would have source
         try:
             with open(input_path, 'r', encoding='utf8') as f:
                 raw_markdown_for_template = f.read()
         except Exception as e:
             print(f"Warning: Could not read raw markdown from {input_path}: {e}")
+
+    # Generate custom theme CSS
+    custom_theme_styles = generate_theme_css(THEME_CONFIG)
 
     page = TEMPLATE.substitute(
         title=title,
@@ -467,7 +522,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         base_url=BASE_URL,
         favicon_url=favicon_url,
         concat_docs_url=concat_docs_url,
-        raw_markdown_content=raw_markdown_for_template
+        raw_markdown_content=raw_markdown_for_template,
+        custom_theme_styles=custom_theme_styles
     )
 
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
