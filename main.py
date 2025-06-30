@@ -432,9 +432,22 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         def run(self, root):
             for element in root.iter('a'):
                 href = element.get('href')
-                if href and href.endswith('.md'):
-                    # Convert .md links to .html
-                    element.set('href', href[:-3] + '.html')
+                if not href or href.startswith(('http://', 'https://', '#', '/')):  # Skip external/anchor/absolute links
+                    continue
+                    
+                # Handle .md extension conversion
+                if href.endswith('.md'):
+                    href = href[:-3] + '.html'
+                
+                # Handle docs/ prefix for local development vs GitHub Pages
+                if href.startswith('docs/'):
+                    href = href[5:]  # Remove docs/ prefix
+                elif not any(href.startswith(prefix) for prefix in ['index.html', 'assets/', 'static/', 'images/']):
+                    # For files that aren't in special directories and don't start with docs/
+                    # we need to ensure they're relative to the current file
+                    href = href
+                
+                element.set('href', href)
             return root
     
     class LinkRewriterExtension(markdown.Extension):
