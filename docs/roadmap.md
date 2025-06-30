@@ -38,7 +38,7 @@
 * True HMR (hot module reload) without full page refresh
 * Build errors shown in browser overlay
 * CLI scaffolding (`wingtip new my-docs`)
-* Local theme overrides via custom CSS
+* ~~Local theme overrides via custom CSS~~ (Basic theming via `theme.json` implemented in v0.4.0 - [Learn more](theming.md))
 
 ### SEO & Output Polish
 
@@ -53,7 +53,8 @@
 * Versioned documentation support
 * i18n / localization
 * Offline mode (PWA shell)
-* Plugin system (before/after hooks, Markdown extensions)
+* Plugin system (before/after hooks, Markdown extensions, theme plugins)
+    * *Theme plugins could allow for entirely new site structures, custom JavaScript, advanced CSS processing (Sass, PostCSS), and template overrides, offering a much deeper level of customization than `theme.json`.*
 
 ## Accessibility
 
