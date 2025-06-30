@@ -24,13 +24,13 @@
 * Nested sidebar sections (grouping by folder or heading)
 * ~~Search with local JSON index~~ (Implemented in v0.3.0)
 * Collapsible sidebar sections
-* Keyboard shortcuts for navigation and toggles
+* ~~Keyboard shortcuts for navigation and toggles~~ (Implemented in v0.4.0)
 
 ### Markdown Enhancements
 
 * Admonition support (`:::note`, etc.)
 * Mermaid diagram rendering
-* LaTeX/math support via KaTeX
+* ~~LaTeX/math support via KaTeX~~ (Implemented in v0.4.0)
 * Image captioning syntax
 
 ### Developer Experience
@@ -58,9 +58,9 @@
 
 ## Accessibility
 
-*   Enhanced ARIA attributes for all interactive elements.
-*   WCAG 2.1 AA compliance audit and necessary improvements.
-*   Keyboard navigation improvements for all UI components.
+* ~~Enhanced ARIA attributes for interactive elements~~ (Implemented in v0.4.0)
+* WCAG 2.1 AA compliance audit and necessary improvements
+* ~~Keyboard navigation improvements~~ (Implemented in v0.4.0 for search, more to come)
 
 ## Performance Optimization
 

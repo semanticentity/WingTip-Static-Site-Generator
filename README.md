@@ -25,8 +25,11 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 * Built-in Open Graph image generator
 * GitHub Actions deployment support
 * Custom 404 error page handling
-* Built-in client-side search ([learn more](docs/search-features.md))
+* Built-in client-side search with keyboard navigation ([learn more](docs/search-features.md))
 * Basic theme overrides for fonts and colors via `theme.json` ([learn more](docs/theming.md))
+* LaTeX math rendering with KaTeX ([examples](docs/math-examples.md))
+* Enhanced dark mode for GFM and KaTeX
+* Screen reader and keyboard accessibility
 
 ---
 
@@ -240,7 +243,8 @@ This implementation ensures a consistent user experience both during development
 
 ## Limitations & Roadmap
 
-- Mermaid diagrams, math rendering, and some advanced Markdown features are not yet supported (planned for a future release).
+- Mermaid diagrams and some advanced Markdown features are not yet supported (planned for a future release).
+- Math rendering is supported via KaTeX!
 
 ---
 

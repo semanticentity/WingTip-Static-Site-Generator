@@ -15,6 +15,8 @@ from string import Template
 from bs4 import BeautifulSoup 
 from datetime import datetime
 import yaml 
+from latex_extension import LaTeXPreservationExtension
+from pymdownx import emoji, superfences, tasklist, mark, caret, tilde, arithmatex
 
 OUTPUT_DIR = "docs/site"
 
@@ -439,12 +441,40 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         def extendMarkdown(self, md):
             md.treeprocessors.register(LinkRewriter(md), 'link_rewriter', 7)
     
-    # Convert markdown to HTML with link rewriting
+    # Convert markdown to HTML with link rewriting and GFM features
     html = markdown.markdown(
         md,
-        extensions=["fenced_code", "codehilite", "tables", LinkRewriterExtension()],
+        extensions=[
+            "fenced_code",
+            "codehilite", 
+            "tables",
+            "nl2br",           # Newlines to <br>
+            "sane_lists",     # Better list handling
+            "smarty",         # Smart quotes, dashes, etc
+            "attr_list",     # {: .class} style attributes
+            "def_list",      # Definition lists
+            "footnotes",     # [^1] style footnotes
+            "md_in_html",    # Markdown inside HTML
+            "toc",           # [TOC] generation
+            "pymdownx.emoji",        # GitHub-style emojis
+            "pymdownx.superfences",  # Better fenced code blocks
+            "pymdownx.tasklist",    # GitHub-style task lists
+            "pymdownx.mark",        # ==highlight==
+            "pymdownx.caret",       # ^superscript^
+            "pymdownx.tilde",       # ~subscript~ and ~~strikethrough~~
+            "pymdownx.arithmatex",  # Better math rendering
+            "admonition",  # !!! note style admonitions
+            LinkRewriterExtension(),
+            "latex_extension"
+        ],
         output_format="html5"
     )
+    
+    # Replace LaTeX placeholders with actual delimiters
+    html = html.replace('DISPLAYMATH_START', '\\[')
+    html = html.replace('DISPLAYMATH_END', '\\]')
+    html = html.replace('INLINEMATH_START', '\\(')
+    html = html.replace('INLINEMATH_END', '\\)')
 
     # Add copy buttons to code blocks
     html = add_codeblock_copy_buttons(html)
