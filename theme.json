@@ -1,0 +1,16 @@
+{
+  "fonts": {
+    "sans_serif": "\"Comic Sans MS\", cursive, sans-serif",
+    "monospace": "\"Courier New\", monospace"
+  },
+  "light_mode": {
+    "background_body": "#FFF0F5",
+    "links_or_primary": "#FF00FF",
+    "text_main": "#5C3317"
+  },
+  "dark_mode": {
+    "background_body": "#000080",
+    "links_or_primary": "#00FF00",
+    "text_main": "#FFFFE0"
+  }
+}
