@@ -1,5 +1,87 @@
 # WingTip Changelog
 
+## [v0.4.0]
+
+### ✨ Features
+
+#### GitHub-Flavored Markdown (GFM)
+- Added comprehensive GFM support with markdown-it-py plugins:
+  - Task lists with checkboxes
+  - Footnotes and references
+  - Tables with full styling
+  - Strikethrough text
+  - Better autolinking
+  - Definition lists
+
+#### Math & Diagrams
+- Added LaTeX math rendering with KaTeX:
+  - Inline math with `$...$`
+  - Display math with `$$...$$`
+  - Fast client-side rendering
+  - See [Math Examples](./math-examples.md)
+
+#### Document Versioning
+- Added version management system:
+  - CLI support for versioned builds
+  - Version selector dropdown in UI
+  - Version-aware sitemap and links
+  - "Latest" version redirect
+
+#### Plugin System
+- Introduced extensible plugin architecture:
+  - Custom Python plugins in `plugins/` directory
+  - Build process hooks for customization
+  - Sample banner plugin included
+
+#### Admonitions
+- Added support for admonition blocks:
+  - Multiple types (note, warning, danger, tip)
+  - Custom styling for each type
+  - Full dark mode support
+
+#### Search Enhancements
+- Enhanced search functionality:
+  - `/` to focus search
+  - Arrow keys to navigate results
+  - Enter to select
+  - Esc to clear
+- Added result highlighting in search matches
+- Improved search UI with theme integration
+- Fixed search index path handling for GitHub Pages
+
+### 🎨 UI & Accessibility
+- Comprehensive dark mode support:
+  - GFM elements (tables, task lists, footnotes)
+  - Admonition blocks with distinct themes
+  - KaTeX math expressions
+  - Code syntax highlighting
+- Enhanced mobile responsiveness:
+  - Improved tablet breakpoints (768px)
+  - Full-width search on mobile
+  - Better nav layout on small screens
+- Added ARIA labels and roles for better screen reader support
+- Improved nav-container styling and transitions
+- Consolidated and optimized CSS
+
+### 🛠 Infrastructure
+- Added automatic .md to .html link conversion
+- Improved GitHub Pages compatibility
+- Enhanced build system for versioned docs
+- Optimized asset loading and paths
+
+### 📚 Documentation
+- Added new guides:
+  - Math rendering examples and usage
+  - Versioning system setup
+  - Plugin development guide
+  - Admonition syntax reference
+- Updated existing docs:
+  - Search features with keyboard shortcuts
+  - Accessibility guidelines
+  - Mobile-responsive design
+  - Dark mode support
+
+
 ## [v0.3.0]
 
 ### ✨ Features

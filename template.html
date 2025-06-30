@@ -35,6 +35,11 @@
 
   <!-- Code highlighting -->
   <link rel="stylesheet" href="syntax.css">
+  <link rel="stylesheet" href="${base_url}/static/css/custom.css">
+  <link rel="stylesheet" href="${base_url}/static/css/search.css">
+  <link rel="stylesheet" href="${base_url}/static/css/admonitions.css">
+  <!-- KaTeX CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/katex@0.16.9/dist/katex.min.css">
 
   <!-- Custom favicon -->
   <link rel="icon" type="image/png" href="${favicon_url}">
@@ -314,7 +319,7 @@
       top: 0;
       left: 0;
       width: 100%;
-      background: #161f27;
+      background: var(--nav-background);
       padding: 0.5em 1em;
       z-index: 1200;
       display: flex;
@@ -661,18 +666,23 @@
       position: relative;
       top: 7px;
     }
-    @media (prefers-color-scheme: light) {
-      .nav-container {
-        background: #f8f9fa;
-        color: #000;
-      }
-    }
     :root {
       --nav-background: #161f27;
     }
+    /* KaTeX Dark Mode */
+    .katex {
+      color: var(--text-color);
+    }
+    .katex-display {
+      overflow: auto hidden;
+      padding: 1em 0;
+    }
     @media (prefers-color-scheme: light) {
       :root {
-        --nav-background: #161f27;
+        --nav-background: #ffffff;
+      }
+      .nav-container {
+        color: #000;
       }
     }
 
@@ -1229,5 +1239,20 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     window.SITE_BASE_URL = '$base_url';
   </script>
   <script src="static/js/search.js" defer></script>
+
+  <!-- KaTeX JS and auto-render extension -->
+  <script defer src="https://unpkg.com/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://unpkg.com/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: "\\[", right: "\\]", display: true},
+          {left: "\\(", right: "\\)", display: false}
+        ],
+        throwOnError: false
+      });
+    });
+  </script>
 </body>
 </html>
