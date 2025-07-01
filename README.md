@@ -21,6 +21,7 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 * SEO optimized with canonical URLs + sitemap.xml
 * Open Graph and Twitter meta support
 * Dark/light mode toggle with auto detection
+* Admonition support with custom titles and nested content ([learn more](docs/admonitions.md))
 * Live dev server with auto-reload (`serve.py`)
 * Built-in Open Graph image generator
 * GitHub Actions deployment support
