@@ -56,6 +56,20 @@
 * Plugin system (before/after hooks, Markdown extensions, theme plugins)
     * *Theme plugins could allow for entirely new site structures, custom JavaScript, advanced CSS processing (Sass, PostCSS), and template overrides, offering a much deeper level of customization than `theme.json`.*
 
+## Future: Theme Plugins
+
+We envision a more powerful **Plugin System** for WingTip in the future. A key part of this system would be **Theme Plugins**.
+
+Unlike the `theme.json` file, which is for simple value overrides (fonts, colors), theme plugins would offer much deeper customization capabilities, potentially including:
+
+*   **Custom HTML Templates:** Providing entirely different HTML structures for pages.
+*   **Custom JavaScript:** Adding new client-side functionalities or interactions.
+*   **Advanced CSS Processing:** Integrating tools like Sass or PostCSS for more complex stylesheets.
+*   **New Asset Types:** Managing and including different types of static assets.
+*   **Complete Visual Overhauls:** Creating unique themes that go far beyond color and font changes.
+
+This plugin system would provide a structured way for developers to create and share complete themes, transforming the look, feel, and even functionality of a WingTip site. 
+
 ## Accessibility
 
 * ~~Enhanced ARIA attributes for interactive elements~~ (Implemented in v0.4.0)

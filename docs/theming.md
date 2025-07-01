@@ -81,7 +81,7 @@ This system allows for quick and easy visual customization of your documentation
 *   **Contrast:** Ensure sufficient contrast between text colors and background colors for readability, especially for accessibility (WCAG AA guidelines are a good reference).
 *   **Font Legibility:** Choose fonts that are clear and easy to read for body text and code. Consider fonts designed for UIs or reading.
 *   **Consistency:** Try to maintain a consistent feel between your light and dark mode themes, even if colors are inverted.
-*   **Test:** Always preview your changes in both light and dark modes to ensure they look as expected.
+*   **Test:** Always preview your changes in both light and dark modes to ensure they look as expected. Use tools like [Color Contrast Analyzer](https://webaim.org/resources/contrastchecker/) to check contrast ratios.
 
 ## Advanced CSS Customization
 
@@ -102,20 +102,5 @@ While `theme.json` provides a straightforward way to change common visual elemen
       ...
     </head>
     ```
-    *(Note: The `${base_url}` part is important if your site is not served from the root of a domain).*
 
-This approach gives you full CSS power to target any element and apply any style.
-
-## Future: Theme Plugins
-
-As outlined in the [Roadmap](roadmap.md), we envision a more powerful **Plugin System** for WingTip in the future. A key part of this system would be **Theme Plugins**.
-
-Unlike the `theme.json` file, which is for simple value overrides (fonts, colors), theme plugins would offer much deeper customization capabilities, potentially including:
-
-*   **Custom HTML Templates:** Providing entirely different HTML structures for pages.
-*   **Custom JavaScript:** Adding new client-side functionalities or interactions.
-*   **Advanced CSS Processing:** Integrating tools like Sass or PostCSS for more complex stylesheets.
-*   **New Asset Types:** Managing and including different types of static assets.
-*   **Complete Visual Overhauls:** Creating unique themes that go far beyond color and font changes.
-
-This plugin system would provide a structured way for developers to create and share complete themes, transforming the look, feel, and even functionality of a WingTip site. Stay tuned for developments in this area!
+*(Note: The `${base_url}` part is important if your site is not served from the root of a domain).*
