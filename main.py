@@ -566,6 +566,11 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             LinkRewriterExtension(),
             "latex_extension"
         ],
+        extension_configs={
+            'admonition': {
+                'nested_content': True
+            }
+        },
         output_format="html5"
     )
     
