@@ -553,7 +553,6 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         extensions=[
             "fenced_code",
             "codehilite", 
-            "tables",
             "nl2br",           # Newlines to <br>
             "sane_lists",     # Better list handling
             "smarty",         # Smart quotes, dashes, etc
@@ -563,6 +562,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             "md_in_html",    # Markdown inside HTML
             "toc",           # [TOC] generation
             "admonition",    # !!! note style admonitions
+            "tables",        # Must be after admonition for nested tables
             LinkRewriterExtension(),
             "latex_extension"
         ],
