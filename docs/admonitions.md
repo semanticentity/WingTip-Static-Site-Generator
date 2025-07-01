@@ -49,16 +49,19 @@ Admonitions can contain any Markdown content:
 !!! note
     ### A Header Inside an Admonition
 
-    1. Ordered lists
-    2. Code blocks:
-       ```python
-       def hello():
-           print("Hello from an admonition!")
-       ```
-    3. Even tables:
-       | Column 1 | Column 2 |
-       |----------|----------|
-       | Cell 1   | Cell 2   |
+    1. Ordered lists work great
+    2. Code blocks work too:
+
+    ```python
+    def hello():
+        print("Hello from an admonition!")
+    ```
+
+    Tables work when not nested in lists:
+
+    | Column 1 | Column 2 |
+    |----------|----------|
+    | Cell 1   | Cell 2   |
 
 ### Custom Titles
 
