@@ -30,6 +30,8 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 * LaTeX math rendering with KaTeX ([examples](docs/math-examples.md))
 * Enhanced dark mode for GFM and KaTeX
 * Screen reader and keyboard accessibility
+* Automatic cleanup of obsolete files during build
+* Smart port handling for development server
 
 ---
 
@@ -39,13 +41,20 @@ WingTip turns a `README.md` and a `docs/` folder into a polished static site —
 pip install markdown beautifulsoup4 livereload pillow PyYAML
 # Alternatively, using uv (a fast Python package installer)
 uv pip install markdown beautifulsoup4 livereload pillow PyYAML
-python wingtip/main.py
-python wingtip/serve.py
+
+# Build site and start dev server in one command
+python main.py --serve
+
+# Or build only
+python main.py
+
+# Or start dev server separately
+python serve.py
 ```
 
 To stop the development server, press `Ctrl+C` in the terminal where it's running.
 
-If you encounter issues stopping the server or suspect orphaned processes, a utility script `killDocs.sh` is provided in the `wingtip` directory. From your project root, you can run it using:
+If you encounter issues stopping the server or get a "port in use" error, a utility script `killDocs.sh` is provided to help. The development server will attempt to use this script automatically if needed, or you can run it manually:
 
 ```bash
 bash wingtip/killDocs.sh

@@ -58,7 +58,7 @@ DEFAULT_CONFIG = {
     "og_image": "social-card.png",
     "twitter_handle": "",
     "concat_docs_filename": "wingtip.txt",
-    "version": "0.1.0",
+    "version": "0.4.1",
     "repo_url": "",
 }
 CFG_PATH = pathlib.Path("config.json")
@@ -112,6 +112,26 @@ def generate_theme_css(theme_config):
         "text_bright": "--text-bright",
         "links_or_primary": "--links",
         "border": "--border",
+        "nav_background": "--nav-background",
+        "bg_admonition": "--bg-admonition",
+        "admonition_note_bg": "--admonition-note-bg",
+        "admonition_note_text": "--admonition-note-text",
+        "admonition_warning_bg": "--admonition-warning-bg",
+        "admonition_warning_text": "--admonition-warning-text",
+        "admonition_danger_bg": "--admonition-danger-bg",
+        "admonition_danger_text": "--admonition-danger-text",
+        "admonition_tip_bg": "--admonition-tip-bg",
+        "admonition_tip_text": "--admonition-tip-text",
+        "admonition_info_bg": "--admonition-info-bg",
+        "admonition_info_text": "--admonition-info-text",
+        "admonition_success_bg": "--admonition-success-bg",
+        "admonition_success_text": "--admonition-success-text",
+        "admonition_note_border": "--admonition-note-border",
+        "admonition_warning_border": "--admonition-warning-border",
+        "admonition_danger_border": "--admonition-danger-border",
+        "admonition_tip_border": "--admonition-tip-border",
+        "admonition_info_border": "--admonition-info-border",
+        "admonition_success_border": "--admonition-success-border",
         # Add more mappings if needed, e.g. for --button-base, --code, etc.
     }
 
@@ -694,10 +714,22 @@ def generate_concatenated_markdown():
     except Exception as e:
         print(f"Error writing concatenated Markdown file: {e}")
 
+def cleanup_output_dir(generated_files):
+    """Remove files in OUTPUT_DIR that are not in the list of generated files.
+    Only removes .html files to avoid touching assets, images, etc."""
+    for root, _, files in os.walk(OUTPUT_DIR):
+        for file in files:
+            if file.endswith('.html'):
+                full_path = os.path.join(root, file)
+                if full_path not in generated_files:
+                    print(f"Removing obsolete file: {full_path}")
+                    os.remove(full_path)
+
 def main():
     parser = argparse.ArgumentParser(description=show_help.__doc__ or "Minimal Markdown to HTML static site generator")
     parser.add_argument("--regen-card", action="store_true", help="Force regenerate social card")
     parser.add_argument("--output", help="Output directory (default: docs/site)")
+    parser.add_argument("--serve", action="store_true", help="Start dev server after build")
     args = parser.parse_args()
     
     # Update output dir if specified
@@ -803,6 +835,46 @@ def main():
     generate_search_index(search_data_for_index, OUTPUT_DIR)
     write_sitemap_xml(pages)
     write_robots_txt()
+    
+    # Clean up obsolete files
+    cleanup_output_dir(pages)
+    
+    # Start dev server if requested
+    if args.serve:
+        import subprocess
+        import sys
+        import time
+        from pathlib import Path
+        
+        serve_script = Path(__file__).parent / "serve.py"
+        kill_script = Path(__file__).parent / "killDocs.sh"
+        
+        if serve_script.exists():
+            print("\nStarting development server...")
+            try:
+                # First attempt to start the server
+                result = subprocess.run([sys.executable, str(serve_script)], capture_output=True, text=True)
+                if result.returncode != 0 and "Address already in use" in result.stderr:
+                    print("Port 8000 is in use. Attempting to free it...")
+                    if kill_script.exists():
+                        # Try to kill existing processes using killDocs.sh
+                        try:
+                            subprocess.run(["./killDocs.sh"], check=True, cwd=str(kill_script.parent))
+                            print("Successfully freed port 8000. Retrying server start...")
+                            time.sleep(1)  # Give the system a moment
+                            # Try starting the server again
+                            subprocess.run([sys.executable, str(serve_script)], check=True)
+                        except subprocess.CalledProcessError as e:
+                            print(f"Failed to free port: {e}")
+                            sys.exit(1)
+                    else:
+                        print("./killDocs.sh not found. Please free port 8000 manually.")
+                        sys.exit(1)
+                elif result.returncode != 0:
+                    print(f"\nServer failed to start: {result.stderr}")
+                    sys.exit(1)
+            except KeyboardInterrupt:
+                print("\nServer stopped by user")
 
 if __name__ == "__main__":
     main()
