@@ -16,7 +16,6 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import yaml 
 from latex_extension import LaTeXPreservationExtension
-from pymdownx import emoji, superfences, tasklist, mark, caret, tilde, arithmatex
 
 OUTPUT_DIR = "docs/site"
 
@@ -563,14 +562,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             "footnotes",     # [^1] style footnotes
             "md_in_html",    # Markdown inside HTML
             "toc",           # [TOC] generation
-            "pymdownx.emoji",        # GitHub-style emojis
-            "pymdownx.superfences",  # Better fenced code blocks
-            "pymdownx.tasklist",    # GitHub-style task lists
-            "pymdownx.mark",        # ==highlight==
-            "pymdownx.caret",       # ^superscript^
-            "pymdownx.tilde",       # ~subscript~ and ~~strikethrough~~
-            "pymdownx.arithmatex",  # Better math rendering
-            "admonition",  # !!! note style admonitions
+            "admonition",    # !!! note style admonitions
             LinkRewriterExtension(),
             "latex_extension"
         ],
