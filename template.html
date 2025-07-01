@@ -28,8 +28,16 @@
   <!-- Light/Dark mode via OS/browser -->
   <link id="watercss-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/light.css">
 
+  <!-- Custom Theme CSS Variables -->
+  ${custom_theme_variables_style}
+
   <!-- Code highlighting -->
-  <link rel="stylesheet" href="syntax.css">
+  <link rel="stylesheet" href="${base_url}/syntax.css">
+  <link rel="stylesheet" href="${base_url}/static/css/custom.css">
+  <link rel="stylesheet" href="${base_url}/static/css/search.css">
+  <link rel="stylesheet" href="${base_url}/static/css/admonitions.css">
+  <!-- KaTeX CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/katex@0.16.9/dist/katex.min.css">
 
   <!-- Custom favicon -->
   <link rel="icon" type="image/png" href="${favicon_url}">
@@ -59,6 +67,7 @@
     }
     
     body {
+      font-family: var(--theme-font-family-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif);
       margin: 0 auto;
       padding: 0;
       line-height: 1.5;
@@ -253,7 +262,6 @@
     }
 
     .navigation a {
-      color: var(--text-color);
       text-decoration: none;
     }
 
@@ -269,7 +277,7 @@
     }
 
     h1 {
-      margin-top: 1rem;
+      margin-top: 4rem;
       margin-bottom: 1rem;
       max-width: 400px;
       line-height: 1.3;
@@ -308,7 +316,7 @@
       top: 0;
       left: 0;
       width: 100%;
-      background: #161f27;
+      background: var(--nav-background);
       padding: 0.5em 1em;
       z-index: 1200;
       display: flex;
@@ -655,18 +663,23 @@
       position: relative;
       top: 7px;
     }
-    @media (prefers-color-scheme: light) {
-      .nav-container {
-        background: #f8f9fa;
-        color: #000;
-      }
-    }
     :root {
       --nav-background: #161f27;
     }
+    /* KaTeX Dark Mode */
+    .katex {
+      color: var(--text-color);
+    }
+    .katex-display {
+      overflow: auto hidden;
+      padding: 1em 0;
+    }
     @media (prefers-color-scheme: light) {
       :root {
-        --nav-background: #161f27;
+        --nav-background: #ffffff;
+      }
+      .nav-container {
+        color: #000;
       }
     }
 
@@ -959,13 +972,13 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   <div id="nav-container" class="nav-container">
     <div class="nav-links">
       <div class="brand">
-        <a href="index.html" style="text-decoration: none;">
+        <a href="${base_url}/index.html" style="text-decoration: none;">
           <img src="$favicon_url" alt="$project" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">
           <span style="color: white !important; font-size: 1.5em; font-weight: 500;">$project</span>
         </a>
       </div>
       <div style="display:none;"> 
-        <a aria-label="README" href="index.html">README</a>
+        <a aria-label="README" href="${base_url}/index.html">README</a>
         <a aria-label="Navigation" href="#navigation">Navigation</a>
       </div>
     </div>
@@ -1015,7 +1028,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     </main>
     <nav class="prev-next-nav">
       $prev_link
-      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a> - <a href="wingtip.txt">View All Docs (Raw)</a></span>
+      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a> - <a href="${base_url}/wingtip.txt">View All Docs (Raw)</a></span>
       $next_link
     </nav>
   </div>
@@ -1222,6 +1235,21 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   <script>
     window.SITE_BASE_URL = '$base_url';
   </script>
-  <script src="static/js/search.js" defer></script>
+  <script src="${base_url}/static/js/search.js" defer></script>
+
+  <!-- KaTeX JS and auto-render extension -->
+  <script defer src="https://unpkg.com/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://unpkg.com/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: "\\[", right: "\\]", display: true},
+          {left: "\\(", right: "\\)", display: false}
+        ],
+        throwOnError: false
+      });
+    });
+  </script>
 </body>
 </html>

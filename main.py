@@ -15,6 +15,8 @@ from string import Template
 from bs4 import BeautifulSoup 
 from datetime import datetime
 import yaml 
+from latex_extension import LaTeXPreservationExtension
+from pymdownx import emoji, superfences, tasklist, mark, caret, tilde, arithmatex
 
 OUTPUT_DIR = "docs/site"
 
@@ -56,13 +58,21 @@ DEFAULT_CONFIG = {
     "og_image": "social-card.png",
     "twitter_handle": "",
     "concat_docs_filename": "wingtip.txt",
-    "version": "0.1.0",
+    "version": "0.4.1",
     "repo_url": "",
 }
 CFG_PATH = pathlib.Path("config.json")
 CONFIG = DEFAULT_CONFIG.copy()
 if CFG_PATH.exists():
     CONFIG.update(json.loads(CFG_PATH.read_text()))
+
+THEME_CFG_PATH = pathlib.Path("theme.json")
+THEME_CONFIG = {}
+if THEME_CFG_PATH.exists():
+    try:
+        THEME_CONFIG = json.loads(THEME_CFG_PATH.read_text())
+    except json.JSONDecodeError as e:
+        print(f"Warning: Could not parse theme.json: {e}. Using default theme.")
 
 BASE_URL = CONFIG["base_url"].rstrip("/") or "."
 
@@ -73,6 +83,77 @@ def load_template():
     return Template(raw)
 
 TEMPLATE = load_template()
+
+DEFAULT_SANS_SERIF_FONT_STACK = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif"
+DEFAULT_MONOSPACE_FONT_STACK = "Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"
+
+def generate_theme_css(theme_config):
+    """Generates style tag with theme CSS variables."""
+    if not theme_config:  # If no theme config, return empty style tag with comment
+        return '<style id="custom-theme-variables">\n    /* No custom theme styles */\n</style>'
+    
+    css_parts = []
+    css_parts.append('<style id="custom-theme-variables">\n    /* Theme overrides */')
+
+    fonts = theme_config.get("fonts", {})
+    sans_serif = fonts.get("sans_serif", DEFAULT_SANS_SERIF_FONT_STACK)
+    monospace = fonts.get("monospace", DEFAULT_MONOSPACE_FONT_STACK)
+
+    css_parts.append("\n    :root {")
+    css_parts.append(f"      --theme-font-family-sans-serif: {sans_serif};")
+    css_parts.append(f"      --theme-font-family-monospace: {monospace};")
+    css_parts.append("    }")
+
+    # Water.css variable mappings
+    water_css_map = {
+        "background_body": "--background-body",
+        "background_element": "--background",
+        "text_main": "--text-main",
+        "text_bright": "--text-bright",
+        "links_or_primary": "--links",
+        "border": "--border",
+        "nav_background": "--nav-background",
+        "bg_admonition": "--bg-admonition",
+        "admonition_note_bg": "--admonition-note-bg",
+        "admonition_note_text": "--admonition-note-text",
+        "admonition_warning_bg": "--admonition-warning-bg",
+        "admonition_warning_text": "--admonition-warning-text",
+        "admonition_danger_bg": "--admonition-danger-bg",
+        "admonition_danger_text": "--admonition-danger-text",
+        "admonition_tip_bg": "--admonition-tip-bg",
+        "admonition_tip_text": "--admonition-tip-text",
+        "admonition_info_bg": "--admonition-info-bg",
+        "admonition_info_text": "--admonition-info-text",
+        "admonition_success_bg": "--admonition-success-bg",
+        "admonition_success_text": "--admonition-success-text",
+        "admonition_note_border": "--admonition-note-border",
+        "admonition_warning_border": "--admonition-warning-border",
+        "admonition_danger_border": "--admonition-danger-border",
+        "admonition_tip_border": "--admonition-tip-border",
+        "admonition_info_border": "--admonition-info-border",
+        "admonition_success_border": "--admonition-success-border",
+        # Add more mappings if needed, e.g. for --button-base, --code, etc.
+    }
+
+    if "light_mode" in theme_config:
+        css_parts.append("\n    html.light:root, :root[data-theme='light'] {") # Target both JS class and potential data-attribute
+        for key, value in theme_config["light_mode"].items():
+            if key in water_css_map:
+                css_parts.append(f"      {water_css_map[key]}: {value};")
+            # Allow defining other --theme-color-*-light variables as well
+            css_parts.append(f"      --theme-color-{key.replace('_', '-')}-light: {value};")
+        css_parts.append("    }")
+
+    if "dark_mode" in theme_config:
+        css_parts.append("\n    html.dark:root, :root[data-theme='dark'] {") # Target both JS class and potential data-attribute
+        for key, value in theme_config["dark_mode"].items():
+            if key in water_css_map:
+                css_parts.append(f"      {water_css_map[key]}: {value};")
+            css_parts.append(f"      --theme-color-{key.replace('_', '-')}-dark: {value};")
+        css_parts.append("    }")
+
+    css_parts.append("\n</style>")
+    return "\n".join(css_parts)
 
 # Helper to build canonical URLs
 def make_url(rel_path):
@@ -341,6 +422,10 @@ def generate_search_index(pages_data, output_dir):
         soup = BeautifulSoup(html_content, "html.parser")
         text_content = soup.get_text(separator=' ').strip()
 
+        # Ensure URL is absolute by prepending base_url if needed
+        if not url.startswith(('http://', 'https://', '/')):
+            url = f"{BASE_URL}/{url}"
+
         search_index.append({
             "title": title,
             "text": text_content,
@@ -373,24 +458,130 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
 
     # Create a custom link pattern processor
     class LinkRewriter(markdown.treeprocessors.Treeprocessor):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            # Load external link config
+            self.config = self.load_config()
+
+        def load_config(self):
+            """Load external link configuration from config.json"""
+            try:
+                with open('config.json', 'r') as f:
+                    config = json.load(f)
+                return config.get('external_links', {
+                    'open_in_new_tab': True,
+                    'exclude_domains': [],
+                    'include_domains': [],
+                    'exclude_paths': [],
+                    'attributes': {
+                        'rel': 'noopener noreferrer',
+                        'class': 'external-link'
+                    }
+                })
+            except Exception as e:
+                print(f"Warning: Could not load external link config: {e}")
+                return {}
+
+        def is_external_link(self, href):
+            """Check if a URL is external (starts with http:// or https://)"""
+            return href and href.startswith(('http://', 'https://'))
+
+        def should_open_in_new_tab(self, href):
+            """Determine if a link should open in a new tab based on config rules"""
+            if not self.is_external_link(href):
+                return False
+
+            # Extract domain from href
+            from urllib.parse import urlparse
+            domain = urlparse(href).netloc
+
+            # Check exclude_domains
+            if any(domain.endswith(d) for d in self.config.get('exclude_domains', [])):
+                return False
+
+            # Check include_domains
+            if any(domain.endswith(d) for d in self.config.get('include_domains', [])):
+                return True
+
+            # Check exclude_paths
+            path = urlparse(href).path
+            if any(fnmatch.fnmatch(path, pattern) for pattern in self.config.get('exclude_paths', [])):
+                return False
+
+            # Use global setting
+            return self.config.get('open_in_new_tab', True)
+
         def run(self, root):
             for element in root.iter('a'):
                 href = element.get('href')
-                if href and href.endswith('.md'):
-                    # Convert .md links to .html
-                    element.set('href', href[:-3] + '.html')
+                if not href:
+                    continue
+
+                if self.is_external_link(href):
+                    # Handle external link according to config
+                    if self.should_open_in_new_tab(href):
+                        element.set('target', '_blank')
+                        # Add additional attributes from config
+                        for key, value in self.config.get('attributes', {}).items():
+                            element.set(key, value)
+                else:
+                    # Handle internal link rewriting
+                    if href.startswith(('#', '/')):
+                        continue
+
+                    # Handle .md extension conversion
+                    if href.endswith('.md'):
+                        href = href[:-3] + '.html'
+
+                    # Handle docs/ prefix for local development vs GitHub Pages
+                    if href.startswith('docs/'):
+                        href = href[5:]  # Remove docs/ prefix
+                    elif not any(href.startswith(prefix) for prefix in ['index.html', 'assets/', 'static/', 'images/']):
+                        # For files that aren't in special directories and don't start with docs/
+                        # we need to ensure they're relative to the current file
+                        href = href
+
+                    element.set('href', href)
             return root
     
     class LinkRewriterExtension(markdown.Extension):
         def extendMarkdown(self, md):
             md.treeprocessors.register(LinkRewriter(md), 'link_rewriter', 7)
     
-    # Convert markdown to HTML with link rewriting
+    # Convert markdown to HTML with link rewriting and GFM features
     html = markdown.markdown(
         md,
-        extensions=["fenced_code", "codehilite", "tables", LinkRewriterExtension()],
+        extensions=[
+            "fenced_code",
+            "codehilite", 
+            "tables",
+            "nl2br",           # Newlines to <br>
+            "sane_lists",     # Better list handling
+            "smarty",         # Smart quotes, dashes, etc
+            "attr_list",     # {: .class} style attributes
+            "def_list",      # Definition lists
+            "footnotes",     # [^1] style footnotes
+            "md_in_html",    # Markdown inside HTML
+            "toc",           # [TOC] generation
+            "pymdownx.emoji",        # GitHub-style emojis
+            "pymdownx.superfences",  # Better fenced code blocks
+            "pymdownx.tasklist",    # GitHub-style task lists
+            "pymdownx.mark",        # ==highlight==
+            "pymdownx.caret",       # ^superscript^
+            "pymdownx.tilde",       # ~subscript~ and ~~strikethrough~~
+            "pymdownx.arithmatex",  # Better math rendering
+            "admonition",  # !!! note style admonitions
+            LinkRewriterExtension(),
+            "latex_extension"
+        ],
         output_format="html5"
     )
+    
+    # Replace LaTeX placeholders with actual delimiters
+    html = html.replace('DISPLAYMATH_START', '\\[')
+    html = html.replace('DISPLAYMATH_END', '\\]')
+    html = html.replace('INLINEMATH_START', '\\(')
+    html = html.replace('INLINEMATH_END', '\\)')
 
     # Add copy buttons to code blocks
     html = add_codeblock_copy_buttons(html)
@@ -438,15 +629,16 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         concat_docs_url = f"{BASE_URL}/{concat_docs_filename}"
 
     # Determine raw markdown content to pass to template
-    # For all pages except 404 page, pass the original markdown content
-    # Read the original markdown file to get the raw content
     raw_markdown_for_template = ""
-    if add_edit_link:
+    if add_edit_link: # Only try to read if it's a page that would have source
         try:
             with open(input_path, 'r', encoding='utf8') as f:
                 raw_markdown_for_template = f.read()
         except Exception as e:
             print(f"Warning: Could not read raw markdown from {input_path}: {e}")
+
+    # Generate custom theme CSS
+    custom_theme_variables_style = generate_theme_css(THEME_CONFIG)
 
     page = TEMPLATE.substitute(
         title=title,
@@ -467,7 +659,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         base_url=BASE_URL,
         favicon_url=favicon_url,
         concat_docs_url=concat_docs_url,
-        raw_markdown_content=raw_markdown_for_template
+        raw_markdown_content=raw_markdown_for_template,
+        custom_theme_variables_style=custom_theme_variables_style
     )
 
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
@@ -521,10 +714,22 @@ def generate_concatenated_markdown():
     except Exception as e:
         print(f"Error writing concatenated Markdown file: {e}")
 
+def cleanup_output_dir(generated_files):
+    """Remove files in OUTPUT_DIR that are not in the list of generated files.
+    Only removes .html files to avoid touching assets, images, etc."""
+    for root, _, files in os.walk(OUTPUT_DIR):
+        for file in files:
+            if file.endswith('.html'):
+                full_path = os.path.join(root, file)
+                if full_path not in generated_files:
+                    print(f"Removing obsolete file: {full_path}")
+                    os.remove(full_path)
+
 def main():
     parser = argparse.ArgumentParser(description=show_help.__doc__ or "Minimal Markdown to HTML static site generator")
     parser.add_argument("--regen-card", action="store_true", help="Force regenerate social card")
     parser.add_argument("--output", help="Output directory (default: docs/site)")
+    parser.add_argument("--serve", action="store_true", help="Start dev server after build")
     args = parser.parse_args()
     
     # Update output dir if specified
@@ -630,6 +835,46 @@ def main():
     generate_search_index(search_data_for_index, OUTPUT_DIR)
     write_sitemap_xml(pages)
     write_robots_txt()
+    
+    # Clean up obsolete files
+    cleanup_output_dir(pages)
+    
+    # Start dev server if requested
+    if args.serve:
+        import subprocess
+        import sys
+        import time
+        from pathlib import Path
+        
+        serve_script = Path(__file__).parent / "serve.py"
+        kill_script = Path(__file__).parent / "killDocs.sh"
+        
+        if serve_script.exists():
+            print("\nStarting development server...")
+            try:
+                # First attempt to start the server
+                result = subprocess.run([sys.executable, str(serve_script)], capture_output=True, text=True)
+                if result.returncode != 0 and "Address already in use" in result.stderr:
+                    print("Port 8000 is in use. Attempting to free it...")
+                    if kill_script.exists():
+                        # Try to kill existing processes using killDocs.sh
+                        try:
+                            subprocess.run(["./killDocs.sh"], check=True, cwd=str(kill_script.parent))
+                            print("Successfully freed port 8000. Retrying server start...")
+                            time.sleep(1)  # Give the system a moment
+                            # Try starting the server again
+                            subprocess.run([sys.executable, str(serve_script)], check=True)
+                        except subprocess.CalledProcessError as e:
+                            print(f"Failed to free port: {e}")
+                            sys.exit(1)
+                    else:
+                        print("./killDocs.sh not found. Please free port 8000 manually.")
+                        sys.exit(1)
+                elif result.returncode != 0:
+                    print(f"\nServer failed to start: {result.stderr}")
+                    sys.exit(1)
+            except KeyboardInterrupt:
+                print("\nServer stopped by user")
 
 if __name__ == "__main__":
     main()

@@ -103,3 +103,18 @@ If no `og_image` is set, the PNG is also copied to `./social-card.png`.
 | `og_image` unset      | Falls back to generated `docs/site/social-card.png` and copies to project root |
 | `favicon` unset       | Default browser icon will be used                                              |
 
+---
+
+## Theming Your Site
+
+WingTip offers ways to customize the visual appearance of your documentation.
+
+### Basic Theme Overrides (`theme.json`)
+
+You can easily customize global fonts and key colors for both light and dark modes by creating a `theme.json` file in your project's root directory. This allows for quick branding changes without needing to write custom CSS.
+
+For detailed instructions on how to structure `theme.json`, available customization options (fonts, colors for light/dark modes), and examples, please see the comprehensive **[Theming Guide](theming.md)**.
+
+### Advanced CSS Customization
+
+For more fine-grained control or styles not covered by `theme.json`, you can incorporate your own custom CSS. Refer to the [Advanced CSS Customization section in the Theming Guide](theming.md#advanced-css-customization) for details.
