@@ -1,4 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Add global / shortcut to focus search
+  document.addEventListener('keydown', (event) => {
+    if (event.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      event.preventDefault();
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.focus();
+      }
+    }
+  });
+
   const searchInput = document.getElementById('search-input');
   const resultsContainer = document.getElementById('search-results-container');
   const searchClearBtn = document.getElementById('search-clear-btn');

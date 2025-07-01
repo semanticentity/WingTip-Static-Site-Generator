@@ -112,11 +112,23 @@ def make_app():
 
 def watch_files():
     """Watch files for changes and rebuild the site"""
-    for pattern in ["README.md", "docs/*.md", "template.html", "main.py", "404.md"]:
-        tornado.autoreload.watch(pattern)
+    # Watch root level files
+    root_files = ["README.md", "template.html", "main.py", "404.md", "theme.json", "config.json"]
+    for file in root_files:
+        if os.path.exists(file):
+            tornado.autoreload.watch(os.path.abspath(file))
+    
+    # Watch all .md files in docs directory recursively
+    docs_dir = os.path.abspath("docs")
+    for root, _, files in os.walk(docs_dir):
+        for file in files:
+            if file.endswith(".md"):
+                file_path = os.path.join(root, file)
+                tornado.autoreload.watch(file_path)
     
     # Add a callback to rebuild the site
     def rebuild_callback():
+        print("\n🔄 File change detected, rebuilding site...")
         build_site()
     
     tornado.autoreload.add_reload_hook(rebuild_callback)

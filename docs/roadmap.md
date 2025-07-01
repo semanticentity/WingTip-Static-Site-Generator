@@ -24,13 +24,21 @@
 * Nested sidebar sections (grouping by folder or heading)
 * ~~Search with local JSON index~~ (Implemented in v0.3.0)
 * Collapsible sidebar sections
-* Keyboard shortcuts for navigation and toggles
+* ~~Keyboard shortcuts for navigation and toggles~~ (Implemented in v0.4.0)
 
 ### Markdown Enhancements
 
-* Admonition support (`:::note`, etc.)
+* ~~Basic admonition support~~ (Implemented in v0.4.0)
+* Advanced admonition features:
+  * Support for pymdownx.admonition extension
+  * Custom icons via Material Icons or FontAwesome
+  * Nested admonitions
+  * Custom admonition types
+  * Collapsible admonitions
+  * Theme-aware styling with CSS variables
+  * Icon customization per theme
 * Mermaid diagram rendering
-* LaTeX/math support via KaTeX
+* ~~LaTeX/math support via KaTeX~~ (Implemented in v0.4.0)
 * Image captioning syntax
 
 ### Developer Experience
@@ -38,7 +46,10 @@
 * True HMR (hot module reload) without full page refresh
 * Build errors shown in browser overlay
 * CLI scaffolding (`wingtip new my-docs`)
-* Local theme overrides via custom CSS
+* ~~Local theme overrides via custom CSS~~ (Basic theming via `theme.json` implemented in v0.4.0 - [Learn more](theming.md))
+* ~~Combined build and serve command~~ (Implemented in v0.4.1)
+* ~~Automatic cleanup of obsolete files~~ (Implemented in v0.4.1)
+* ~~Smart port handling for dev server~~ (Implemented in v0.4.1)
 
 ### SEO & Output Polish
 
@@ -50,16 +61,45 @@
 
 ### Longer-Term Ideas
 
-* Versioned documentation support
+* Documentation Versioning & Categories
+  * **Category Support:**
+    * Auto-generate categories from docs/ subfolders
+    * Category metadata via _category.json (name, description, icon, order)
+    * Category-based navigation and breadcrumbs
+    * Category-specific themes and templates
+    * Category-based search filtering
+    * Cross-category linking and references
+  * **Versioning Options:**
+    * File-level versioning (most granular, complex navigation)
+    * Category-level versioning (logical grouping, easier navigation)
+    * Repository-level versioning (simple but all-or-nothing)
+    * Version aliases (latest, stable, dev)
+    * Version-aware navigation and search
+    * Cross-version linking support
 * i18n / localization
 * Offline mode (PWA shell)
-* Plugin system (before/after hooks, Markdown extensions)
+* Plugin system (before/after hooks, Markdown extensions, theme plugins)
+    * *Theme plugins could allow for entirely new site structures, custom JavaScript, advanced CSS processing (Sass, PostCSS), and template overrides, offering a much deeper level of customization than `theme.json`.*
+
+## Future: Theme Plugins
+
+We envision a more powerful **Plugin System** for WingTip in the future. A key part of this system would be **Theme Plugins**.
+
+Unlike the `theme.json` file, which is for simple value overrides (fonts, colors), theme plugins would offer much deeper customization capabilities, potentially including:
+
+*   **Custom HTML Templates:** Providing entirely different HTML structures for pages.
+*   **Custom JavaScript:** Adding new client-side functionalities or interactions.
+*   **Advanced CSS Processing:** Integrating tools like Sass or PostCSS for more complex stylesheets.
+*   **New Asset Types:** Managing and including different types of static assets.
+*   **Complete Visual Overhauls:** Creating unique themes that go far beyond color and font changes.
+
+This plugin system would provide a structured way for developers to create and share complete themes, transforming the look, feel, and even functionality of a WingTip site. 
 
 ## Accessibility
 
-*   Enhanced ARIA attributes for all interactive elements.
-*   WCAG 2.1 AA compliance audit and necessary improvements.
-*   Keyboard navigation improvements for all UI components.
+* ~~Enhanced ARIA attributes for interactive elements~~ (Implemented in v0.4.0)
+* WCAG 2.1 AA compliance audit and necessary improvements
+* ~~Keyboard navigation improvements~~ (Implemented in v0.4.0 for search, more to come)
 
 ## Performance Optimization
 

@@ -1,0 +1,151 @@
+/* Base admonition styles */
+.admonition {
+  margin: 1.5625em 0;
+  padding: 0.6rem 1rem;
+  border-left: 0.3rem solid;
+  border-radius: 0.2rem;
+  overflow: hidden;
+  font-size: 0.95rem;
+  page-break-inside: avoid;
+  background-color: var(--bg-admonition);
+}
+
+.admonition p {
+  margin: 0.8em 0;
+}
+
+.admonition .admonition-title {
+  margin: 0 -1rem 0.8rem -1rem;
+  padding: 0.4rem 1rem;
+  font-weight: 700;
+  background-color: rgba(68, 138, 255, 0.1);
+}
+
+.admonition .admonition-title::before {
+  margin-right: 0.5rem;
+  font-family: "Material Icons";
+}
+
+/* Note */
+.admonition.note {
+  border-color: #448aff;
+}
+
+.admonition.note .admonition-title {
+  background-color: rgba(68, 138, 255, 0.1);
+  color: #448aff;
+}
+
+.admonition.note .admonition-title::before {
+  content: "note";
+}
+
+/* Warning */
+.admonition.warning {
+  border-color: #ff9100;
+}
+
+.admonition.warning .admonition-title {
+  background-color: rgba(255, 145, 0, 0.1);
+  color: #ff9100;
+}
+
+.admonition.warning .admonition-title::before {
+  content: "warning";
+}
+
+/* Danger */
+.admonition.danger {
+  border-color: #ff5252;
+}
+
+.admonition.danger .admonition-title {
+  background-color: rgba(255, 82, 82, 0.1);
+  color: #ff5252;
+}
+
+.admonition.danger .admonition-title::before {
+  content: "dangerous";
+}
+
+/* Tip */
+.admonition.tip {
+  border-color: #00bfa5;
+}
+
+.admonition.tip .admonition-title {
+  background-color: rgba(0, 191, 165, 0.1);
+  color: #00bfa5;
+}
+
+.admonition.tip .admonition-title::before {
+  content: "tips_and_updates";
+}
+
+/* Info */
+.admonition.info {
+  border-color: #00b0ff;
+}
+
+.admonition.info .admonition-title {
+  background-color: rgba(0, 176, 255, 0.1);
+  color: #00b0ff;
+}
+
+.admonition.info .admonition-title::before {
+  content: "info";
+}
+
+/* Success */
+.admonition.success {
+  border-color: #00c853;
+}
+
+.admonition.success .admonition-title {
+  background-color: rgba(0, 200, 83, 0.1);
+  color: #00c853;
+}
+
+.admonition.success .admonition-title::before {
+  content: "check_circle";
+}
+
+/* Dark mode overrides */
+html.dark .admonition {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+html.dark .admonition .admonition-title {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Plugin banner styles */
+.banner {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+.banner-info {
+  background-color: rgba(68, 138, 255, 0.1);
+  border: 1px solid #448aff;
+  color: #448aff;
+}
+
+.banner-warning {
+  background-color: rgba(255, 145, 0, 0.1);
+  border: 1px solid #ff9100;
+  color: #ff9100;
+}
+
+.banner-danger {
+  background-color: rgba(255, 82, 82, 0.1);
+  border: 1px solid #ff5252;
+  color: #ff5252;
+}
+
+/* Dark mode banner overrides */
+html.dark .banner {
+  background-color: rgba(0, 0, 0, 0.2);
+}
