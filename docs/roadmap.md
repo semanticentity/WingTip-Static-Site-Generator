@@ -28,7 +28,15 @@
 
 ### Markdown Enhancements
 
-* Admonition support (`:::note`, etc.)
+* ~~Basic admonition support~~ (Implemented in v0.4.0)
+* Advanced admonition features:
+  * Support for pymdownx.admonition extension
+  * Custom icons via Material Icons or FontAwesome
+  * Nested admonitions
+  * Custom admonition types
+  * Collapsible admonitions
+  * Theme-aware styling with CSS variables
+  * Icon customization per theme
 * Mermaid diagram rendering
 * ~~LaTeX/math support via KaTeX~~ (Implemented in v0.4.0)
 * Image captioning syntax
@@ -39,6 +47,9 @@
 * Build errors shown in browser overlay
 * CLI scaffolding (`wingtip new my-docs`)
 * ~~Local theme overrides via custom CSS~~ (Basic theming via `theme.json` implemented in v0.4.0 - [Learn more](theming.md))
+* ~~Combined build and serve command~~ (Implemented in v0.4.1)
+* ~~Automatic cleanup of obsolete files~~ (Implemented in v0.4.1)
+* ~~Smart port handling for dev server~~ (Implemented in v0.4.1)
 
 ### SEO & Output Polish
 
@@ -50,7 +61,21 @@
 
 ### Longer-Term Ideas
 
-* Versioned documentation support
+* Documentation Versioning & Categories
+  * **Category Support:**
+    * Auto-generate categories from docs/ subfolders
+    * Category metadata via _category.json (name, description, icon, order)
+    * Category-based navigation and breadcrumbs
+    * Category-specific themes and templates
+    * Category-based search filtering
+    * Cross-category linking and references
+  * **Versioning Options:**
+    * File-level versioning (most granular, complex navigation)
+    * Category-level versioning (logical grouping, easier navigation)
+    * Repository-level versioning (simple but all-or-nothing)
+    * Version aliases (latest, stable, dev)
+    * Version-aware navigation and search
+    * Cross-version linking support
 * i18n / localization
 * Offline mode (PWA shell)
 * Plugin system (before/after hooks, Markdown extensions, theme plugins)
