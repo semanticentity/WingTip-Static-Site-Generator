@@ -12,6 +12,16 @@
         "repo": "semanticentity/WingTip-Static-Site-Generator",
         "branch": "main"
     },
+    "external_links": {
+        "open_in_new_tab": true,
+        "exclude_domains": [],
+        "include_domains": [],
+        "exclude_paths": [],
+        "attributes": {
+            "rel": "noopener noreferrer",
+            "class": "external-link"
+        }
+    },
     "social_card": {
         "title": "WingTip",
         "tagline": "Make your docs fly.",

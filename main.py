@@ -438,25 +438,90 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
 
     # Create a custom link pattern processor
     class LinkRewriter(markdown.treeprocessors.Treeprocessor):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            # Load external link config
+            self.config = self.load_config()
+
+        def load_config(self):
+            """Load external link configuration from config.json"""
+            try:
+                with open('config.json', 'r') as f:
+                    config = json.load(f)
+                return config.get('external_links', {
+                    'open_in_new_tab': True,
+                    'exclude_domains': [],
+                    'include_domains': [],
+                    'exclude_paths': [],
+                    'attributes': {
+                        'rel': 'noopener noreferrer',
+                        'class': 'external-link'
+                    }
+                })
+            except Exception as e:
+                print(f"Warning: Could not load external link config: {e}")
+                return {}
+
+        def is_external_link(self, href):
+            """Check if a URL is external (starts with http:// or https://)"""
+            return href and href.startswith(('http://', 'https://'))
+
+        def should_open_in_new_tab(self, href):
+            """Determine if a link should open in a new tab based on config rules"""
+            if not self.is_external_link(href):
+                return False
+
+            # Extract domain from href
+            from urllib.parse import urlparse
+            domain = urlparse(href).netloc
+
+            # Check exclude_domains
+            if any(domain.endswith(d) for d in self.config.get('exclude_domains', [])):
+                return False
+
+            # Check include_domains
+            if any(domain.endswith(d) for d in self.config.get('include_domains', [])):
+                return True
+
+            # Check exclude_paths
+            path = urlparse(href).path
+            if any(fnmatch.fnmatch(path, pattern) for pattern in self.config.get('exclude_paths', [])):
+                return False
+
+            # Use global setting
+            return self.config.get('open_in_new_tab', True)
+
         def run(self, root):
             for element in root.iter('a'):
                 href = element.get('href')
-                if not href or href.startswith(('http://', 'https://', '#', '/')):  # Skip external/anchor/absolute links
+                if not href:
                     continue
-                    
-                # Handle .md extension conversion
-                if href.endswith('.md'):
-                    href = href[:-3] + '.html'
-                
-                # Handle docs/ prefix for local development vs GitHub Pages
-                if href.startswith('docs/'):
-                    href = href[5:]  # Remove docs/ prefix
-                elif not any(href.startswith(prefix) for prefix in ['index.html', 'assets/', 'static/', 'images/']):
-                    # For files that aren't in special directories and don't start with docs/
-                    # we need to ensure they're relative to the current file
-                    href = href
-                
-                element.set('href', href)
+
+                if self.is_external_link(href):
+                    # Handle external link according to config
+                    if self.should_open_in_new_tab(href):
+                        element.set('target', '_blank')
+                        # Add additional attributes from config
+                        for key, value in self.config.get('attributes', {}).items():
+                            element.set(key, value)
+                else:
+                    # Handle internal link rewriting
+                    if href.startswith(('#', '/')):
+                        continue
+
+                    # Handle .md extension conversion
+                    if href.endswith('.md'):
+                        href = href[:-3] + '.html'
+
+                    # Handle docs/ prefix for local development vs GitHub Pages
+                    if href.startswith('docs/'):
+                        href = href[5:]  # Remove docs/ prefix
+                    elif not any(href.startswith(prefix) for prefix in ['index.html', 'assets/', 'static/', 'images/']):
+                        # For files that aren't in special directories and don't start with docs/
+                        # we need to ensure they're relative to the current file
+                        href = href
+
+                    element.set('href', href)
             return root
     
     class LinkRewriterExtension(markdown.Extension):
