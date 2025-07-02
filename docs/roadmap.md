@@ -2,20 +2,24 @@
 
 ## Feature Comparison
 
-| Feature               | WingTip v1                 | MkDocs | Docusaurus | VitePress |
-| --------------------- | -------------------------- | ------ | ---------- | --------- |
-| **Markdown Support**  | Basic+                     | Good   | Advanced   | Advanced  |
-| **Code Highlighting** | Pygments (themed)          | Good   | Advanced   | Advanced  |
-| **Dark Mode**         | Auto + toggle              | Basic  | Advanced   | Advanced  |
-| **Live Reload**       | Full (w/ scroll restore)   | Good   | Advanced   | Advanced  |
-| **Auto Sidebar**      | Yes                        | Yes    | Advanced   | Advanced  |
-| **Search**            | Client-side (JSON)         | Basic  | Advanced   | Good      |
-| **TOC Navigation**    | Yes                        | Good   | Advanced   | Good      |
-| **Prev/Next Links**   | Yes                        | Basic  | Good       | Good      |
-| **Social Cards**      | Built-in (Pillow)          | None   | Basic      | None      |
-| **SEO**               | Canonical + sitemap + meta | Basic  | Advanced   | Good      |
-| **Analytics**         | Not yet                    | Basic  | Advanced   | Good      |
-| **Versioning**        | Not yet                    | No     | Yes        | No        |
+| Feature                 | WingTip v1                   | MkDocs | Docusaurus | VitePress |
+| ----------------------- | ---------------------------- | ------ | ---------- | --------- |
+| **Markdown Support**    | Advanced (GFM + extras)      | Good   | Advanced   | Advanced  |
+| **Code Highlighting**   | Pygments (themed)            | Good   | Advanced   | Advanced  |
+| **Dark Mode**           | Auto + toggle + CSS vars     | Basic  | Advanced   | Advanced  |
+| **Live Reload**         | Full (w/ scroll restore)     | Good   | Advanced   | Advanced  |
+| **Auto Sidebar**        | Yes                          | Yes    | Advanced   | Advanced  |
+| **Search**              | Client-side (JSON)           | Basic  | Advanced   | Good      |
+| **TOC Navigation**      | Yes + keyboard shortcuts     | Good   | Advanced   | Good      |
+| **Prev/Next Links**     | Yes                          | Basic  | Good       | Good      |
+| **Social Cards**        | Built-in (Pillow)            | None   | Basic      | None      |
+| **SEO**                 | Canonical + sitemap + meta   | Basic  | Advanced   | Good      |
+| **Theme System**        | CSS vars + JSON config       | Basic  | Advanced   | Good      |
+| **External Links**      | Configurable + new tab      | Basic  | Basic      | Basic     |
+| **Math Support**        | KaTeX                       | Plugin | MDX        | Plugin    |
+| **Admonitions**         | Yes (Material style)         | Plugin | MDX        | Plugin    |
+| **Analytics**           | Not yet                      | Basic  | Advanced   | Good      |
+| **Versioning**          | Not yet                      | No     | Yes        | No        |
 
 ## Planned Features
 
