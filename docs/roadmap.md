@@ -28,15 +28,19 @@
 
 ### Markdown Enhancements
 
-* ~~Basic admonition support~~ (Implemented in v0.4.0)
+* ~~Basic admonition support~~ (Implemented in v0.4.1)
 * Advanced admonition features:
-  * Support for pymdownx.admonition extension
-  * Custom icons via Material Icons or FontAwesome
-  * Nested admonitions
-  * Custom admonition types
-  * Collapsible admonitions
+  * Support for nested content (lists, code blocks)
+  * Basic icon support via Material Icons
   * Theme-aware styling with CSS variables
-  * Icon customization per theme
+  * Future enhancements (deferred):
+    * Support for pymdownx.admonition extension
+    * Custom icons via FontAwesome
+    * Nested admonitions
+    * Custom admonition types
+    * Collapsible admonitions
+    * Icon customization per theme
+    * Support for tables inside list items (Python-Markdown limitation)
 * Mermaid diagram rendering
 * ~~LaTeX/math support via KaTeX~~ (Implemented in v0.4.0)
 * Image captioning syntax
@@ -47,9 +51,9 @@
 * Build errors shown in browser overlay
 * CLI scaffolding (`wingtip new my-docs`)
 * ~~Local theme overrides via custom CSS~~ (Basic theming via `theme.json` implemented in v0.4.0 - [Learn more](theming.md))
-* ~~Combined build and serve command~~ (Implemented in v0.4.1)
-* ~~Automatic cleanup of obsolete files~~ (Implemented in v0.4.1)
-* ~~Smart port handling for dev server~~ (Implemented in v0.4.1)
+* ~~Combined build and serve command~~ (Implemented in v0.4.1 via `--serve` flag)
+* ~~Smart port handling for dev server~~ (Implemented in v0.4.1 with auto-retry and port cleanup)
+* Automatic cleanup of obsolete files (deferred to future release)
 
 ### SEO & Output Polish
 
