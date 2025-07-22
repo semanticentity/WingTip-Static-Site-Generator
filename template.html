@@ -166,6 +166,22 @@
       margin: 0;
     }
 
+    .navigation ul ul {
+      padding-left: 1em;
+      display: none; /* Hidden by default */
+    }
+
+    .navigation .toggle {
+      cursor: pointer;
+      display: inline-block;
+      margin-right: 5px;
+      transition: transform 0.2s;
+    }
+
+    .navigation .toggle.open {
+      transform: rotate(90deg);
+    }
+
     .navigation li {
       margin-bottom: 8px;
     }
@@ -938,6 +954,20 @@ html.dark #search-results-container li a .search-result-snippet {
 .search-clear-btn:hover {
   color: var(--text-color, #333333);
 }
+
+/* Version Switcher Styles */
+.version-switcher {
+  margin-left: 1em;
+}
+
+#version-select {
+  padding: 0.4em 0.6em;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
 html.dark .search-clear-btn:hover {
   color: var(--text-bright, #ffffff);
 }
@@ -983,6 +1013,13 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
         <a aria-label="README" href="${base_url}/index.html">README</a>
         <a aria-label="Navigation" href="#navigation">Navigation</a>
       </div>
+    </div>
+
+    <!-- Version Switcher -->
+    <div class="version-switcher">
+      <select id="version-select">
+        <!-- Options will be populated by script -->
+      </select>
     </div>
 
     <!-- Slideout Navigation -->
@@ -1238,6 +1275,46 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     window.SITE_BASE_URL = '$base_url';
   </script>
   <script src="${base_url}/static/js/search.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggles = document.querySelectorAll('.navigation .toggle');
+      toggles.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+          toggle.classList.toggle('open');
+          const nextUl = toggle.parentElement.querySelector('ul');
+          if (nextUl) {
+            nextUl.style.display = nextUl.style.display === 'block' ? 'none' : 'block';
+          }
+        });
+      });
+
+      // Version switcher logic
+      const versionSelect = document.getElementById('version-select');
+      if (versionSelect) {
+        fetch('/versions.json')
+          .then(response => response.json())
+          .then(versions => {
+            const currentVersion = window.location.pathname.split('/')[1];
+            versions.forEach(version => {
+              const option = document.createElement('option');
+              option.value = version;
+              option.textContent = version;
+              if (version === currentVersion) {
+                option.selected = true;
+              }
+              versionSelect.appendChild(option);
+            });
+          });
+
+        versionSelect.addEventListener('change', () => {
+          const newVersion = versionSelect.value;
+          const currentPath = window.location.pathname;
+          const newPath = currentPath.replace(/\/[^/]+\//, `/${newVersion}/`);
+          window.location.href = newPath;
+        });
+      }
+    });
+  </script>
 
   <!-- KaTeX JS and auto-render extension -->
   <script defer src="https://unpkg.com/katex@0.16.9/dist/katex.min.js"></script>
