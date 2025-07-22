@@ -161,7 +161,7 @@ def make_url(rel_path):
         rel_path = ""
     return f"{BASE_URL}/{rel_path}".rstrip("/")
 
-def write_robots_txt():
+def write_robots_txt(output_dir):
     lines = [
         "User-agent: *",
         "Allow: /",
@@ -177,19 +177,19 @@ def write_robots_txt():
         # For local preview (base_url = '.') or missing base_url, use a root-relative path
         lines.append(f"Sitemap: /sitemap.xml")
 
-    with open(os.path.join(OUTPUT_DIR, "robots.txt"), "w", encoding="utf8") as f:
+    with open(os.path.join(output_dir, "robots.txt"), "w", encoding="utf8") as f:
         f.write("\n".join(lines) + "\n") # Add trailing newline
 
-def write_sitemap_xml(pages):
-    with open(os.path.join(OUTPUT_DIR, "sitemap.xml"), "w", encoding="utf8") as f:
+def write_sitemap_xml(pages, output_dir):
+    with open(os.path.join(output_dir, "sitemap.xml"), "w", encoding="utf8") as f:
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
         for path in pages:
-            rel_path = path.replace(OUTPUT_DIR + "/", "").lstrip("/")
+            rel_path = path.replace(output_dir + "/", "").lstrip("/")
             f.write(f'  <url><loc>{BASE_URL}/{rel_path}</loc></url>\n')
         f.write('</urlset>\n')
 
-def generate_syntax_css():
+def generate_syntax_css(output_dir):
     """Generate syntax highlighting CSS for both light and dark modes"""
     from pygments.formatters import HtmlFormatter
     from pygments.styles import get_style_by_name
@@ -226,19 +226,19 @@ def generate_syntax_css():
 }}
 '''
     
-    css_path = os.path.join(OUTPUT_DIR, 'syntax.css')
+    css_path = os.path.join(output_dir, 'syntax.css')
     with open(css_path, 'w') as f:
         f.write(css_content)
 
-def copy_static_files():
+def copy_static_files(output_dir):
     """Copy static files to output directory"""
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     
     # Generate syntax highlighting CSS
-    generate_syntax_css()
+    generate_syntax_css(output_dir)
     
     # Handle favicon
-    favicon_dest = os.path.join(OUTPUT_DIR, "favicon.png")
+    favicon_dest = os.path.join(output_dir, "favicon.png")
     if CONFIG.get("favicon"):
         try:
             import urllib.request
@@ -249,7 +249,7 @@ def copy_static_files():
     # Copy the entire 'static' directory if it exists
     static_src_dir = "static"
     if os.path.isdir(static_src_dir): # Source must be a directory
-        static_dest_dir = os.path.join(OUTPUT_DIR, "static")
+        static_dest_dir = os.path.join(output_dir, "static")
 
         # Handle existing destination: remove if it's a file or a directory
         if os.path.exists(static_dest_dir):
@@ -324,39 +324,74 @@ def add_codeblock_copy_buttons(html):
 
 
 
-def build_navigation(current_file: str) -> str:
-    """Build the navigation section HTML."""
-    nav_html = ['<div class="navigation">']  
+def build_navigation(current_file: str, version: str = None) -> str:
+    """Build the navigation section HTML, supporting nested directories."""
+    nav_html = ['<div class="navigation">']
     nav_html.append('<h2>Documentation</h2>')
-    nav_html.append('<ul>')
     
-    # Add link to README/index
-    nav_html.append('<li><a href="index.html">README</a></li>')
-    
-    # Add links to all docs
+    # Determine the documentation directory based on the version
     docs_dir = "docs"
-    if os.path.isdir(docs_dir):
-        for name in sorted(os.listdir(docs_dir)):
-            if name.endswith('.md'):
+    if version:
+        docs_dir = os.path.join(docs_dir, version)
+
+    if not os.path.isdir(docs_dir):
+        nav_html.append('<p>No documentation found.</p>')
+        nav_html.append('</div>')
+        return '\n'.join(nav_html)
+
+    # Helper function to recursively build navigation
+    def build_nav_recursive(directory, level=0):
+        html = '<ul>'
+        items = sorted(os.listdir(directory))
+
+        for name in items:
+            path = os.path.join(directory, name)
+            if os.path.isdir(path):
+                # Add a toggle for the folder
+                html += f'<li><span class="toggle">▶</span><strong>{name.title()}</strong>'
+                # Recursively build navigation for the subdirectory
+                html += build_nav_recursive(path, level + 1)
+                html += '</li>'
+            elif name.endswith('.md'):
                 base = os.path.splitext(name)[0]
-                nav_html.append(f'<li><a href="{base}.html">{base.title()}</a></li>')
+                # Construct the relative path for the link
+                relative_path = os.path.relpath(path, docs_dir)
+                link = os.path.splitext(relative_path)[0] + '.html'
+                html += f'<li><a href="{link}">{base.title()}</a></li>'
+
+        html += '</ul>'
+        return html
+
+    # Add link to README/index at the top level
+    nav_html.append('<ul><li><a href="index.html">README</a></li></ul>')
+
+    # Build the rest of the navigation
+    nav_html.append(build_nav_recursive(docs_dir))
     
-    nav_html.append('</ul>')
     nav_html.append('</div>')
     return '\n'.join(nav_html)
 
-def get_prev_next_links(current_file: str) -> tuple[str, str]:
-    """Get the previous and next page links for navigation."""
-    docs_dir = os.path.join(os.path.dirname(__file__), 'docs')
-    if not os.path.exists(docs_dir):
+def get_prev_next_links(current_file: str, version: str = None) -> tuple[str, str]:
+    """Get the previous and next page links for navigation, supporting nested directories."""
+    docs_dir = "docs"
+    if version:
+        docs_dir = os.path.join(docs_dir, version)
+
+    if not os.path.isdir(docs_dir):
         return '', ''
 
-    # Get all markdown files
-    md_files = sorted([f for f in os.listdir(docs_dir) if f.endswith('.md')])
+    # Get all markdown files recursively
+    md_files = []
+    for root, _, files in os.walk(docs_dir):
+        for file in files:
+            if file.endswith('.md'):
+                md_files.append(os.path.join(root, file))
     
+    md_files.sort()
+
     # Find current index
     try:
-        current_index = md_files.index(os.path.basename(current_file))
+        current_index = md_files.index(current_file)
     except ValueError:
         return '', ''
 
@@ -365,8 +400,21 @@ def get_prev_next_links(current_file: str) -> tuple[str, str]:
     next_file = md_files[current_index + 1] if current_index < len(md_files) - 1 else ''
 
     # Build links
-    prev_link = f'<a href="{prev_file.replace(".md", ".html")}" class="prev">← {prev_file.replace(".md", "").title()}</a>' if prev_file else ''
-    next_link = f'<a href="{next_file.replace(".md", ".html")}" class="next">{next_file.replace(".md", "").title()} →</a>' if next_file else ''
+    def format_link(file_path, direction):
+        if not file_path:
+            return ''
+
+        relative_path = os.path.relpath(file_path, docs_dir)
+        link = os.path.splitext(relative_path)[0] + '.html'
+        title = os.path.splitext(os.path.basename(file_path))[0].title()
+
+        if direction == 'prev':
+            return f'<a href="{link}" class="prev">← {title}</a>'
+        else:
+            return f'<a href="{link}" class="next">{title} →</a>'
+
+    prev_link = format_link(prev_file, 'prev')
+    next_link = format_link(next_file, 'next')
 
     return prev_link, next_link
 
@@ -437,7 +485,7 @@ def generate_search_index(pages_data, output_dir):
         json.dump(search_index, f, indent=2)
     print(f"Generated search index: {output_path}")
 
-def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev_page=None, next_page=None):
+def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev_page=None, next_page=None, version=None):
     with open(input_path, "r", encoding="utf8") as f:
         md = f.read()
     
@@ -591,11 +639,10 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     title = h1.text if h1 else os.path.basename(input_path)
 
     # Get navigation links
-    nav_links = build_navigation(input_path)
+    nav_links = build_navigation(input_path, version=version)
 
     # Build prev/next links
-    prev_link = f'<a href="{prev_page[1]}" class="prev">← {prev_page[0]}</a>' if prev_page else ''
-    next_link = f'<a href="{next_page[1]}" class="next">{next_page[0]} →</a>' if next_page else ''
+    prev_link, next_link = get_prev_next_links(input_path, version=version)
 
     # Add edit on GitHub link if requested
     if add_edit_link and CONFIG.get("github", {}).get("repo"):
@@ -642,7 +689,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         author=CONFIG["author"],
         og_image=CONFIG["og_image"],
         twitter_handle=CONFIG["twitter_handle"],
-        version=CONFIG["version"],
+        version=version if version else CONFIG["version"],
         year=datetime.now().year,
         repo_url=CONFIG["repo_url"],
         navigation=nav_links,
@@ -652,7 +699,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         favicon_url=favicon_url,
         concat_docs_url=concat_docs_url,
         raw_markdown_content=raw_markdown_for_template,
-        custom_theme_variables_style=custom_theme_variables_style
+        custom_theme_variables_style=custom_theme_variables_style,
+        newVersion=version if version else ''
     )
 
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
@@ -665,7 +713,7 @@ def get_page_nav(pages, current_index):
     next_page = pages[current_index + 1] if current_index < len(pages) - 1 else None
     return prev_page, next_page
 
-def generate_concatenated_markdown():
+def generate_concatenated_markdown(output_dir, version=None):
     """Generates a single Markdown file from README.md and docs/*.md (excluding 404.md)."""
     all_markdown_content = []
     files_to_process = []
@@ -676,10 +724,14 @@ def generate_concatenated_markdown():
 
     # Add files from docs/ directory, excluding 404.md
     docs_dir = "docs"
+    if version:
+        docs_dir = os.path.join(docs_dir, version)
+
     if os.path.isdir(docs_dir):
-        for name in sorted(os.listdir(docs_dir)):
-            if name.endswith(".md") and name != "404.md":
-                files_to_process.append(os.path.join(docs_dir, name))
+        for root, _, files in os.walk(docs_dir):
+            for name in files:
+                if name.endswith(".md") and name != "404.md":
+                    files_to_process.append(os.path.join(root, name))
 
     for filepath in files_to_process:
         try:
@@ -696,9 +748,9 @@ def generate_concatenated_markdown():
     concatenated_content = "".join(all_markdown_content)
 
     output_filename = CONFIG.get("concat_docs_filename", "concatenated_docs.txt")
-    full_output_path = os.path.join(OUTPUT_DIR, output_filename)
+    full_output_path = os.path.join(output_dir, output_filename)
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     try:
         with open(full_output_path, "w", encoding="utf8") as f:
             f.write(concatenated_content)
@@ -729,107 +781,121 @@ def main():
     if args.output:
         OUTPUT_DIR = args.output
 
-    copy_static_files()
-    generate_concatenated_markdown() # Call the new function here
-    pages = []
-    search_data_for_index = []
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    social = CONFIG.get("social_card", {})
-    card_path = pathlib.Path(OUTPUT_DIR) / "social-card.png"
-    should_generate = args.regen_card or not social.get("image") or not card_path.exists()
-
-    if should_generate:
-        try:
-            from wingtip.generate_card import generate_social_card
-        except ImportError:
-            # For direct script execution
-            from generate_card import generate_social_card
-        generate_social_card(
-            social.get("title", CONFIG["project"]),
-            social.get("tagline", "Make your docs fly."),
-            theme=social.get("theme", "light"),
-            font=social.get("font", "Poppins")
-        )
-
-    if not CONFIG["og_image"]:
-        CONFIG["og_image"] = f'{BASE_URL}/social-card.png'
-        # Copy social-card.png to root if it was generated
-        if card_path.exists():
-            import shutil
-            root_card = pathlib.Path("social-card.png")
-            shutil.copy2(card_path, root_card)
-
-    # First collect all doc files and their titles
+    # Discover versions
     docs_dir = "docs"
-    nav_pages = []
-    
-    # Start with README if it exists
-    if os.path.exists("README.md"):
-        with open("README.md", "r", encoding="utf8") as f:
-            readme_content_raw = f.read()
-        readme_title = extract_title(readme_content_raw)
-        readme_md_content_no_frontmatter = remove_frontmatter(readme_content_raw)
-        search_data_for_index.append({
-            "title": readme_title,
-            "content_md": readme_md_content_no_frontmatter,
-            "url": "index.html"
-        })
-        nav_pages.append((readme_title, "index.html", "README.md"))
-    
-    # Then collect all .md files from docs directory
-    if os.path.isdir(docs_dir):
-        for name in os.listdir(docs_dir):
-            if name.endswith(".md"):
-                md_path = os.path.join(docs_dir, name)
-                with open(md_path, "r", encoding="utf8") as f:
-                    md_content_raw = f.read()
-                title = extract_title(md_content_raw)
+    versions = [d for d in os.listdir(docs_dir) if os.path.isdir(os.path.join(docs_dir, d))]
+    if not versions:
+        versions = [None] # Default to no versioning
 
-                if name != "404.md":
-                    md_content_no_frontmatter = remove_frontmatter(md_content_raw)
-                    html_filename = f"{os.path.splitext(name)[0]}.html"
-                    search_data_for_index.append({
-                        "title": title,
-                        "content_md": md_content_no_frontmatter,
-                        "url": html_filename
-                    })
-                base = os.path.splitext(name)[0]
-                nav_pages.append((title, f"{base}.html", md_path))
-    
-    # Convert all files with prev/next navigation
-    for i, (title, html_file, md_path) in enumerate(nav_pages):
-        prev_page = nav_pages[i-1][:2] if i > 0 else None
-        next_page = nav_pages[i+1][:2] if i < len(nav_pages)-1 else None
+    # Write versions.json
+    with open(os.path.join(OUTPUT_DIR, "versions.json"), "w") as f:
+        json.dump(versions, f)
+
+    for version in versions:
+        version_output_dir = os.path.join(OUTPUT_DIR, version) if version else OUTPUT_DIR
+
+        copy_static_files(OUTPUT_DIR)
+        generate_concatenated_markdown(version_output_dir, version)
+        pages = []
+        search_data_for_index = []
+        os.makedirs(version_output_dir, exist_ok=True)
+
+        social = CONFIG.get("social_card", {})
+        card_path = pathlib.Path(version_output_dir) / "social-card.png"
+        should_generate = args.regen_card or not social.get("image") or not card_path.exists()
+
+        if should_generate:
+            try:
+                from wingtip.generate_card import generate_social_card
+            except ImportError:
+                # For direct script execution
+                from generate_card import generate_social_card
+            generate_social_card(
+                social.get("title", CONFIG["project"]),
+                social.get("tagline", "Make your docs fly."),
+                theme=social.get("theme", "light"),
+                font=social.get("font", "Poppins"),
+                output_path=card_path
+            )
+
+        if not CONFIG["og_image"]:
+            CONFIG["og_image"] = f'{BASE_URL}/{version if version else ""}/social-card.png'
+            # Copy social-card.png to root if it was generated
+            if card_path.exists():
+                import shutil
+                root_card = pathlib.Path("social-card.png")
+                shutil.copy2(card_path, root_card)
+
+        # First collect all doc files and their titles
+        current_docs_dir = os.path.join(docs_dir, version) if version else docs_dir
+        nav_pages = []
         
-        output_path = os.path.join(OUTPUT_DIR, html_file)
-        convert_markdown_file(md_path, output_path, add_edit_link=True,
-                            prev_page=prev_page, next_page=next_page)
-        pages.append(f"{OUTPUT_DIR}/{html_file}")
+        # Start with README if it exists
+        if os.path.exists("README.md"):
+            with open("README.md", "r", encoding="utf8") as f:
+                readme_content_raw = f.read()
+            readme_title = extract_title(readme_content_raw)
+            readme_md_content_no_frontmatter = remove_frontmatter(readme_content_raw)
+            search_data_for_index.append({
+                "title": readme_title,
+                "content_md": readme_md_content_no_frontmatter,
+                "url": "index.html"
+            })
+            nav_pages.append((readme_title, "index.html", "README.md"))
 
-    # Process 404.md if it exists
-    fourofour_md_path = pathlib.Path("404.md")
-    if fourofour_md_path.exists():
-        fourofour_html_path = pathlib.Path(OUTPUT_DIR) / "404.html"
-        # Title will be extracted by convert_markdown_file from H1 or default to filename
-        convert_markdown_file(
-            input_path=str(fourofour_md_path),
-            output_filename=str(fourofour_html_path),
-            add_edit_link=False,  # Typically no "edit this page" for a 404
-            prev_page=None,
-            next_page=None
-        )
-        pages.append(str(fourofour_html_path))
+        # Then collect all .md files from docs directory recursively
+        if os.path.isdir(current_docs_dir):
+            for root, _, files in os.walk(current_docs_dir):
+                for name in files:
+                    if name.endswith(".md"):
+                        md_path = os.path.join(root, name)
+                        with open(md_path, "r", encoding="utf8") as f:
+                            md_content_raw = f.read()
+                        title = extract_title(md_content_raw)
+
+                        # Determine the output path, preserving the directory structure
+                        relative_path = os.path.relpath(md_path, current_docs_dir)
+                        html_filename = os.path.splitext(relative_path)[0] + '.html'
+
+                        if name != "404.md":
+                            md_content_no_frontmatter = remove_frontmatter(md_content_raw)
+                            search_data_for_index.append({
+                                "title": title,
+                                "content_md": md_content_no_frontmatter,
+                                "url": html_filename
+                            })
+
+                        nav_pages.append((title, html_filename, md_path))
         
-        # For GitHub Pages compatibility, also copy 404.html to the root of the site
-        # This ensures it works with the permalink: /404.html front matter
+        # Convert all files with prev/next navigation
+        for i, (title, html_file, md_path) in enumerate(nav_pages):
+            prev_page, next_page = get_page_nav(nav_pages, i)
 
-    generate_search_index(search_data_for_index, OUTPUT_DIR)
-    write_sitemap_xml(pages)
-    write_robots_txt()
-    
-    # Clean up obsolete files
-    cleanup_output_dir(pages)
+            output_path = os.path.join(version_output_dir, html_file)
+            convert_markdown_file(md_path, output_path, add_edit_link=True,
+                                prev_page=prev_page, next_page=next_page, version=version)
+            pages.append(str(pathlib.Path(output_path)))
+
+        # Process 404.md if it exists
+        fourofour_md_path = pathlib.Path("404.md")
+        if fourofour_md_path.exists():
+            fourofour_html_path = pathlib.Path(version_output_dir) / "404.html"
+            convert_markdown_file(
+                input_path=str(fourofour_md_path),
+                output_filename=str(fourofour_html_path),
+                add_edit_link=False,
+                prev_page=None,
+                next_page=None,
+                version=version
+            )
+            pages.append(str(fourofour_html_path))
+
+        generate_search_index(search_data_for_index, version_output_dir)
+        write_sitemap_xml(pages, version_output_dir)
+        write_robots_txt(version_output_dir)
+
+        # Clean up obsolete files
+        cleanup_output_dir(pages)
     
     # Start dev server if requested
     if args.serve:

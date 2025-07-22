@@ -42,7 +42,10 @@ def get_google_font(font_name):
         print(f"Failed to download Google Font {font_name}: {e}")
         return None
 
-def generate_social_card(title, tagline, theme="light", font="Poppins"):
+def generate_social_card(title, tagline, theme="light", font="Poppins", output_path=None):
+    if not output_path:
+        output_path = pathlib.Path("docs/site/social-card.png")
+
     size = (1200, 630)
     bg_color = "#f6ede3"  # Warm background color
     fg_color = "#000000"  # Black text
@@ -113,6 +116,5 @@ def generate_social_card(title, tagline, theme="light", font="Poppins"):
     # Draw tagline below title with 40px gap
     draw.text((text_x, text_y + title_height + 40), tagline, font=tagline_font, fill=fg_color)
 
-    output = pathlib.Path("docs/site/social-card.png")
-    output.parent.mkdir(parents=True, exist_ok=True)
-    card.save(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    card.save(output_path)
