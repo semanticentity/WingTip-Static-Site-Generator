@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="$language">
 <head>
   <meta charset="UTF-8">
-  <title>$title · WingTip · Clean docs that soar</title>
+  <title>$title · $project</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="$description">
   <meta name="robots" content="index, follow">
@@ -17,6 +17,8 @@
   <meta property="og:url" content="$page_url">
   <meta property="og:type" content="website">
   <meta property="og:image" content="${base_url}/$og_image">
+  <meta property="og:site_name" content="$project">
+  <meta property="og:locale" content="$language">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="$title">
@@ -24,6 +26,8 @@
   <meta name="twitter:image" content="${base_url}/$og_image">
 
   <meta name="author" content="$author">
+
+  $json_ld
 
   <!-- Light/Dark mode via OS/browser -->
   <link id="watercss-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/light.css">
