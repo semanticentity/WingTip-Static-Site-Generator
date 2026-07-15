@@ -184,9 +184,13 @@ def write_sitemap_xml(pages):
     with open(os.path.join(OUTPUT_DIR, "sitemap.xml"), "w", encoding="utf8") as f:
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
-        for path in pages:
+        for path, md_path in pages:
             rel_path = path.replace(OUTPUT_DIR + "/", "").lstrip("/")
-            f.write(f'  <url><loc>{BASE_URL}/{rel_path}</loc></url>\n')
+            f.write(f'  <url>\n    <loc>{BASE_URL}/{rel_path}</loc>\n')
+            if md_path and os.path.exists(md_path):
+                lastmod = datetime.fromtimestamp(os.path.getmtime(md_path)).strftime('%Y-%m-%d')
+                f.write(f'    <lastmod>{lastmod}</lastmod>\n')
+            f.write('  </url>\n')
         f.write('</urlset>\n')
 
 def generate_syntax_css():
@@ -590,6 +594,19 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     h1 = soup.find('h1')
     title = h1.text if h1 else os.path.basename(input_path)
 
+    # Get description from front matter or fallback to first paragraph
+    page_description = front_matter.get('description')
+    if not page_description:
+        p_tag = soup.find('p')
+        if p_tag:
+            page_description = p_tag.text.strip()
+        else:
+            page_description = CONFIG.get("description", "")
+    # Ensure description doesn't have newlines and is a reasonable length
+    page_description = page_description.replace('\n', ' ').replace('\r', '')
+    if len(page_description) > 160:
+        page_description = page_description[:157] + "..."
+
     # Get navigation links
     nav_links = build_navigation(input_path)
 
@@ -632,13 +649,61 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # Generate custom theme CSS
     custom_theme_variables_style = generate_theme_css(THEME_CONFIG)
 
+    # Generate JSON-LD Schema
+    lastmod_iso = datetime.fromtimestamp(os.path.getmtime(input_path)).isoformat()
+    json_ld = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "Home",
+                        "item": BASE_URL
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": title,
+                        "item": page_url
+                    }
+                ]
+            },
+            {
+                "@type": "TechArticle",
+                "headline": title,
+                "description": page_description,
+                "author": {
+                    "@type": "Person",
+                    "name": CONFIG.get("author", "SemanticEntity")
+                },
+                "publisher": {
+                    "@type": "Organization",
+                    "name": CONFIG.get("project_name", "WingTip"),
+                    "logo": {
+                        "@type": "ImageObject",
+                        "url": f"{BASE_URL}/{CONFIG.get('favicon', 'favicon.png')}"
+                    }
+                },
+                "dateModified": lastmod_iso,
+                "image": f"{BASE_URL}/{CONFIG.get('og_image', 'social-card.png')}"
+            }
+        ]
+    }
+    json_ld_script = f'<script type="application/ld+json">\n{json.dumps(json_ld, indent=2)}\n</script>'
+
+    language = CONFIG.get("language", "en")
+
     page = TEMPLATE.substitute(
         title=title,
         canonical_url=page_url,
         page_url=page_url,
         content=html,
         project=CONFIG["project_name"],
-        description=CONFIG["description"],
+        description=page_description,
+        language=language,
         author=CONFIG["author"],
         og_image=CONFIG["og_image"],
         twitter_handle=CONFIG["twitter_handle"],
@@ -652,7 +717,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         favicon_url=favicon_url,
         concat_docs_url=concat_docs_url,
         raw_markdown_content=raw_markdown_for_template,
-        custom_theme_variables_style=custom_theme_variables_style
+        custom_theme_variables_style=custom_theme_variables_style,
+        json_ld=json_ld_script
     )
 
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
@@ -805,7 +871,7 @@ def main():
         output_path = os.path.join(OUTPUT_DIR, html_file)
         convert_markdown_file(md_path, output_path, add_edit_link=True,
                             prev_page=prev_page, next_page=next_page)
-        pages.append(f"{OUTPUT_DIR}/{html_file}")
+        pages.append((f"{OUTPUT_DIR}/{html_file}", md_path))
 
     # Process 404.md if it exists
     fourofour_md_path = pathlib.Path("404.md")
@@ -819,7 +885,7 @@ def main():
             prev_page=None,
             next_page=None
         )
-        pages.append(str(fourofour_html_path))
+        pages.append((str(fourofour_html_path), str(fourofour_md_path)))
         
         # For GitHub Pages compatibility, also copy 404.html to the root of the site
         # This ensures it works with the permalink: /404.html front matter
@@ -829,7 +895,7 @@ def main():
     write_robots_txt()
     
     # Clean up obsolete files
-    cleanup_output_dir(pages)
+    cleanup_output_dir([p[0] for p in pages])
     
     # Start dev server if requested
     if args.serve:
