@@ -13,7 +13,7 @@ import shutil
 import html as html_module 
 from string import Template
 from bs4 import BeautifulSoup 
-from datetime import datetime
+from datetime import datetime, date
 import yaml 
 import subprocess
 from .latex_extension import LaTeXPreservationExtension
@@ -55,6 +55,36 @@ def get_last_modified(filepath: str) -> str:
         if not now.endswith('Z') and '+' not in now:
             now += '+00:00'
         return now
+
+def _parse_datetime(value):
+    """Parse a YAML/string/datetime value into a datetime object."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, date):
+        return datetime(value.year, value.month, value.day)
+    if isinstance(value, str):
+        text = value.strip()
+        # ISO-8601 (Python 3.7+ supports 'Z' via replace)
+        try:
+            return datetime.fromisoformat(text.replace('Z', '+00:00'))
+        except ValueError:
+            pass
+        for fmt in ('%Y-%m-%d', '%Y-%m-%d %H:%M:%S', '%Y/%m/%d'):
+            try:
+                return datetime.strptime(text, fmt)
+            except ValueError:
+                continue
+    return None
+
+def _iso_date(value):
+    dt = _parse_datetime(value)
+    return dt.isoformat() if dt else ''
+
+def _display_date(value):
+    dt = _parse_datetime(value)
+    return dt.strftime('%B %d, %Y') if dt else ''
 
 OUTPUT_DIR = "docs/site"
 
@@ -783,18 +813,36 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
 
     author = str(front_matter.get('author') or CONFIG.get("author", "")).strip()
 
-    # Generate JSON-LD Schema
-    lastmod_iso = get_last_modified(input_path)
+    # Per-page date metadata (date / lastmod frontmatter)
+    date_published_raw = front_matter.get('date') or front_matter.get('published')
+    date_modified_raw = front_matter.get('lastmod') or front_matter.get('updated')
+    lastmod_from_git = get_last_modified(input_path)
 
+    date_published_iso = _iso_date(date_published_raw)
+    date_modified_iso = _iso_date(date_modified_raw) or lastmod_from_git
+
+    date_published_display = _display_date(date_published_raw)
+    date_modified_display = _display_date(date_modified_raw)
+
+    date_meta_parts = []
+    if date_published_display:
+        date_meta_parts.append(f'Published {date_published_display}')
+    if date_modified_display:
+        date_meta_parts.append(f'Updated {date_modified_display}')
+    date_meta = f'<p class="page-dates">{" · ".join(date_meta_parts)}</p>' if date_meta_parts else ''
+
+    # Generate JSON-LD Schema
     json_ld_script = ""
     if not noindex:
         tech_article = {
             "@type": "TechArticle",
             "headline": title,
             "description": page_description,
-            "dateModified": lastmod_iso,
+            "dateModified": date_modified_iso,
             "image": og_image_url
         }
+        if date_published_iso:
+            tech_article["datePublished"] = date_published_iso
 
         if author:
             tech_article["author"] = {
@@ -847,6 +895,9 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         page_url=page_url,
         keywords=keywords,
         robots=robots,
+        date_published=date_published_display,
+        last_modified=date_modified_display,
+        date_meta=date_meta,
         markdown_url=markdown_alternate_url,
         content=html,
         project=CONFIG.get("project_name") or "Documentation",
