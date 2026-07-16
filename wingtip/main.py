@@ -420,6 +420,58 @@ def _public_url(rel_path):
     """Shortcut to resolve a site-root relative path to a public URL."""
     return resolve_public_url(rel_path)
 
+def _build_head_snippet(front_matter):
+    """Build a custom <head> snippet from analytics config, global snippets, and per-page frontmatter."""
+    snippets = []
+
+    analytics = CONFIG.get('analytics') or {}
+    provider = str(analytics.get('provider') or analytics.get('type') or '').lower().strip()
+    site_id = str(analytics.get('site_id') or analytics.get('id') or analytics.get('property_id') or analytics.get('tracking_id') or '')
+    domain = str(analytics.get('domain') or analytics.get('site') or CONFIG.get('base_url') or '')
+
+    if provider == 'plausible':
+        src = str(analytics.get('src') or analytics.get('script') or 'https://plausible.io/js/plausible.js')
+        snippets.append(f'<script defer data-domain="{html_module.escape(domain)}" src="{html_module.escape(src)}"></script>')
+    elif provider == 'umami':
+        src = str(analytics.get('src') or analytics.get('script') or 'https://analytics.umami.is/script.js')
+        snippets.append(f'<script defer src="{html_module.escape(src)}" data-website-id="{html_module.escape(site_id)}"></script>')
+    elif provider == 'fathom':
+        src = str(analytics.get('src') or analytics.get('script') or 'https://cdn.usefathom.com/script.js')
+        snippets.append(f'<script src="{html_module.escape(src)}" data-site="{html_module.escape(site_id)}" defer></script>')
+    elif provider in ('gtag', 'google', 'googleanalytics'):
+        if site_id:
+            ga_id = html_module.escape(site_id)
+            snippets.append(f"""<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', '{ga_id}');
+</script>""")
+    elif provider == 'custom' and analytics.get('script'):
+        snippets.append(str(analytics['script']))
+
+    # Global head snippet from config (file path or raw HTML)
+    for key in ('head_snippet', 'head'):
+        config_snippet = CONFIG.get(key)
+        if isinstance(config_snippet, str):
+            if os.path.exists(config_snippet):
+                try:
+                    snippets.append(pathlib.Path(config_snippet).read_text(encoding='utf8'))
+                except Exception as e:
+                    print(f"Warning: Could not read head snippet file {config_snippet}: {e}")
+            else:
+                snippets.append(config_snippet)
+
+    # Per-page head snippet from frontmatter
+    page_snippet = front_matter.get('head') or front_matter.get('head_snippet')
+    if isinstance(page_snippet, str):
+        snippets.append(page_snippet)
+    elif isinstance(page_snippet, list):
+        snippets.extend(str(s) for s in page_snippet)
+
+    return '\n'.join(snippets)
+
 def generate_pwa_files(pages, output_dir):
     """Generate a web app manifest, PWA icons, offline fallback, and service worker."""
     os.makedirs(output_dir, exist_ok=True)
@@ -1074,6 +1126,9 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     icon_192_url = _public_url('icon-192.png')
     icon_512_url = _public_url('icon-512.png')
 
+    # Custom <head> snippet (analytics, scripts, verification tags, etc.)
+    head_snippet = _build_head_snippet(front_matter)
+
     # Determine raw markdown content to pass to template
     raw_markdown_for_template = ""
     if add_edit_link: # Only try to read if it's a page that would have source
@@ -1241,6 +1296,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         theme_color=theme_color,
         icon_192_url=icon_192_url,
         icon_512_url=icon_512_url,
+        head_snippet=head_snippet,
         raw_markdown_content=raw_markdown_for_template,
         custom_theme_variables_style=custom_theme_variables_style,
         json_ld=json_ld_script
