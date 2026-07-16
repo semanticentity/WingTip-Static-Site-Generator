@@ -852,6 +852,55 @@ def resolve_public_url(path_or_url, default=None):
     return f"{BASE_URL}/{rel}"
 
 
+def _slugify(name):
+    """Simple ASCII slug generator."""
+    slug = re.sub(r'[^a-zA-Z0-9]+', '-', name.lower())
+    return slug.strip('-')
+
+def _doc_html_filename(md_path, docs_dir='docs'):
+    """Convert a markdown source path to its flat output HTML filename.
+
+    Files inside docs/ subdirectories are prefixed with the directory path
+    (e.g. docs/category/page.md -> category--page.html) so all pages can live
+    in a single output directory without collisions.
+    """
+    if os.path.basename(md_path).lower() == 'readme.md' and (md_path == 'README.md' or md_path == os.path.join(docs_dir, 'README.md')):
+        return 'index.html'
+    rel = os.path.relpath(md_path, docs_dir)
+    base = os.path.splitext(rel)[0].replace(os.sep, '--').replace('/', '--')
+    return f"{base}.html"
+
+def _load_category_meta(category_dir):
+    """Read _category.json metadata if present."""
+    category_json = os.path.join(category_dir, '_category.json')
+    if os.path.exists(category_json):
+        try:
+            return json.loads(pathlib.Path(category_json).read_text(encoding='utf8'))
+        except Exception as e:
+            print(f"Warning: Could not read {category_json}: {e}")
+    return {}
+
+def _category_for_path(md_path, docs_dir='docs', front_matter=None):
+    """Return (category_slug, category_name) for a markdown file."""
+    if front_matter and front_matter.get('category'):
+        category_value = front_matter['category']
+        if isinstance(category_value, dict):
+            return (_slugify(category_value.get('name', 'category')), str(category_value.get('name', 'category')))
+        name = str(category_value).strip()
+        return (_slugify(name), name)
+
+    # Determine the first-level subdirectory under docs/
+    abs_md = os.path.abspath(md_path)
+    abs_docs = os.path.abspath(docs_dir)
+    if abs_md.startswith(abs_docs + os.sep):
+        rel = os.path.relpath(abs_md, abs_docs)
+        first = rel.split(os.sep)[0]
+        if first and first != os.path.basename(rel):
+            meta = _load_category_meta(os.path.join(docs_dir, first))
+            name = meta.get('name') or first.replace('-', ' ').replace('_', ' ').title()
+            return (_slugify(name), name)
+    return None, None
+
 def extract_title(md):
     front = parse_frontmatter(md)
     if front.get('title'):
@@ -862,22 +911,61 @@ def extract_title(md):
 
 
 def build_navigation(current_file: str) -> str:
-    """Build the navigation section HTML."""
-    nav_html = ['<div class="navigation">']  
+    """Build the navigation section HTML, grouping pages by frontmatter category."""
+    nav_html = ['<div class="navigation">']
     nav_html.append('<h2>Documentation</h2>')
-    nav_html.append('<ul>')
-    
-    # Add link to README/index
-    nav_html.append('<li><a href="index.html">README</a></li>')
-    
-    # Add links to all docs
-    docs_dir = "docs"
+
+    # Determine the active HTML filename from the current markdown source path
+    if os.path.basename(current_file).lower() == 'readme.md':
+        active_html = 'index.html'
+    else:
+        active_html = f"{os.path.splitext(os.path.basename(current_file))[0]}.html"
+
+    # Collect pages and their frontmatter categories
+    pages_by_category = {}
+    root_pages = []
+    docs_dir = 'docs'
     if os.path.isdir(docs_dir):
         for name in sorted(os.listdir(docs_dir)):
-            if name.endswith('.md'):
-                base = os.path.splitext(name)[0]
-                nav_html.append(f'<li><a href="{base}.html">{base.title()}</a></li>')
-    
+            if not name.endswith('.md'):
+                continue
+            md_path = os.path.join(docs_dir, name)
+            try:
+                front = parse_frontmatter(pathlib.Path(md_path).read_text(encoding='utf8'))
+                title = extract_title(pathlib.Path(md_path).read_text(encoding='utf8'))
+            except Exception:
+                front = {}
+                title = name[:-3]
+            category = str(front.get('category', '')).strip() if isinstance(front, dict) else ''
+            base = os.path.splitext(name)[0]
+            html_file = f"{base}.html"
+            item = (title, html_file)
+            if category:
+                pages_by_category.setdefault(category, []).append(item)
+            else:
+                root_pages.append(item)
+
+    nav_html.append('<ul>')
+
+    # README / Home
+    if os.path.exists('README.md'):
+        active_class = ' class="active"' if active_html == 'index.html' else ''
+        nav_html.append(f'<li><a href="index.html"{active_class}>README</a></li>')
+
+    # Uncategorized pages
+    for title, href in sorted(root_pages, key=lambda x: x[0].lower()):
+        active_class = ' class="active"' if href == active_html else ''
+        nav_html.append(f'<li><a href="{href}"{active_class}>{html_module.escape(title)}</a></li>')
+
+    # Categorized pages
+    for category in sorted(pages_by_category, key=lambda x: x.lower()):
+        nav_html.append('</ul>')
+        nav_html.append(f'<h3 class="nav-category">{html_module.escape(category)}</h3>')
+        nav_html.append('<ul>')
+        for title, href in sorted(pages_by_category[category], key=lambda x: x[0].lower()):
+            active_class = ' class="active"' if href == active_html else ''
+            nav_html.append(f'<li><a href="{href}"{active_class}>{html_module.escape(title)}</a></li>')
+
     nav_html.append('</ul>')
     nav_html.append('</div>')
     return '\n'.join(nav_html)
@@ -1319,6 +1407,10 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     else:
         keywords = str(keywords).strip()
 
+    # Per-page category and version metadata
+    category = str(front_matter.get('category', '') or '').strip()
+    version = str(front_matter.get('version', '') or '').strip()
+
     # Per-page OG/Twitter overrides
     og_title = str(front_matter.get('og_title') or front_matter.get('og:title') or title).strip()
     og_description = str(front_matter.get('og_description') or front_matter.get('og:description') or page_description).strip()
@@ -1364,6 +1456,10 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             "dateModified": date_modified_iso,
             "image": og_image_url
         }
+        if category:
+            tech_article["articleSection"] = category
+        if version:
+            tech_article["version"] = version
         if date_published_iso:
             tech_article["datePublished"] = date_published_iso
 
@@ -1384,25 +1480,40 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
                 }
             }
 
+        breadcrumb_items = [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": BASE_URL
+            }
+        ]
+        if category:
+            breadcrumb_items.append({
+                "@type": "ListItem",
+                "position": 2,
+                "name": category,
+                "item": page_url
+            })
+            breadcrumb_items.append({
+                "@type": "ListItem",
+                "position": 3,
+                "name": title,
+                "item": page_url
+            })
+        else:
+            breadcrumb_items.append({
+                "@type": "ListItem",
+                "position": 2,
+                "name": title,
+                "item": page_url
+            })
         json_ld = {
             "@context": "https://schema.org",
             "@graph": [
                 {
                     "@type": "BreadcrumbList",
-                    "itemListElement": [
-                        {
-                            "@type": "ListItem",
-                            "position": 1,
-                            "name": "Home",
-                            "item": BASE_URL
-                        },
-                        {
-                            "@type": "ListItem",
-                            "position": 2,
-                            "name": title,
-                            "item": page_url
-                        }
-                    ]
+                    "itemListElement": breadcrumb_items
                 },
                 tech_article
             ]
@@ -1596,6 +1707,8 @@ def main():
     docs_dir = "docs"
     nav_pages = []
     sitemap_pages = []
+    categories_data = {}
+    versions_data = {}
 
     def _is_noindex(front):
         if not isinstance(front, dict):
@@ -1620,7 +1733,7 @@ def main():
                 "content_md": readme_md_content_no_frontmatter,
                 "url": "index.html"
             })
-        nav_pages.append((readme_title, "index.html", "README.md"))
+        nav_pages.append((readme_title, "index.html", "README.md", readme_front))
     
     # Then collect all .md files from docs directory
     if os.path.isdir(docs_dir):
@@ -1635,16 +1748,20 @@ def main():
                 if name != "404.md" and not _is_noindex(front):
                     md_content_no_frontmatter = remove_frontmatter(md_content_raw)
                     html_filename = f"{os.path.splitext(name)[0]}.html"
+                    category_val = str(front.get('category', '') or '').strip() if isinstance(front, dict) else ''
+                    version_val = str(front.get('version', '') or '').strip() if isinstance(front, dict) else ''
                     search_data_for_index.append({
                         "title": title,
                         "content_md": md_content_no_frontmatter,
-                        "url": html_filename
+                        "url": html_filename,
+                        "category": category_val,
+                        "version": version_val
                     })
                 base = os.path.splitext(name)[0]
-                nav_pages.append((title, f"{base}.html", md_path))
+                nav_pages.append((title, f"{base}.html", md_path, front))
     
     # Convert all files with prev/next navigation
-    for i, (title, html_file, md_path) in enumerate(nav_pages):
+    for i, (title, html_file, md_path, front) in enumerate(nav_pages):
         prev_page = nav_pages[i-1][:2] if i > 0 else None
         next_page = nav_pages[i+1][:2] if i < len(nav_pages)-1 else None
         
@@ -1654,6 +1771,31 @@ def main():
         pages.append((f"{OUTPUT_DIR}/{html_file}", md_path))
         if not _is_noindex(front) and os.path.basename(output_path) != "404.html":
             sitemap_pages.append((f"{OUTPUT_DIR}/{html_file}", md_path))
+
+    # Generate category and version index files for downstream consumers
+    categories_data = {}
+    versions_data = {}
+    for title, html_file, md_path, front in nav_pages:
+        if _is_noindex(front):
+            continue
+        category_val = str(front.get('category', '') or '').strip() if isinstance(front, dict) else ''
+        version_val = str(front.get('version', '') or '').strip() if isinstance(front, dict) else ''
+        if category_val:
+            categories_data.setdefault(category_val, []).append({"title": title, "url": html_file})
+        if version_val:
+            versions_data.setdefault(version_val, []).append({"title": title, "url": html_file})
+
+    if categories_data:
+        categories_json_path = os.path.join(OUTPUT_DIR, 'categories.json')
+        with open(categories_json_path, 'w', encoding='utf8') as f:
+            json.dump(categories_data, f, indent=2)
+        print(f"Generated categories index: {categories_json_path}")
+
+    if versions_data:
+        versions_json_path = os.path.join(OUTPUT_DIR, 'versions.json')
+        with open(versions_json_path, 'w', encoding='utf8') as f:
+            json.dump(versions_data, f, indent=2)
+        print(f"Generated versions index: {versions_json_path}")
 
     # Process 404.md if it exists
     fourofour_md_path = pathlib.Path("404.md")
