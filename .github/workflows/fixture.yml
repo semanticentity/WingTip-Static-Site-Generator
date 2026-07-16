@@ -1,0 +1,51 @@
+name: Fixture Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install hatch
+      run: pip install hatch
+
+    - name: Build wheel
+      run: hatch build -t wheel
+
+    - name: Create fixture project
+      run: |
+        mkdir -p /tmp/fixture_project/docs
+        cd /tmp/fixture_project
+        echo "# Acme API" > README.md
+        echo "# Install" > docs/install.md
+
+        # Install the wheel
+        pip install $GITHUB_WORKSPACE/dist/*.whl
+
+        # Run wingtip
+        wingtip > build_output.log 2>&1
+
+        cat build_output.log
+
+        # Assert no warnings in build output
+        if grep -qi "warning" build_output.log; then echo "Warnings found in build output!"; exit 1; fi
+
+        # Assert expected assets are present
+        if [ ! -f docs/site/static/css/custom.css ]; then echo "Missing custom.css"; exit 1; fi
+        if [ ! -f docs/site/static/css/admonitions.css ]; then echo "Missing admonitions.css"; exit 1; fi
+        if [ ! -f docs/site/static/js/search.js ]; then echo "Missing search.js"; exit 1; fi
+
+        echo "Fixture tests passed."
