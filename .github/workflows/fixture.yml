@@ -48,4 +48,7 @@ jobs:
         if [ ! -f docs/site/static/css/admonitions.css ]; then echo "Missing admonitions.css"; exit 1; fi
         if [ ! -f docs/site/static/js/search.js ]; then echo "Missing search.js"; exit 1; fi
 
+        # Audit the build for missing local files and CDN regressions
+        python $GITHUB_WORKSPACE/audit_site.py --output docs/site
+
         echo "Fixture tests passed."

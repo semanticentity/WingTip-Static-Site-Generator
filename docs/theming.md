@@ -93,14 +93,14 @@ While `theme.json` provides a straightforward way to change common visual elemen
     ```html
     <head>
       ...
-      <link id="watercss-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/light.css">
+      <link id="watercss-theme" rel="stylesheet" href="./static/vendor/light.css">
       <style id="custom-theme-variables">
         $custom_theme_styles
       </style>
       <link rel="stylesheet" href="syntax.css">
-      <link rel="stylesheet" href="${base_url}/static/css/custom.css"> <!-- Add your custom CSS -->
+      <link rel="stylesheet" href="./static/css/custom.css"> <!-- Add your custom CSS -->
       ...
     </head>
     ```
 
-*(Note: The `${base_url}` part is important if your site is not served from the root of a domain).*
+*(Note: Use a relative path like `./static/css/custom.css` if your site is not served from the root of a domain.)*
