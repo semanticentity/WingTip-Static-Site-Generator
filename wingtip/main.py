@@ -411,6 +411,167 @@ def generate_rss_feed(pages, output_dir):
         f.write(rss)
     print(f"Generated RSS feed: {output_path}")
 
+def get_theme_colors():
+    """Return (theme_color, background_color) from the theme config."""
+    light = THEME_CONFIG.get('light_mode', {})
+    return light.get('links_or_primary', '#0366d6'), light.get('background_body', '#ffffff')
+
+def _public_url(rel_path):
+    """Shortcut to resolve a site-root relative path to a public URL."""
+    return resolve_public_url(rel_path)
+
+def generate_pwa_files(pages, output_dir):
+    """Generate a web app manifest, PWA icons, offline fallback, and service worker."""
+    os.makedirs(output_dir, exist_ok=True)
+    theme_color, background_color = get_theme_colors()
+    project_name = CONFIG.get('project_name') or 'Documentation'
+    short_name = project_name[:12]
+    description = CONFIG.get('description') or project_name
+    language = CONFIG.get('language', 'en')
+
+    manifest_path = pathlib.Path(output_dir) / "manifest.json"
+    sw_path = pathlib.Path(output_dir) / "sw.js"
+    offline_path = pathlib.Path(output_dir) / "offline.html"
+
+    # Generate icon sizes from favicon.png / wingtip-logo.png if available
+    icon_192 = "icon-192.png"
+    icon_512 = "icon-512.png"
+    source_icon = None
+    for candidate in ('favicon.png', 'wingtip-logo.png', os.path.join(output_dir, 'favicon.png')):
+        if os.path.exists(candidate):
+            source_icon = candidate
+            break
+    if source_icon:
+        try:
+            from PIL import Image
+            # Ensure a favicon exists in the site root for the manifest/PWA
+            root_favicon = os.path.join(output_dir, 'favicon.png')
+            if source_icon != root_favicon and not os.path.exists(root_favicon):
+                shutil.copy2(source_icon, root_favicon)
+            for size, filename in ((192, icon_192), (512, icon_512)):
+                with Image.open(source_icon) as img:
+                    if img.mode not in ('RGBA', 'RGB'):
+                        img = img.convert('RGBA')
+                    img_resized = img.resize((size, size), Image.LANCZOS)
+                    img_resized.save(os.path.join(output_dir, filename), 'PNG')
+        except Exception as e:
+            print(f"Warning: Could not generate PWA icons from {source_icon}: {e}")
+            icon_192 = ""
+            icon_512 = ""
+    else:
+        icon_192 = ""
+        icon_512 = ""
+
+    # Build precache list from the generated output directory
+    precache = []
+    for root, dirs, files in os.walk(output_dir):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        for name in files:
+            full = os.path.join(root, name)
+            rel = os.path.relpath(full, output_dir).replace(os.sep, '/')
+            if rel == 'sw.js':
+                continue
+            precache.append(rel)
+
+    # Generate manifest
+    icons_list = []
+    if icon_192:
+        icons_list.append({"src": icon_192, "sizes": "192x192", "type": "image/png"})
+    if icon_512:
+        icons_list.append({"src": icon_512, "sizes": "512x512", "type": "image/png"})
+    manifest = {
+        "name": project_name,
+        "short_name": short_name,
+        "description": description,
+        "start_url": ".",
+        "scope": ".",
+        "display": "standalone",
+        "background_color": background_color,
+        "theme_color": theme_color,
+        "orientation": "portrait",
+        "lang": language,
+        "icons": icons_list
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf8')
+    print(f"Generated manifest: {manifest_path}")
+
+    # Generate offline fallback page
+    home_url = "./index.html" if BASE_URL == '.' else f"{BASE_URL}/index.html"
+    offline_html = f"""<!DOCTYPE html>
+<html lang="{html_module.escape(language)}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline · {html_module.escape(project_name)}</title>
+  <meta name="theme-color" content="{html_module.escape(theme_color)}">
+  <style>
+    body {{ font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; background: {html_module.escape(background_color)}; color: #24292e; }}
+    main {{ max-width: 720px; margin: auto; }}
+    a {{ color: {html_module.escape(theme_color)}; }}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>You are offline</h1>
+    <p>The page you requested is not available without a network connection.</p>
+    <p><a href="{html_module.escape(home_url)}">Go to the home page</a></p>
+  </main>
+</body>
+</html>"""
+    offline_path.write_text(offline_html, encoding='utf8')
+
+    # Generate service worker
+    cache_version = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+    urls_json = json.dumps(precache)
+    sw_js = f"""const CACHE_VERSION = '{cache_version}';
+const CACHE_NAME = 'wingtip-cache-' + CACHE_VERSION;
+
+const PRECACHE_URLS = {urls_json};
+
+self.addEventListener('install', (event) => {{
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {{
+      return cache.addAll(PRECACHE_URLS);
+    }}).then(() => self.skipWaiting())
+  );
+}});
+
+self.addEventListener('activate', (event) => {{
+  event.waitUntil(
+    caches.keys().then((keyList) => {{
+      return Promise.all(keyList.map((key) => {{
+        if (key !== CACHE_NAME) {{
+          return caches.delete(key);
+        }}
+      }}));
+    }}).then(() => self.clients.claim())
+  );
+}});
+
+self.addEventListener('fetch', (event) => {{
+  if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith(self.location.origin)) return;
+
+  event.respondWith(
+    caches.match(event.request).then((cached) => {{
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {{
+        if (!response || response.status !== 200 || response.type !== 'basic') return response;
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      }}).catch(() => {{
+        if (event.request.mode === 'navigate') {{
+          return caches.match('offline.html');
+        }}
+      }});
+    }})
+  );
+}});
+"""
+    sw_path.write_text(sw_js, encoding='utf8')
+    print(f"Generated service worker: {sw_path}")
+
 def generate_syntax_css():
     """Generate syntax highlighting CSS for both light and dark modes"""
     from pygments.formatters import HtmlFormatter
@@ -837,8 +998,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         canonical_url = page_url
 
     # Build page using global template
-    # Handle favicon URL - if base_url is '.', use relative path
-    favicon_url = 'favicon.png' if BASE_URL == '.' else f'{BASE_URL}/favicon.png'
+    # Handle favicon URL (support remote, absolute, and relative config values)
+    favicon_url = resolve_public_url(CONFIG.get('favicon', 'favicon.png'), default='favicon.png')
 
     # Construct URL for the concatenated docs file
     concat_docs_filename = CONFIG.get("concat_docs_filename", "llms-full.txt")
@@ -851,6 +1012,13 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # URL for the RSS feed
     rss_filename = CONFIG.get("rss_filename", "feed.xml")
     feed_url = rss_filename if BASE_URL == '.' else f"{BASE_URL}/{rss_filename}"
+
+    # PWA asset URLs
+    theme_color, _ = get_theme_colors()
+    manifest_url = _public_url('manifest.json')
+    sw_url = _public_url('sw.js')
+    icon_192_url = _public_url('icon-192.png')
+    icon_512_url = _public_url('icon-512.png')
 
     # Determine raw markdown content to pass to template
     raw_markdown_for_template = ""
@@ -1014,6 +1182,11 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         favicon_url=favicon_url,
         concat_docs_url=concat_docs_url,
         feed_url=feed_url,
+        manifest_url=manifest_url,
+        sw_url=sw_url,
+        theme_color=theme_color,
+        icon_192_url=icon_192_url,
+        icon_512_url=icon_512_url,
         raw_markdown_content=raw_markdown_for_template,
         custom_theme_variables_style=custom_theme_variables_style,
         json_ld=json_ld_script
@@ -1240,6 +1413,9 @@ def main():
     
     # Clean up obsolete files
     cleanup_output_dir([p[0] for p in pages])
+
+    # Generate PWA manifest, icons, offline page, and service worker
+    generate_pwa_files(pages, OUTPUT_DIR)
     
     # Start dev server if requested
     if args.serve:
