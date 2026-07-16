@@ -77,24 +77,10 @@
 
 ### Longer-Term Ideas
 
-* Documentation Versioning & Categories
-  * **Category Support:**
-    * Auto-generate categories from docs/ subfolders
-    * Category metadata via _category.json (name, description, icon, order)
-    * Category-based navigation and breadcrumbs
-    * Category-specific themes and templates
-    * Category-based search filtering
-    * Cross-category linking and references
-  * **Versioning Options:**
-    * File-level versioning (most granular, complex navigation)
-    * Category-level versioning (logical grouping, easier navigation)
-    * Repository-level versioning (simple but all-or-nothing)
-    * Version aliases (latest, stable, dev)
-    * Version-aware navigation and search
-    * Cross-version linking support
-* i18n / localization
+* ~~Documentation Versioning & Categories (per-page `category`/`version`, `categories.json`, `versions.json`)~~ (Implemented in v0.5.0)
+* ~~i18n / localization (per-page `lang`, `translations`, hreflang links)~~ (Implemented in v0.5.0)
 * ~~Offline mode (PWA shell)~~ (Implemented in v0.5.0)
-* Plugin system (before/after hooks, Markdown extensions, theme plugins)
+* ~~Plugin system (before/after hooks, Markdown extensions, theme plugins)~~ (Implemented in v0.5.0)
     * *Theme plugins could allow for entirely new site structures, custom JavaScript, advanced CSS processing (Sass, PostCSS), and template overrides, offering a much deeper level of customization than `theme.json`.*
 
 ## Future: Theme Plugins
