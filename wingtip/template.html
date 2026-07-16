@@ -10,6 +10,9 @@
   <meta name="googlebot" content="$robots">
   <meta name="bingbot" content="$robots">
 
+  <link rel="manifest" href="$manifest_url">
+  <meta name="theme-color" content="$theme_color">
+  <link rel="apple-touch-icon" sizes="192x192" href="$icon_192_url">
   <link rel="canonical" href="$canonical_url">
   <link rel="alternate" type="text/markdown" href="$markdown_url">
   <link rel="alternate" type="application/rss+xml" href="$feed_url" title="RSS feed for $project">
@@ -1258,6 +1261,15 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
         throwOnError: false
       });
     });
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('$sw_url').catch(function(err) {
+          console.error('Service worker registration failed:', err);
+        });
+      });
+    }
   </script>
 </body>
 </html>
