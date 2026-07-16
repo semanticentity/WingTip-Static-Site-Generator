@@ -26,7 +26,7 @@ def build_site():
         tmp_dir = "docs_site_tmp"
         os.makedirs(tmp_dir, exist_ok=True)
         result = subprocess.run(
-            ["python", str(BASE_DIR / "main.py"), "--output", tmp_dir],
+            [sys.executable, "-m", "wingtip.main", "--output", tmp_dir],
             capture_output=True,
             text=True
         )
@@ -35,7 +35,7 @@ def build_site():
             print("  ✓ Build successful")
             # If successful, rebuild for real
             result = subprocess.run(
-                ["python", str(BASE_DIR / "main.py")],
+                [sys.executable, "-m", "wingtip.main"],
                 capture_output=True,
                 text=True
             )
