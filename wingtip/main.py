@@ -586,13 +586,12 @@ def _build_csp(front_matter):
 
     return (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
-        "https://code.iconify.design https://unpkg.com https://fonts.googleapis.com https://www.googletagmanager.com "
-        f"{script_extra}; "
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+        f"{script_extra.strip()}; "
+        "style-src 'self' 'unsafe-inline'; "
+        "font-src 'self'; "
         "img-src 'self' data: https:; "
-        f"connect-src 'self' {connect_extra}; "
+        f"connect-src 'self' {connect_extra.strip()}; "
         "media-src 'self'; "
         "manifest-src 'self'; "
         "worker-src 'self'; "
@@ -865,6 +864,21 @@ def copy_static_files():
         print(f"Copied static assets ({' + '.join(copied_from)}) to '{static_dest_dir}'")
     else:
         print("Warning: no static assets found; pages will render unstyled.")
+
+    # Ensure a favicon/logo is available in the site root for the PWA manifest,
+    # favicon meta tag, and search index. Project root wins over packaged default.
+    for logo_name in ('favicon.png', 'wingtip-logo.png'):
+        source = None
+        if os.path.isfile(logo_name):
+            source = logo_name
+        elif pkg_static and os.path.isfile(os.path.join(pkg_static, logo_name)):
+            source = os.path.join(pkg_static, logo_name)
+        if source and not os.path.exists(os.path.join(OUTPUT_DIR, logo_name)):
+            try:
+                shutil.copy2(source, os.path.join(OUTPUT_DIR, logo_name))
+                print(f"Copied {logo_name} to output root")
+            except Exception as e:
+                print(f"Warning: Could not copy {logo_name}: {e}")
 
 
 def parse_frontmatter(md_text):
@@ -1288,9 +1302,12 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
                     if href.startswith(('#', '/')):
                         continue
 
-                    # Handle .md extension conversion
-                    if href.endswith('.md'):
-                        href = href[:-3] + '.html'
+                    # Handle .md extension conversion (including fragment/query variants)
+                    base, sep, rest = href.partition('.md')
+                    if sep == '.md':
+                        suffix = rest
+                        if not suffix or suffix.startswith(('#', '?')):
+                            href = base + '.html' + suffix
 
                     # Handle docs/ prefix for local development vs GitHub Pages
                     if href.startswith('docs/'):
