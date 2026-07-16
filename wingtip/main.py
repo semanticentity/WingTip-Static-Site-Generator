@@ -166,6 +166,7 @@ CONFIG["project"] = CONFIG["project_name"]
 
 THEME_CFG_PATH = pathlib.Path("theme.json")
 THEME_CONFIG = {}
+_PLUGINS = []  # populated at build time
 if THEME_CFG_PATH.exists():
     try:
         THEME_CONFIG = json.loads(THEME_CFG_PATH.read_text())
@@ -174,6 +175,7 @@ if THEME_CFG_PATH.exists():
 
 BASE_URL = (CONFIG.get("base_url") or ".").rstrip("/") or "."
 
+import importlib
 import importlib.resources
 
 # Load and format template
@@ -501,6 +503,49 @@ def _build_hreflang_alternates(front_matter, canonical_url):
         links.append(f'<link rel="alternate" hreflang="{html_module.escape(code)}" href="{html_module.escape(resolve_public_url(url))}">')
     links.append(f'<link rel="alternate" hreflang="x-default" href="{html_module.escape(canonical_url)}">')
     return '\n  '.join(links)
+
+def _load_plugins():
+    """Load user plugins from the plugins/ directory.
+
+    The optional `plugins` config key can be a list of module basenames to load.
+    If omitted, all *.py files in plugins/ are loaded.
+    """
+    plugins = []
+    plugins_dir = pathlib.Path("plugins")
+    if not plugins_dir.is_dir():
+        return plugins
+    allowed = CONFIG.get('plugins')
+    if not isinstance(allowed, list):
+        allowed = None
+    for plugin_file in sorted(plugins_dir.glob("*.py")):
+        if plugin_file.name.startswith("_"):
+            continue
+        if allowed and plugin_file.stem not in allowed:
+            continue
+        module_name = f"__wingtip_user_plugins_{plugin_file.stem}"
+        try:
+            spec = importlib.util.spec_from_file_location(module_name, plugin_file)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            plugins.append(module)
+        except Exception as e:
+            print(f"Warning: Could not load plugin {plugin_file}: {e}")
+    return plugins
+
+def _plugin_markdown_extensions(plugins):
+    """Collect Markdown extension objects/strings from plugins."""
+    extensions = []
+    for plugin in plugins:
+        exts = getattr(plugin, 'markdown_extensions', [])
+        if callable(exts) and not isinstance(exts, (list, tuple)):
+            try:
+                exts = exts()
+            except Exception as e:
+                print(f"Warning: markdown_extensions hook failed in {plugin.__name__}: {e}")
+                exts = []
+        if isinstance(exts, (list, tuple)):
+            extensions.extend(exts)
+    return extensions
 
 def _build_csp(front_matter):
     """Build a Content-Security-Policy string from config and per-page frontmatter."""
@@ -1152,6 +1197,19 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     front_matter = parse_frontmatter(md)
     md = remove_frontmatter(md)
 
+    # Plugin before_convert hooks
+    for plugin in _PLUGINS:
+        hook = getattr(plugin, 'before_convert', None)
+        if callable(hook):
+            try:
+                result = hook(front_matter, md, input_path, output_filename)
+                if isinstance(result, tuple) and len(result) == 2:
+                    front_matter, md = result
+                elif result is not None:
+                    md = str(result)
+            except Exception as e:
+                print(f"Warning: before_convert hook failed in {plugin.__name__}: {e}")
+
     # Create a custom link pattern processor
     class LinkRewriter(markdown.treeprocessors.Treeprocessor):
         def __init__(self, *args, **kwargs):
@@ -1249,7 +1307,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         def extendMarkdown(self, md):
             md.treeprocessors.register(LinkRewriter(md), 'link_rewriter', 7)
     
-    # Convert markdown to HTML with link rewriting and GFM features
+    # Convert markdown to HTML with link rewriting, GFM features, and plugin extensions
+    plugin_extensions = _plugin_markdown_extensions(_PLUGINS)
     html = markdown.markdown(
         md,
         extensions=[
@@ -1267,7 +1326,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             "tables",        # Must be after admonition for nested tables
             LinkRewriterExtension(),
             "wingtip.latex_extension"
-        ],
+        ] + plugin_extensions,
         output_format="html5"
     )
     
@@ -1290,8 +1349,18 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # Optimize content images: copy to output, generate responsive srcset, lazy load
     _process_content_images(soup, input_path, output_filename)
 
-    # Serialize soup back to HTML for further processing
+    # Plugin after_convert hooks (operate on fully processed HTML)
     html = str(soup)
+    for plugin in _PLUGINS:
+        hook = getattr(plugin, 'after_convert', None)
+        if callable(hook):
+            try:
+                result = hook(html, front_matter, input_path, output_filename)
+                if isinstance(result, str):
+                    html = result
+            except Exception as e:
+                print(f"Warning: after_convert hook failed in {plugin.__name__}: {e}")
+    soup = BeautifulSoup(html, 'html.parser')
 
     h1 = soup.find('h1')
     title = str(front_matter.get('title') or (h1.text if h1 else os.path.basename(input_path))).strip()
@@ -1671,6 +1740,17 @@ def main():
     if args.source != ".":
         os.chdir(args.source)
 
+    # Load user plugins before anything is generated
+    global _PLUGINS
+    _PLUGINS = _load_plugins()
+    for plugin in _PLUGINS:
+        hook = getattr(plugin, 'before_build', None)
+        if callable(hook):
+            try:
+                hook(CONFIG, OUTPUT_DIR)
+            except Exception as e:
+                print(f"Warning: before_build hook failed in {plugin.__name__}: {e}")
+
     copy_static_files()
     generate_concatenated_markdown() # Call the new function here
     pages = []
@@ -1825,7 +1905,16 @@ def main():
 
     # Generate PWA manifest, icons, offline page, and service worker
     generate_pwa_files(pages, OUTPUT_DIR)
-    
+
+    # Plugin after_build hooks
+    for plugin in _PLUGINS:
+        hook = getattr(plugin, 'after_build', None)
+        if callable(hook):
+            try:
+                hook(CONFIG, OUTPUT_DIR)
+            except Exception as e:
+                print(f"Warning: after_build hook failed in {plugin.__name__}: {e}")
+
     # Start dev server if requested
     if args.serve:
         import subprocess
