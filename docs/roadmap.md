@@ -68,6 +68,13 @@
 * Animated copy-to-clipboard feedback
 * ~~Custom 404 page~~ (Implemented in v0.4.1)
 
+### Performance, Security, & Extensibility
+
+* ~~Image lazy loading and intrinsic size attributes for local images~~ (Implemented in v0.5.0)
+* Responsive `srcset` image generation
+* Default Content Security Policy meta tag
+* Analytics / custom `<head>` snippet hook
+
 ### Longer-Term Ideas
 
 * Documentation Versioning & Categories
