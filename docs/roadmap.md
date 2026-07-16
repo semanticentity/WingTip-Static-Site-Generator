@@ -64,7 +64,7 @@
 * ~~JSON-LD structured data for articles~~ (Implemented in v0.4.0)
 * ~~Per-page SEO frontmatter overrides (title, description, keywords, canonical, noindex, Open Graph, Twitter cards)~~ (Implemented in v0.5.0)
 * ~~Author/date metadata in frontmatter~~ (Implemented in v0.5.0)
-* RSS feed generation
+* ~~RSS feed generation~~ (Implemented in v0.5.0)
 * Animated copy-to-clipboard feedback
 * ~~Custom 404 page~~ (Implemented in v0.4.1)
 

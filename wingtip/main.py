@@ -13,7 +13,8 @@ import shutil
 import html as html_module 
 from string import Template
 from bs4 import BeautifulSoup 
-from datetime import datetime, date
+from datetime import datetime, date, timezone
+from email.utils import format_datetime
 import yaml 
 import subprocess
 from .latex_extension import LaTeXPreservationExtension
@@ -323,6 +324,92 @@ def write_sitemap_xml(pages):
                 f.write(f'    <lastmod>{lastmod}</lastmod>\n')
             f.write('  </url>\n')
         f.write('</urlset>\n')
+
+def _rss_date(value, md_path=None):
+    """Parse a frontmatter/string value into an RFC-822 datetime string."""
+    dt = _parse_datetime(value)
+    if not dt and md_path:
+        dt = _parse_datetime(get_last_modified(md_path))
+    if not dt:
+        dt = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return format_datetime(dt)
+
+def _page_text_excerpt(md_text):
+    """Return a short plain-text excerpt from markdown body."""
+    # Remove front matter
+    text = remove_frontmatter(md_text)
+    # Collapse whitespace and take first sentence/line up to ~300 chars
+    text = re.sub(r'\n+', ' ', text).strip()
+    if not text:
+        return ''
+    if len(text) > 300:
+        text = text[:297] + '...'
+    return text
+
+def generate_rss_feed(pages, output_dir):
+    """Generate an RSS 2.0 feed for public pages that are not noindex."""
+    feed_filename = CONFIG.get('rss_filename', 'feed.xml')
+    output_path = os.path.join(output_dir, feed_filename)
+    os.makedirs(output_dir, exist_ok=True)
+
+    site_title = html_module.escape(CONFIG.get('project_name') or 'Documentation')
+    site_link = BASE_URL if BASE_URL != '.' else ''
+    site_desc = html_module.escape(CONFIG.get('description') or site_title)
+    language = CONFIG.get('language', 'en')
+    build_date = format_datetime(datetime.now(timezone.utc))
+
+    items = []
+    for html_path, md_path in pages:
+        if not os.path.exists(md_path):
+            continue
+        with open(md_path, 'r', encoding='utf8') as f:
+            md_text = f.read()
+        front = parse_frontmatter(md_text)
+        # Skip noindex pages in feed
+        robots = front.get('robots', '')
+        if front.get('noindex') or (isinstance(robots, str) and 'noindex' in robots.lower()):
+            continue
+
+        title = html_module.escape(str(front.get('title') or extract_title(md_text)))
+        rel_path = html_path.replace(output_dir + '/', '').lstrip('/')
+        link = f"{site_link}/{rel_path}" if site_link else rel_path
+        description = html_module.escape(
+            str(front.get('description') or _page_text_excerpt(md_text))
+        )
+
+        pub_date = _rss_date(front.get('date') or front.get('published'), md_path=md_path)
+        guid = link
+
+        items.append((pub_date, f"""    <item>
+      <title>{title}</title>
+      <link>{link}</link>
+      <guid>{guid}</guid>
+      <description>{description}</description>
+      <pubDate>{pub_date}</pubDate>
+    </item>"""))
+
+    # Sort by publication date descending
+    items.sort(key=lambda x: x[0], reverse=True)
+    item_xml = '\n'.join(item[1] for item in items)
+
+    rss = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>{site_title}</title>
+    <link>{site_link}</link>
+    <description>{site_desc}</description>
+    <language>{language}</language>
+    <lastBuildDate>{build_date}</lastBuildDate>
+    <generator>WingTip</generator>
+{item_xml}
+  </channel>
+</rss>
+"""
+    with open(output_path, 'w', encoding='utf8') as f:
+        f.write(rss)
+    print(f"Generated RSS feed: {output_path}")
 
 def generate_syntax_css():
     """Generate syntax highlighting CSS for both light and dark modes"""
@@ -761,6 +848,10 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     else:
         concat_docs_url = f"{BASE_URL}/{concat_docs_filename}"
 
+    # URL for the RSS feed
+    rss_filename = CONFIG.get("rss_filename", "feed.xml")
+    feed_url = rss_filename if BASE_URL == '.' else f"{BASE_URL}/{rss_filename}"
+
     # Determine raw markdown content to pass to template
     raw_markdown_for_template = ""
     if add_edit_link: # Only try to read if it's a page that would have source
@@ -922,6 +1013,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         base_url=BASE_URL,
         favicon_url=favicon_url,
         concat_docs_url=concat_docs_url,
+        feed_url=feed_url,
         raw_markdown_content=raw_markdown_for_template,
         custom_theme_variables_style=custom_theme_variables_style,
         json_ld=json_ld_script
@@ -1142,6 +1234,7 @@ def main():
 
     generate_search_index(search_data_for_index, OUTPUT_DIR)
     write_sitemap_xml(sitemap_pages)
+    generate_rss_feed(sitemap_pages, OUTPUT_DIR)
     write_llms_txt(nav_pages)
     write_robots_txt()
     
