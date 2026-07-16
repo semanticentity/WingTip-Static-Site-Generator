@@ -2,24 +2,24 @@
 
 ## Feature Comparison
 
-| Feature                 | WingTip v1                   | MkDocs | Docusaurus | VitePress |
-| ----------------------- | ---------------------------- | ------ | ---------- | --------- |
-| **Markdown Support**    | Advanced (GFM + extras)      | Good   | Advanced   | Advanced  |
-| **Code Highlighting**   | Pygments (themed)            | Good   | Advanced   | Advanced  |
-| **Dark Mode**           | Auto + toggle + CSS vars     | Basic  | Advanced   | Advanced  |
-| **Live Reload**         | Full (w/ scroll restore)     | Good   | Advanced   | Advanced  |
-| **Auto Sidebar**        | Yes                          | Yes    | Advanced   | Advanced  |
-| **Search**              | Client-side (JSON)           | Basic  | Advanced   | Good      |
-| **TOC Navigation**      | Yes + keyboard shortcuts     | Good   | Advanced   | Good      |
-| **Prev/Next Links**     | Yes                          | Basic  | Good       | Good      |
-| **Social Cards**        | Built-in (Pillow)            | None   | Basic      | None      |
-| **SEO**                 | Canonical + sitemap + meta   | Basic  | Advanced   | Good      |
-| **Theme System**        | CSS vars + JSON config       | Basic  | Advanced   | Good      |
-| **External Links**      | Configurable + new tab      | Basic  | Basic      | Basic     |
-| **Math Support**        | KaTeX                       | Plugin | MDX        | Plugin    |
-| **Admonitions**         | Yes (Material style)         | Plugin | MDX        | Plugin    |
-| **Analytics**           | Not yet                      | Basic  | Advanced   | Good      |
-| **Versioning**          | Not yet                      | No     | Yes        | No        |
+| Feature                       | WingTip v1                                       | MkDocs | Docusaurus | VitePress | Mintlify |
+| ----------------------------- | ------------------------------------------------ | ------ | ---------- | --------- | -------- |
+| **Markdown Support**          | Advanced (GFM + extras)                          | Good   | Advanced   | Advanced  | Advanced |
+| **Code Highlighting**         | Pygments (themed)                                | Good   | Advanced   | Advanced  | Advanced |
+| **Dark Mode**                 | Auto + toggle + CSS vars                         | Basic  | Advanced   | Advanced  | Advanced |
+| **Live Reload**               | Full (w/ scroll restore)                         | Good   | Advanced   | Advanced  | Advanced |
+| **Auto Sidebar**              | Yes                                              | Yes    | Advanced   | Advanced  | Advanced |
+| **Search**                    | Client-side (JSON)                               | Basic  | Advanced   | Good      | Advanced |
+| **TOC Navigation**            | Yes + keyboard shortcuts                         | Good   | Advanced   | Good      | Good     |
+| **Prev/Next Links**           | Yes                                              | Basic  | Good       | Good      | Good     |
+| **Social Cards**              | Built-in (Pillow)                                | None   | Basic      | None      | Built-in |
+| **SEO (frontmatter overrides)** | Advanced (per-page title, canonical, noindex, OG/Twitter, keywords) | Basic  | Advanced   | Good      | Advanced |
+| **Theme System**              | CSS vars + JSON config                           | Basic  | Advanced   | Good      | Advanced |
+| **External Links**            | Configurable + new tab                           | Basic  | Basic      | Basic     | Basic    |
+| **Math Support**              | KaTeX                                            | Plugin | MDX        | Plugin    | Good     |
+| **Admonitions**               | Yes (Material style)                             | Plugin | MDX        | Plugin    | Yes      |
+| **Analytics**                 | Not yet                                          | Basic  | Advanced   | Good      | Built-in |
+| **Versioning**                | Not yet                                          | No     | Yes        | No        | Yes      |
 
 ## Planned Features
 
@@ -61,11 +61,12 @@
 
 ### SEO & Output Polish
 
-* JSON-LD structured data for articles
-* Author/date metadata in frontmatter
+* ~~JSON-LD structured data for articles~~ (Implemented in v0.4.0)
+* ~~Per-page SEO frontmatter overrides (title, description, keywords, canonical, noindex, Open Graph, Twitter cards)~~ (Implemented in v0.5.0)
+* Author/date metadata in frontmatter (author implemented; publish date pending)
 * RSS feed generation
 * Animated copy-to-clipboard feedback
-* Custom 404 page
+* ~~Custom 404 page~~ (Implemented in v0.4.1)
 
 ### Longer-Term Ideas
 
