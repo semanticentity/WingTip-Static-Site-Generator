@@ -278,7 +278,7 @@ def write_llms_txt(nav_pages):
     if description:
         lines.append(f"\n> {description}\n")
 
-    for title, html_file, md_path in nav_pages:
+    for title, html_file, md_path, _front in nav_pages:
         lines.append(f"- [{title}]({html_file})")
 
     lines.append("\n## Optional\n")
