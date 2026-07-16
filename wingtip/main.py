@@ -87,22 +87,51 @@ NOTES:
 """
     print(show_help.__doc__)
 
+def _package_version(default="0.0.0"):
+    """Read the version from installed package metadata, not a hardcoded string.
+
+    pyproject.toml is the single source of truth. Falls back for a bare
+    checkout that was never pip-installed.
+    """
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            return version("wingtip")
+        except PackageNotFoundError:
+            return default
+    except Exception:
+        return default
+
+
 # Load config
 DEFAULT_CONFIG = {
-    "project": "WingTip",
-    "tagline": "Clean docs that soar",
-    "description": "Minimal static site generator for beautiful documentation. Clean Markdown to HTML conversion with modern features.",
+    # base_url MUST have a default. It is read at import time, so a missing key
+    # here is not a feature failure -- it is `wingtip --help` raising KeyError.
+    # "." yields relative URLs, which is what you want for local preview.
+    "base_url": ".",
+    # Canonical key is project_name. "project" is kept as a legacy alias and
+    # normalised below; everything downstream reads project_name.
+    "project_name": "WingTip",
+    "tagline": "",
+    "description": "",
     "author": "",
     "og_image": "social-card.png",
     "twitter_handle": "",
     "concat_docs_filename": "llms-full.txt",
-    "version": "0.4.1",
+    "version": _package_version(),
     "repo_url": "",
 }
 CFG_PATH = pathlib.Path("config.json")
 CONFIG = DEFAULT_CONFIG.copy()
 if CFG_PATH.exists():
     CONFIG.update(json.loads(CFG_PATH.read_text()))
+
+# Reconcile the legacy "project" alias with project_name so old configs and old
+# template vars both keep working, and neither can silently resolve to "".
+if CONFIG.get("project") and not CONFIG.get("project_name"):
+    CONFIG["project_name"] = CONFIG["project"]
+CONFIG["project_name"] = CONFIG.get("project_name") or "Documentation"
+CONFIG["project"] = CONFIG["project_name"]
 
 THEME_CFG_PATH = pathlib.Path("theme.json")
 THEME_CONFIG = {}
@@ -112,7 +141,7 @@ if THEME_CFG_PATH.exists():
     except json.JSONDecodeError as e:
         print(f"Warning: Could not parse theme.json: {e}. Using default theme.")
 
-BASE_URL = CONFIG["base_url"].rstrip("/") or "."
+BASE_URL = (CONFIG.get("base_url") or ".").rstrip("/") or "."
 
 import importlib.resources
 
@@ -306,6 +335,20 @@ def generate_syntax_css():
     with open(css_path, 'w') as f:
         f.write(css_content)
 
+def package_static_dir():
+    """Absolute path to the static assets shipped inside the wingtip package.
+
+    Mirrors load_template()'s resolution: importlib.resources when installed,
+    __file__ when running from a checkout.
+    """
+    try:
+        return str(importlib.resources.files("wingtip").joinpath("static"))
+    except Exception:
+        pass
+    local = os.path.join(os.path.dirname(__file__), "static")
+    return local if os.path.isdir(local) else None
+
+
 def copy_static_files():
     """Copy static files to output directory"""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -322,25 +365,44 @@ def copy_static_files():
         except Exception as e:
             print(f"Warning: Failed to download favicon: {e}")
 
-    # Copy the entire 'static' directory if it exists
-    static_src_dir = "static"
-    if os.path.isdir(static_src_dir): # Source must be a directory
-        static_dest_dir = os.path.join(OUTPUT_DIR, "static")
+    # Static assets resolve in two layers:
+    #
+    #   1. package defaults  (wingtip/static/)  -- always present once installed
+    #   2. project overlay   (./static/)        -- optional, wins on conflict
+    #
+    # Layer 1 is why `pip install wingtip` produces a styled site. Before this,
+    # copy_static_files() only ever looked at CWD, so an installed user's pages
+    # requested static/css/custom.css and got three 404s and an unstyled site.
+    static_dest_dir = os.path.join(OUTPUT_DIR, "static")
 
-        # Handle existing destination: remove if it's a file or a directory
-        if os.path.exists(static_dest_dir):
-            if os.path.isdir(static_dest_dir):
-                shutil.rmtree(static_dest_dir)
-            else:
-                os.remove(static_dest_dir) # Remove if it's a file
+    if os.path.exists(static_dest_dir):
+        if os.path.isdir(static_dest_dir):
+            shutil.rmtree(static_dest_dir)
+        else:
+            os.remove(static_dest_dir)
 
+    copied_from = []
+
+    pkg_static = package_static_dir()
+    if pkg_static and os.path.isdir(pkg_static):
         try:
-            shutil.copytree(static_src_dir, static_dest_dir)
-            print(f"Copied static assets from '{static_src_dir}' to '{static_dest_dir}'")
-        except FileNotFoundError:
-             print(f"Warning: Source static directory '{static_src_dir}' not found. Skipping copy.")
+            shutil.copytree(pkg_static, static_dest_dir)
+            copied_from.append("package defaults")
         except Exception as e:
-            print(f"Warning: Could not copy static assets from '{static_src_dir}': {e}")
+            print(f"Warning: Could not copy bundled static assets: {e}")
+
+    project_static = "static"
+    if os.path.isdir(project_static):
+        try:
+            shutil.copytree(project_static, static_dest_dir, dirs_exist_ok=True)
+            copied_from.append(f"'{project_static}'")
+        except Exception as e:
+            print(f"Warning: Could not copy static assets from '{project_static}': {e}")
+
+    if copied_from:
+        print(f"Copied static assets ({' + '.join(copied_from)}) to '{static_dest_dir}'")
+    else:
+        print("Warning: no static assets found; pages will render unstyled.")
 
 
 def extract_title(md):
@@ -369,31 +431,6 @@ def build_navigation(current_file: str) -> str:
     nav_html.append('</ul>')
     nav_html.append('</div>')
     return '\n'.join(nav_html)
-
-def get_prev_next_links(current_file: str) -> tuple[str, str]:
-    """Get the previous and next page links for navigation."""
-    docs_dir = os.path.join(os.path.dirname(__file__), 'docs')
-    if not os.path.exists(docs_dir):
-        return '', ''
-
-    # Get all markdown files
-    md_files = sorted([f for f in os.listdir(docs_dir) if f.endswith('.md')])
-    
-    # Find current index
-    try:
-        current_index = md_files.index(os.path.basename(current_file))
-    except ValueError:
-        return '', ''
-
-    # Get prev/next files
-    prev_file = md_files[current_index - 1] if current_index > 0 else ''
-    next_file = md_files[current_index + 1] if current_index < len(md_files) - 1 else ''
-
-    # Build links
-    prev_link = f'<a href="{prev_file.replace(".md", ".html")}" class="prev">← {prev_file.replace(".md", "").title()}</a>' if prev_file else ''
-    next_link = f'<a href="{next_file.replace(".md", ".html")}" class="next">{next_file.replace(".md", "").title()} →</a>' if next_file else ''
-
-    return prev_link, next_link
 
 def add_codeblock_copy_buttons(html: str) -> str:
     """Add copy buttons to code blocks."""
@@ -488,23 +525,28 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             self.config = self.load_config()
 
         def load_config(self):
-            """Load external link configuration from config.json"""
-            try:
-                with open('config.json', 'r') as f:
-                    config = json.load(f)
-                return config.get('external_links', {
-                    'open_in_new_tab': True,
-                    'exclude_domains': [],
-                    'include_domains': [],
-                    'exclude_paths': [],
-                    'attributes': {
-                        'rel': 'noopener noreferrer',
-                        'class': 'external-link'
-                    }
-                })
-            except Exception as e:
-                print(f"Warning: Could not load external link config: {e}")
-                return {}
+            """External link configuration, defaulting when no config.json exists.
+
+            Reads the already-parsed CONFIG rather than re-opening config.json
+            off disk -- the old version warned twice per build for every user
+            without a config file, which is the documented zero-config path.
+            """
+            defaults = {
+                'open_in_new_tab': True,
+                'exclude_domains': [],
+                'include_domains': [],
+                'exclude_paths': [],
+                'attributes': {
+                    'rel': 'noopener noreferrer',
+                    'class': 'external-link'
+                }
+            }
+            overrides = CONFIG.get('external_links')
+            if not isinstance(overrides, dict):
+                return defaults
+            merged = defaults.copy()
+            merged.update(overrides)
+            return merged
 
         def is_external_link(self, href):
             """Check if a URL is external (starts with http:// or https://)"""
@@ -740,7 +782,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         page_url=page_url,
         markdown_url=markdown_alternate_url,
         content=html,
-        project=CONFIG.get("project_name", ""),
+        project=CONFIG.get("project_name") or "Documentation",
         description=page_description,
         language=language,
         og_locale=og_locale,
@@ -843,6 +885,21 @@ def main():
     if args.output:
         OUTPUT_DIR = args.output
 
+    # Without a config.json, DEFAULT_CONFIG's project_name would brand every
+    # unconfigured user's site "WingTip". Derive it from the README H1, then
+    # the directory name, before anything renders.
+    if not CFG_PATH.exists():
+        derived = None
+        if os.path.exists("README.md"):
+            with open("README.md", "r", encoding="utf8") as f:
+                derived = extract_title(remove_frontmatter(f.read()))
+        if not derived or derived == "Untitled":
+            derived = os.path.basename(os.path.abspath(".")) or "Documentation"
+        CONFIG["project_name"] = derived
+        CONFIG["project"] = derived
+        if not CONFIG.get("description"):
+            CONFIG["description"] = f"Documentation for {derived}."
+
     if args.source != ".":
         os.chdir(args.source)
 
@@ -863,10 +920,11 @@ def main():
             # For direct script execution
             from .generate_card import generate_social_card
         generate_social_card(
-            social.get("title", CONFIG["project"]),
-            social.get("tagline", "Make your docs fly."),
+            social.get("title", CONFIG["project_name"]),
+            social.get("tagline") or CONFIG.get("tagline") or "",
             theme=social.get("theme", "light"),
-            font=social.get("font", "Poppins")
+            font=social.get("font", "Poppins"),
+            logo=social.get("logo"),
         )
 
     if not CONFIG["og_image"]:
