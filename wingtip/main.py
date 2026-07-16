@@ -15,7 +15,46 @@ from string import Template
 from bs4 import BeautifulSoup 
 from datetime import datetime
 import yaml 
-from latex_extension import LaTeXPreservationExtension
+import subprocess
+from .latex_extension import LaTeXPreservationExtension
+
+_last_modified_cache = {}
+
+def get_last_modified(filepath: str) -> str:
+    """
+    Get the last modified date of a file from git history (ISO 8601 format).
+    Falls back to file mtime if git is not available or the file is uncommitted.
+    Note: Requires checkout fetch-depth: 0 in CI to work correctly.
+    """
+    if filepath in _last_modified_cache:
+        return _last_modified_cache[filepath]
+
+    try:
+        result = subprocess.run(
+            ['git', 'log', '-1', '--format=%cI', filepath],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        out = result.stdout.strip()
+        if out:
+            _last_modified_cache[filepath] = out
+            return out
+    except Exception:
+        pass
+
+    try:
+        mtime = os.path.getmtime(filepath)
+        dt = datetime.fromtimestamp(mtime).isoformat()
+        if not dt.endswith('Z') and '+' not in dt:
+            dt += '+00:00'
+        _last_modified_cache[filepath] = dt
+        return dt
+    except OSError:
+        now = datetime.now().isoformat()
+        if not now.endswith('Z') and '+' not in now:
+            now += '+00:00'
+        return now
 
 OUTPUT_DIR = "docs/site"
 
@@ -53,10 +92,10 @@ DEFAULT_CONFIG = {
     "project": "WingTip",
     "tagline": "Clean docs that soar",
     "description": "Minimal static site generator for beautiful documentation. Clean Markdown to HTML conversion with modern features.",
-    "author": "SemanticEntity",
+    "author": "",
     "og_image": "social-card.png",
     "twitter_handle": "",
-    "concat_docs_filename": "wingtip.txt",
+    "concat_docs_filename": "llms-full.txt",
     "version": "0.4.1",
     "repo_url": "",
 }
@@ -75,10 +114,18 @@ if THEME_CFG_PATH.exists():
 
 BASE_URL = CONFIG["base_url"].rstrip("/") or "."
 
+import importlib.resources
+
 # Load and format template
 def load_template():
-    path = os.path.join(os.path.dirname(__file__), "template.html")
-    raw = pathlib.Path(path).read_text(encoding="utf8")
+    try:
+        raw = importlib.resources.read_text("wingtip", "template.html", encoding="utf8")
+    except AttributeError:
+        # Fallback for Python 3.11+
+        raw = importlib.resources.files("wingtip").joinpath("template.html").read_text(encoding="utf8")
+    except Exception:
+        path = os.path.join(os.path.dirname(__file__), "template.html")
+        raw = pathlib.Path(path).read_text(encoding="utf8")
     return Template(raw)
 
 TEMPLATE = load_template()
@@ -161,11 +208,33 @@ def make_url(rel_path):
         rel_path = ""
     return f"{BASE_URL}/{rel_path}".rstrip("/")
 
+def write_llms_txt(nav_pages):
+    """Generates llms.txt index following the llmstxt.org specification."""
+    lines = []
+    lines.append(f"# {CONFIG.get('project', 'Project')}")
+    description = CONFIG.get("description")
+    if description:
+        lines.append(f"\n> {description}\n")
+
+    for title, html_file, md_path in nav_pages:
+        lines.append(f"- [{title}]({html_file})")
+
+    lines.append("\n## Optional\n")
+    concat_docs_filename = CONFIG.get("concat_docs_filename", "llms-full.txt")
+    lines.append(f"- [{CONFIG.get('project', 'Project')} Full Documentation]({concat_docs_filename})")
+
+    output_path = os.path.join(OUTPUT_DIR, "llms.txt")
+    with open(output_path, "w", encoding="utf8") as f:
+        f.write("\n".join(lines) + "\n")
+    print(f"Generated llms.txt: {output_path}")
+
 def write_robots_txt():
     lines = [
         "User-agent: *",
         "Allow: /",
-        "Disallow: /search_index.json"
+        "Disallow: /search_index.json",
+        f"Allow: /{CONFIG.get('concat_docs_filename', 'llms-full.txt')}",
+        "Allow: /llms.txt"
     ]
 
     # Determine Sitemap URL
@@ -188,7 +257,10 @@ def write_sitemap_xml(pages):
             rel_path = path.replace(OUTPUT_DIR + "/", "").lstrip("/")
             f.write(f'  <url>\n    <loc>{BASE_URL}/{rel_path}</loc>\n')
             if md_path and os.path.exists(md_path):
-                lastmod = datetime.fromtimestamp(os.path.getmtime(md_path)).strftime('%Y-%m-%d')
+                lastmod_iso = get_last_modified(md_path)
+                # Parse the iso string and format to YYYY-MM-DD
+                lastmod_dt = datetime.fromisoformat(lastmod_iso.replace('Z', '+00:00'))
+                lastmod = lastmod_dt.strftime('%Y-%m-%d')
                 f.write(f'    <lastmod>{lastmod}</lastmod>\n')
             f.write('  </url>\n')
         f.write('</urlset>\n')
@@ -274,57 +346,6 @@ def copy_static_files():
 def extract_title(md):
     match = re.search(r"^# (.+)", md, re.MULTILINE)
     return match.group(1).strip() if match else "Untitled"
-
-def add_codeblock_copy_buttons(html):
-    soup = BeautifulSoup(html, "html.parser")
-    for i, code in enumerate(soup.select("pre > code")):
-        # Normalize class="language-xyz" to class="xyz"
-        classes = code.get("class", [])
-        for j, cls in enumerate(classes):
-            if cls.startswith("language-"):
-                classes[j] = cls.replace("language-", "")
-        if not classes:
-            classes = ["plaintext"]
-        code["class"] = classes
-
-        # Add copy button
-        btn = soup.new_tag("button", type="button")
-        btn.string = "📌"
-        btn["class"] = "copy-btn"
-        btn["style"] = "float:right;margin-bottom:0.5em;display:inline-block;font-size:0.8em;padding:10px;position:absolute;right:-15px;top:-10px;"
-        btn["data-code-id"] = f"codeblock-{i+1}"
-        code["id"] = f"codeblock-{i+1}"
-        code.parent.insert_before(btn)
-
-    # Inject copy script if needed
-    if not soup.find_all("script", string=lambda s: s and "copy-btn" in s):
-        script = soup.new_tag("script")
-        script.string = '''
-        document.querySelectorAll('.copy-btn').forEach(function(btn){
-          btn.addEventListener('click', function(){
-            var codeId = btn.getAttribute('data-code-id');
-            var codeElem = document.getElementById(codeId);
-            if (codeElem) {
-              var text = codeElem.innerText;
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(text);
-              } else {
-                var textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-              }
-              btn.innerText = 'Copied!';
-              setTimeout(function(){ btn.innerText = '📌'; }, 1200);
-            }
-          });
-        });
-        '''
-        soup.body.append(script) if soup.body else soup.append(script)
-
-    return str(soup)
 
 
 
@@ -568,7 +589,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             "admonition",    # !!! note style admonitions
             "tables",        # Must be after admonition for nested tables
             LinkRewriterExtension(),
-            "latex_extension"
+            "wingtip.latex_extension"
         ],
         output_format="html5"
     )
@@ -630,7 +651,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     favicon_url = 'favicon.png' if BASE_URL == '.' else f'{BASE_URL}/favicon.png'
 
     # Construct URL for the concatenated docs file
-    concat_docs_filename = CONFIG.get("concat_docs_filename", "concatenated_docs.txt")
+    concat_docs_filename = CONFIG.get("concat_docs_filename", "llms-full.txt")
     # For local development (BASE_URL is '.'), use a relative path
     if BASE_URL == '.':
         concat_docs_url = concat_docs_filename
@@ -649,8 +670,42 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # Generate custom theme CSS
     custom_theme_variables_style = generate_theme_css(THEME_CONFIG)
 
+    # Determine proper OG type and locale
+    og_type = "website" if os.path.basename(output_filename) == "index.html" else "article"
+
+    # Fix og:locale format
+    language = CONFIG.get("language", "en")
+    og_locale = "en_US" if language == "en" else language
+
     # Generate JSON-LD Schema
-    lastmod_iso = datetime.fromtimestamp(os.path.getmtime(input_path)).isoformat()
+    lastmod_iso = get_last_modified(input_path)
+
+    tech_article = {
+        "@type": "TechArticle",
+        "headline": title,
+        "description": page_description,
+        "dateModified": lastmod_iso,
+        "image": f"{BASE_URL}/{CONFIG.get('og_image', 'social-card.png')}"
+    }
+
+    author_name = CONFIG.get("author")
+    if author_name:
+        tech_article["author"] = {
+            "@type": "Person",
+            "name": author_name
+        }
+
+    project_name = CONFIG.get("project_name")
+    if project_name:
+        tech_article["publisher"] = {
+            "@type": "Organization",
+            "name": project_name,
+            "logo": {
+                "@type": "ImageObject",
+                "url": f"{BASE_URL}/{CONFIG.get('favicon', 'favicon.png')}"
+            }
+        }
+
     json_ld = {
         "@context": "https://schema.org",
         "@graph": [
@@ -671,42 +726,28 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
                     }
                 ]
             },
-            {
-                "@type": "TechArticle",
-                "headline": title,
-                "description": page_description,
-                "author": {
-                    "@type": "Person",
-                    "name": CONFIG.get("author", "SemanticEntity")
-                },
-                "publisher": {
-                    "@type": "Organization",
-                    "name": CONFIG.get("project_name", "WingTip"),
-                    "logo": {
-                        "@type": "ImageObject",
-                        "url": f"{BASE_URL}/{CONFIG.get('favicon', 'favicon.png')}"
-                    }
-                },
-                "dateModified": lastmod_iso,
-                "image": f"{BASE_URL}/{CONFIG.get('og_image', 'social-card.png')}"
-            }
+            tech_article
         ]
     }
     json_ld_script = f'<script type="application/ld+json">\n{json.dumps(json_ld, indent=2)}\n</script>'
 
-    language = CONFIG.get("language", "en")
+    # Properly construct the markdown alternate URL to avoid .md extension applied to the root domain
+    markdown_alternate_url = f"{BASE_URL}/{os.path.basename(output_filename)}.md"
 
     page = TEMPLATE.substitute(
         title=title,
         canonical_url=page_url,
         page_url=page_url,
+        markdown_url=markdown_alternate_url,
         content=html,
-        project=CONFIG["project_name"],
+        project=CONFIG.get("project_name", ""),
         description=page_description,
         language=language,
-        author=CONFIG["author"],
-        og_image=CONFIG["og_image"],
-        twitter_handle=CONFIG["twitter_handle"],
+        og_locale=og_locale,
+        og_type=og_type,
+        author=CONFIG.get("author", ""),
+        og_image=CONFIG.get("og_image", ""),
+        twitter_handle=CONFIG.get("twitter_handle", ""),
         version=CONFIG["version"],
         year=datetime.now().year,
         repo_url=CONFIG["repo_url"],
@@ -724,6 +765,12 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
     with open(output_filename, "w", encoding="utf8") as f:
         f.write(page)
+
+    # Write the markdown sibling file (.html.md)
+    if raw_markdown_for_template:
+        md_sibling_path = output_filename + ".md"
+        with open(md_sibling_path, "w", encoding="utf8") as f:
+            f.write(raw_markdown_for_template)
 
 def get_page_nav(pages, current_index):
     """Get previous and next page links"""
@@ -761,7 +808,7 @@ def generate_concatenated_markdown():
 
     concatenated_content = "".join(all_markdown_content)
 
-    output_filename = CONFIG.get("concat_docs_filename", "concatenated_docs.txt")
+    output_filename = CONFIG.get("concat_docs_filename", "llms-full.txt")
     full_output_path = os.path.join(OUTPUT_DIR, output_filename)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -788,12 +835,16 @@ def main():
     parser.add_argument("--regen-card", action="store_true", help="Force regenerate social card")
     parser.add_argument("--output", help="Output directory (default: docs/site)")
     parser.add_argument("--serve", action="store_true", help="Start dev server after build")
+    parser.add_argument("--source", help="Source content directory (default: current directory)", default=".")
     args = parser.parse_args()
     
     # Update output dir if specified
     global OUTPUT_DIR
     if args.output:
         OUTPUT_DIR = args.output
+
+    if args.source != ".":
+        os.chdir(args.source)
 
     copy_static_files()
     generate_concatenated_markdown() # Call the new function here
@@ -810,7 +861,7 @@ def main():
             from wingtip.generate_card import generate_social_card
         except ImportError:
             # For direct script execution
-            from generate_card import generate_social_card
+            from .generate_card import generate_social_card
         generate_social_card(
             social.get("title", CONFIG["project"]),
             social.get("tagline", "Make your docs fly."),
@@ -892,6 +943,7 @@ def main():
 
     generate_search_index(search_data_for_index, OUTPUT_DIR)
     write_sitemap_xml(pages)
+    write_llms_txt(nav_pages)
     write_robots_txt()
     
     # Clean up obsolete files
@@ -911,7 +963,7 @@ def main():
             print("\nStarting development server...")
             try:
                 # First attempt to start the server
-                result = subprocess.run([sys.executable, str(serve_script)], capture_output=True, text=True)
+                result = subprocess.run([sys.executable, "-m", "wingtip.serve"], capture_output=True, text=True)
                 if result.returncode != 0 and "Address already in use" in result.stderr:
                     print("Port 8000 is in use. Attempting to free it...")
                     if kill_script.exists():
@@ -921,7 +973,7 @@ def main():
                             print("Successfully freed port 8000. Retrying server start...")
                             time.sleep(1)  # Give the system a moment
                             # Try starting the server again
-                            subprocess.run([sys.executable, str(serve_script)], check=True)
+                            subprocess.run([sys.executable, "-m", "wingtip.serve"], check=True)
                         except subprocess.CalledProcessError as e:
                             print(f"Failed to free port: {e}")
                             sys.exit(1)
