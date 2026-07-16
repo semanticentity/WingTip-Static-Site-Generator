@@ -771,6 +771,48 @@ def add_codeblock_copy_buttons(html: str) -> str:
     
     return str(soup)
 
+def _get_image_size(path):
+    """Return (width, height) for a local image file, or None on failure."""
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            return str(im.width), str(im.height)
+    except Exception:
+        return None
+
+def _image_size_for_src(src, input_path):
+    """Resolve an <img src> to a local file and return its intrinsic size."""
+    if not src or src.startswith(('http://', 'https://', '//', 'data:')):
+        return None
+
+    candidates = []
+    if src.startswith('/'):
+        candidates.append(src.lstrip('/'))
+    else:
+        input_dir = os.path.dirname(input_path) or '.'
+        candidates.append(os.path.normpath(os.path.join(input_dir, src)))
+        # Also try relative to site root
+        candidates.append(src)
+
+    # Try a few likely asset prefixes for sites that use /static or /assets
+    prefixed = []
+    for path in candidates:
+        for prefix in ('static', 'assets'):
+            prefixed.append(os.path.join(prefix, path))
+    candidates.extend(prefixed)
+
+    seen = set()
+    for path in candidates:
+        norm = os.path.normpath(path)
+        if norm in seen:
+            continue
+        seen.add(norm)
+        if os.path.exists(norm):
+            size = _get_image_size(norm)
+            if size:
+                return size
+    return None
+
 def remove_frontmatter(md_text):
     """Removes frontmatter from markdown text."""
     if md_text.startswith("---"):
@@ -951,6 +993,18 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         wrapper = soup.new_tag('div', attrs={'class': 'table-responsive'})
         table.insert_before(wrapper)
         wrapper.append(table)
+
+    # Optimize images: lazy load and add intrinsic dimensions for local images
+    for img in soup.find_all('img'):
+        if not img.get('loading'):
+            img['loading'] = 'lazy'
+        if not img.get('decoding'):
+            img['decoding'] = 'async'
+        if 'width' not in img.attrs and 'height' not in img.attrs:
+            size = _image_size_for_src(img.get('src', ''), input_path)
+            if size:
+                img['width'], img['height'] = size
+
     # Serialize soup back to HTML for further processing
     html = str(soup)
 
