@@ -42,7 +42,7 @@ def get_google_font(font_name):
         print(f"Failed to download Google Font {font_name}: {e}")
         return None
 
-def generate_social_card(title, tagline, theme="light", font="Poppins"):
+def generate_social_card(title, tagline, theme="light", font="Poppins", logo=None):
     size = (1200, 630)
     bg_color = "#f6ede3"  # Warm background color
     fg_color = "#000000"  # Black text
@@ -76,9 +76,15 @@ def generate_social_card(title, tagline, theme="light", font="Poppins"):
     # Load and resize custom logo
     logo_width = 0  # Default if logo fails to load
     
+    # Logo is opt-in and project-relative. Hardcoding "wingtip-logo.png" meant
+    # every user's build printed a failure for an asset only this repo has.
+    logo_path = logo or "wingtip-logo.png"
+    if not os.path.exists(logo_path):
+        logo_path = None
+
     try:
-        # Load the custom logo
-        logo_path = "wingtip-logo.png"
+        if not logo_path:
+            raise FileNotFoundError("no logo configured")
         logo_img = Image.open(logo_path)
         
         # Convert to RGBA if needed
@@ -97,9 +103,10 @@ def generate_social_card(title, tagline, theme="light", font="Poppins"):
         
         # Paste logo with alpha channel
         card.paste(logo_img, (logo_x, logo_y), logo_img)
+    except FileNotFoundError:
+        pass  # No logo: text starts from the margin. Not an error.
     except Exception as e:
-        print(f"Failed to load logo: {e}")
-        # If logo fails, text will start from margin
+        print(f"Warning: could not render logo '{logo_path}': {e}")
     
     # Position text to the right of logo with spacing
     text_x = logo_width + 0  # 0px gap from logo

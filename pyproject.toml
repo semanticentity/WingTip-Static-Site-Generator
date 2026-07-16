@@ -4,21 +4,61 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wingtip"
-version = "0.1.0"
-description = "A minimal static site generator for documentation"
-authors = [
-  { name="SemanticEntity", email="user@example.com" }
-]
+version = "0.4.1"
+description = "A static site generator for documentation that is built to be indexed and cited."
 readme = "README.md"
-requires-python = ">=3.8"
-dependencies = [
-  "markdown",
-  "beautifulsoup4",
-  "livereload",
-  "pillow",
-  "PyYAML",
-  "Pygments"
+license = { text = "MIT" }
+authors = [{ name = "SemanticEntity" }]
+keywords = ["documentation", "static-site-generator", "seo", "llms-txt", "markdown", "aeo"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Documentation",
+  "Topic :: Software Development :: Documentation",
 ]
+
+# 3.9, not 3.8: importlib.resources.files() is 3.9+, and PEP 585 builtin
+# generics in evaluated annotations raise TypeError on 3.8.
+requires-python = ">=3.9"
+
+dependencies = [
+  "markdown>=3.5",
+  "beautifulsoup4>=4.12",
+  "Pygments>=2.17",
+  "Pillow>=10.0",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+# livereload is only used by `wingtip --serve`. Out of the base install so a
+# CI docs build doesn't pull a dev server.
+serve = ["livereload>=2.6"]
+dev = ["livereload>=2.6", "build", "twine"]
+
+[project.urls]
+Homepage = "https://semanticentity.github.io/WingTip-Static-Site-Generator"
+Source = "https://github.com/semanticentity/WingTip-Static-Site-Generator"
+Issues = "https://github.com/semanticentity/WingTip-Static-Site-Generator/issues"
 
 [project.scripts]
 wingtip = "wingtip.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["wingtip"]
+
+# Everything the generator needs at runtime must live inside the package.
+# static/ and fonts/ moved under wingtip/ for exactly this reason.
+artifacts = [
+  "wingtip/template.html",
+  "wingtip/static/**/*",
+  "wingtip/fonts/**/*",
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["wingtip", "README.md", "config.sample.json", "theme.json"]
