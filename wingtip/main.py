@@ -405,7 +405,40 @@ def copy_static_files():
         print("Warning: no static assets found; pages will render unstyled.")
 
 
+def parse_frontmatter(md_text):
+    """Parse YAML front matter if present and return a dict."""
+    if md_text.startswith('---'):
+        try:
+            end_marker = md_text.find('---', 3)
+            if end_marker != -1:
+                return yaml.safe_load(md_text[3:end_marker].strip()) or {}
+        except Exception as e:
+            print(f"Warning: Error parsing front matter: {e}")
+    return {}
+
+
+def resolve_public_url(path_or_url, default=None):
+    """Resolve a config/frontmatter asset path into a public URL."""
+    if not path_or_url and default:
+        path_or_url = default
+    if not path_or_url:
+        return ''
+    if path_or_url.startswith(('http://', 'https://')):
+        return path_or_url
+    rel = path_or_url
+    while rel.startswith('./'):
+        rel = rel[2:]
+    if rel.startswith('/'):
+        rel = rel[1:]
+    if BASE_URL == '.':
+        return rel
+    return f"{BASE_URL}/{rel}"
+
+
 def extract_title(md):
+    front = parse_frontmatter(md)
+    if front.get('title'):
+        return str(front['title']).strip()
     match = re.search(r"^# (.+)", md, re.MULTILINE)
     return match.group(1).strip() if match else "Untitled"
 
@@ -503,19 +536,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     with open(input_path, "r", encoding="utf8") as f:
         md = f.read()
     
-    # Check for YAML front matter
-    front_matter = {}
-    if md.startswith('---'):
-        try:
-            # Find the second '---' to extract front matter
-            end_marker = md.find('---', 3)
-            if end_marker != -1:
-                front_matter_text = md[3:end_marker].strip()
-                front_matter = yaml.safe_load(front_matter_text) or {}
-                # Remove front matter from markdown content
-                md = md[end_marker + 3:].strip()
-        except Exception as e:
-            print(f"Warning: Error parsing front matter: {e}")
+    front_matter = parse_frontmatter(md)
+    md = remove_frontmatter(md)
 
     # Create a custom link pattern processor
     class LinkRewriter(markdown.treeprocessors.Treeprocessor):
@@ -655,7 +677,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     html = str(soup)
 
     h1 = soup.find('h1')
-    title = h1.text if h1 else os.path.basename(input_path)
+    title = str(front_matter.get('title') or (h1.text if h1 else os.path.basename(input_path))).strip()
 
     # Get description from front matter or fallback to first paragraph
     page_description = front_matter.get('description')
@@ -666,7 +688,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         else:
             page_description = CONFIG.get("description", "")
     # Ensure description doesn't have newlines and is a reasonable length
-    page_description = page_description.replace('\n', ' ').replace('\r', '')
+    page_description = str(page_description).replace('\n', ' ').replace('\r', '')
     if len(page_description) > 160:
         page_description = page_description[:157] + "..."
 
@@ -685,8 +707,17 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         edit_url = f"https://github.com/{repo}/edit/{branch}/{path}"
         html += f'\n<p class="edit-link"><a href="{edit_url}">Edit this page on GitHub</a></p>'
 
-    # Get page URL
-    page_url = make_url(os.path.basename(output_filename))
+    # Canonical URL and page URL (allow per-page override)
+    canonical_override = front_matter.get('canonical') or front_matter.get('canonical_url')
+    if canonical_override:
+        canonical_override = str(canonical_override).strip()
+        if canonical_override.startswith(('http://', 'https://')):
+            page_url = canonical_url = canonical_override
+        else:
+            page_url = canonical_url = make_url(canonical_override)
+    else:
+        page_url = make_url(os.path.basename(output_filename))
+        canonical_url = page_url
 
     # Build page using global template
     # Handle favicon URL - if base_url is '.', use relative path
@@ -712,74 +743,110 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # Generate custom theme CSS
     custom_theme_variables_style = generate_theme_css(THEME_CONFIG)
 
-    # Determine proper OG type and locale
-    og_type = "website" if os.path.basename(output_filename) == "index.html" else "article"
+    # Determine proper OG type and locale (allow frontmatter overrides)
+    og_type = front_matter.get('og_type') or front_matter.get('og:type') or ("website" if os.path.basename(output_filename) == "index.html" else "article")
 
-    # Fix og:locale format
-    language = CONFIG.get("language", "en")
-    og_locale = "en_US" if language == "en" else language
+    # Page-level or site-level language
+    language = str(front_matter.get('language') or CONFIG.get("language", "en"))
+    og_locale = "en_US" if language == "en" else language.replace('-', '_')
+
+    # Robots directive: support `noindex: true` and explicit `robots:` frontmatter
+    robots = front_matter.get('robots')
+    if front_matter.get('noindex') or (isinstance(robots, str) and 'noindex' in robots.lower()):
+        robots = robots if isinstance(robots, str) and 'noindex' in robots.lower() else 'noindex, nofollow'
+        noindex = True
+    else:
+        robots = str(robots).strip() if robots else 'index, follow'
+        noindex = False
+
+    # Keywords meta
+    keywords = front_matter.get('keywords', '')
+    if isinstance(keywords, list):
+        keywords = ', '.join(str(k).strip() for k in keywords)
+    else:
+        keywords = str(keywords).strip()
+
+    # Per-page OG/Twitter overrides
+    og_title = str(front_matter.get('og_title') or front_matter.get('og:title') or title).strip()
+    og_description = str(front_matter.get('og_description') or front_matter.get('og:description') or page_description).strip()
+    og_image_url = resolve_public_url(
+        front_matter.get('og_image') or front_matter.get('og:image') or CONFIG.get('og_image'),
+        default='social-card.png'
+    )
+    twitter_title = str(front_matter.get('twitter_title') or front_matter.get('twitter:title') or og_title).strip()
+    twitter_description = str(front_matter.get('twitter_description') or front_matter.get('twitter:description') or og_description).strip()
+    twitter_image = front_matter.get('twitter_image') or front_matter.get('twitter:image')
+    if twitter_image:
+        twitter_image_url = resolve_public_url(twitter_image)
+    else:
+        twitter_image_url = og_image_url
+
+    author = str(front_matter.get('author') or CONFIG.get("author", "")).strip()
 
     # Generate JSON-LD Schema
     lastmod_iso = get_last_modified(input_path)
 
-    tech_article = {
-        "@type": "TechArticle",
-        "headline": title,
-        "description": page_description,
-        "dateModified": lastmod_iso,
-        "image": f"{BASE_URL}/{CONFIG.get('og_image', 'social-card.png')}"
-    }
-
-    author_name = CONFIG.get("author")
-    if author_name:
-        tech_article["author"] = {
-            "@type": "Person",
-            "name": author_name
+    json_ld_script = ""
+    if not noindex:
+        tech_article = {
+            "@type": "TechArticle",
+            "headline": title,
+            "description": page_description,
+            "dateModified": lastmod_iso,
+            "image": og_image_url
         }
 
-    project_name = CONFIG.get("project_name")
-    if project_name:
-        tech_article["publisher"] = {
-            "@type": "Organization",
-            "name": project_name,
-            "logo": {
-                "@type": "ImageObject",
-                "url": f"{BASE_URL}/{CONFIG.get('favicon', 'favicon.png')}"
+        if author:
+            tech_article["author"] = {
+                "@type": "Person",
+                "name": author
             }
-        }
 
-    json_ld = {
-        "@context": "https://schema.org",
-        "@graph": [
-            {
-                "@type": "BreadcrumbList",
-                "itemListElement": [
-                    {
-                        "@type": "ListItem",
-                        "position": 1,
-                        "name": "Home",
-                        "item": BASE_URL
-                    },
-                    {
-                        "@type": "ListItem",
-                        "position": 2,
-                        "name": title,
-                        "item": page_url
-                    }
-                ]
-            },
-            tech_article
-        ]
-    }
-    json_ld_script = f'<script type="application/ld+json">\n{json.dumps(json_ld, indent=2)}\n</script>'
+        project_name = CONFIG.get("project_name")
+        if project_name:
+            tech_article["publisher"] = {
+                "@type": "Organization",
+                "name": project_name,
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": resolve_public_url(CONFIG.get('favicon', 'favicon.png'))
+                }
+            }
+
+        json_ld = {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "Home",
+                            "item": BASE_URL
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": title,
+                            "item": page_url
+                        }
+                    ]
+                },
+                tech_article
+            ]
+        }
+        json_ld_script = f'<script type="application/ld+json">\n{json.dumps(json_ld, indent=2)}\n</script>'
 
     # Properly construct the markdown alternate URL to avoid .md extension applied to the root domain
     markdown_alternate_url = f"{BASE_URL}/{os.path.basename(output_filename)}.md"
 
     page = TEMPLATE.substitute(
         title=title,
-        canonical_url=page_url,
+        canonical_url=canonical_url,
         page_url=page_url,
+        keywords=keywords,
+        robots=robots,
         markdown_url=markdown_alternate_url,
         content=html,
         project=CONFIG.get("project_name") or "Documentation",
@@ -787,8 +854,13 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         language=language,
         og_locale=og_locale,
         og_type=og_type,
-        author=CONFIG.get("author", ""),
-        og_image=CONFIG.get("og_image", ""),
+        author=author,
+        og_title=og_title,
+        og_description=og_description,
+        og_image_url=og_image_url,
+        twitter_title=twitter_title,
+        twitter_description=twitter_description,
+        twitter_image_url=twitter_image_url,
         twitter_handle=CONFIG.get("twitter_handle", ""),
         version=CONFIG["version"],
         year=datetime.now().year,
@@ -813,6 +885,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         md_sibling_path = output_filename + ".md"
         with open(md_sibling_path, "w", encoding="utf8") as f:
             f.write(raw_markdown_for_template)
+
+    return front_matter
 
 def get_page_nav(pages, current_index):
     """Get previous and next page links"""
@@ -938,18 +1012,31 @@ def main():
     # First collect all doc files and their titles
     docs_dir = "docs"
     nav_pages = []
+    sitemap_pages = []
+
+    def _is_noindex(front):
+        if not isinstance(front, dict):
+            return False
+        if front.get('noindex'):
+            return True
+        robots = front.get('robots')
+        if isinstance(robots, str) and 'noindex' in robots.lower():
+            return True
+        return False
     
     # Start with README if it exists
     if os.path.exists("README.md"):
         with open("README.md", "r", encoding="utf8") as f:
             readme_content_raw = f.read()
+        readme_front = parse_frontmatter(readme_content_raw)
         readme_title = extract_title(readme_content_raw)
         readme_md_content_no_frontmatter = remove_frontmatter(readme_content_raw)
-        search_data_for_index.append({
-            "title": readme_title,
-            "content_md": readme_md_content_no_frontmatter,
-            "url": "index.html"
-        })
+        if not _is_noindex(readme_front):
+            search_data_for_index.append({
+                "title": readme_title,
+                "content_md": readme_md_content_no_frontmatter,
+                "url": "index.html"
+            })
         nav_pages.append((readme_title, "index.html", "README.md"))
     
     # Then collect all .md files from docs directory
@@ -959,9 +1046,10 @@ def main():
                 md_path = os.path.join(docs_dir, name)
                 with open(md_path, "r", encoding="utf8") as f:
                     md_content_raw = f.read()
+                front = parse_frontmatter(md_content_raw)
                 title = extract_title(md_content_raw)
 
-                if name != "404.md":
+                if name != "404.md" and not _is_noindex(front):
                     md_content_no_frontmatter = remove_frontmatter(md_content_raw)
                     html_filename = f"{os.path.splitext(name)[0]}.html"
                     search_data_for_index.append({
@@ -978,16 +1066,18 @@ def main():
         next_page = nav_pages[i+1][:2] if i < len(nav_pages)-1 else None
         
         output_path = os.path.join(OUTPUT_DIR, html_file)
-        convert_markdown_file(md_path, output_path, add_edit_link=True,
+        front = convert_markdown_file(md_path, output_path, add_edit_link=True,
                             prev_page=prev_page, next_page=next_page)
         pages.append((f"{OUTPUT_DIR}/{html_file}", md_path))
+        if not _is_noindex(front) and os.path.basename(output_path) != "404.html":
+            sitemap_pages.append((f"{OUTPUT_DIR}/{html_file}", md_path))
 
     # Process 404.md if it exists
     fourofour_md_path = pathlib.Path("404.md")
     if fourofour_md_path.exists():
         fourofour_html_path = pathlib.Path(OUTPUT_DIR) / "404.html"
         # Title will be extracted by convert_markdown_file from H1 or default to filename
-        convert_markdown_file(
+        front = convert_markdown_file(
             input_path=str(fourofour_md_path),
             output_filename=str(fourofour_html_path),
             add_edit_link=False,  # Typically no "edit this page" for a 404
@@ -1000,7 +1090,7 @@ def main():
         # This ensures it works with the permalink: /404.html front matter
 
     generate_search_index(search_data_for_index, OUTPUT_DIR)
-    write_sitemap_xml(pages)
+    write_sitemap_xml(sitemap_pages)
     write_llms_txt(nav_pages)
     write_robots_txt()
     

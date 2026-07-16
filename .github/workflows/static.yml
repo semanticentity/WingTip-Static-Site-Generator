@@ -38,7 +38,7 @@ jobs:
           pip install markdown Pygments Pillow beautifulsoup4 PyYAML
 
       - name: Build site
-        run: python main.py
+        run: python -m wingtip.main
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
