@@ -86,7 +86,7 @@
     * Version-aware navigation and search
     * Cross-version linking support
 * i18n / localization
-* Offline mode (PWA shell)
+* ~~Offline mode (PWA shell)~~ (Implemented in v0.5.0)
 * Plugin system (before/after hooks, Markdown extensions, theme plugins)
     * *Theme plugins could allow for entirely new site structures, custom JavaScript, advanced CSS processing (Sass, PostCSS), and template overrides, offering a much deeper level of customization than `theme.json`.*
 
