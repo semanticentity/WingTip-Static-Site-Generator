@@ -472,6 +472,36 @@ def _build_head_snippet(front_matter):
 
     return '\n'.join(snippets)
 
+def _build_hreflang_alternates(front_matter, canonical_url):
+    """Build <link rel=\"alternate\" hreflang=...> tags from frontmatter / config."""
+    if not canonical_url:
+        return ''
+    translations = front_matter.get('translations') or front_matter.get('hreflang') or {}
+    if not isinstance(translations, dict):
+        translations = {}
+    i18n_config = CONFIG.get('i18n') or {}
+    site_languages = i18n_config.get('languages', [])
+
+    alts = {}
+    for code, url in translations.items():
+        alts[str(code).strip()] = str(url).strip()
+    for lang_info in site_languages:
+        if isinstance(lang_info, dict):
+            code = str(lang_info.get('code', '')).strip()
+            url = lang_info.get('url')
+            if code and url and code not in alts:
+                alts[code] = str(url).strip()
+
+    if not alts:
+        return ''
+
+    current_lang = str(front_matter.get('lang') or front_matter.get('language') or CONFIG.get('language', 'en')).strip()
+    links = [f'<link rel="alternate" hreflang="{html_module.escape(current_lang)}" href="{html_module.escape(canonical_url)}">']
+    for code, url in alts.items():
+        links.append(f'<link rel="alternate" hreflang="{html_module.escape(code)}" href="{html_module.escape(resolve_public_url(url))}">')
+    links.append(f'<link rel="alternate" hreflang="x-default" href="{html_module.escape(canonical_url)}">')
+    return '\n  '.join(links)
+
 def _build_csp(front_matter):
     """Build a Content-Security-Policy string from config and per-page frontmatter."""
     csp = front_matter.get('csp')
@@ -1266,9 +1296,12 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # Determine proper OG type and locale (allow frontmatter overrides)
     og_type = front_matter.get('og_type') or front_matter.get('og:type') or ("website" if os.path.basename(output_filename) == "index.html" else "article")
 
-    # Page-level or site-level language
-    language = str(front_matter.get('language') or CONFIG.get("language", "en"))
+    # Page-level or site-level language (support `lang` alias)
+    language = str(front_matter.get('lang') or front_matter.get('language') or CONFIG.get("language", "en"))
     og_locale = "en_US" if language == "en" else language.replace('-', '_')
+
+    # Hreflang alternate links for multilingual pages
+    hreflang_alternates = _build_hreflang_alternates(front_matter, canonical_url)
 
     # Robots directive: support `noindex: true` and explicit `robots:` frontmatter
     robots = front_matter.get('robots')
@@ -1420,6 +1453,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         icon_512_url=icon_512_url,
         head_snippet=head_snippet,
         csp_meta=csp_meta,
+        hreflang_alternates=hreflang_alternates,
         raw_markdown_content=raw_markdown_for_template,
         custom_theme_variables_style=custom_theme_variables_style,
         json_ld=json_ld_script
