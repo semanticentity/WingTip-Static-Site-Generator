@@ -472,6 +472,63 @@ def _build_head_snippet(front_matter):
 
     return '\n'.join(snippets)
 
+def _build_csp(front_matter):
+    """Build a Content-Security-Policy string from config and per-page frontmatter."""
+    csp = front_matter.get('csp')
+    if csp is None:
+        csp = CONFIG.get('csp', False)
+    if csp is False or csp is None:
+        return ''
+    if isinstance(csp, str):
+        return csp.strip()
+    if isinstance(csp, dict):
+        return str(csp.get('policy', '')).strip()
+
+    # Default CSP tuned for WingTip's bundled and CDN assets.
+    # 'unsafe-inline' is required because the template uses inline scripts/styles.
+    analytics = CONFIG.get('analytics') or {}
+    providers = {
+        'plausible': 'https://plausible.io',
+        'umami': str(analytics.get('src', 'https://analytics.umami.is')).rsplit('/script.js', 1)[0],
+        'fathom': 'https://cdn.usefathom.com',
+        'gtag': 'https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com',
+        'google': 'https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com',
+        'googleanalytics': 'https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com'
+    }
+    provider = str(analytics.get('provider') or analytics.get('type') or '').lower().strip()
+    connect_extra = providers.get(provider, '')
+    script_extra = connect_extra
+
+    if provider == 'plausible':
+        plausible_src = str(analytics.get('src', 'https://plausible.io/js/plausible.js'))
+        script_extra = f"{connect_extra} {plausible_src}"
+    elif provider == 'umami':
+        umami_src = str(analytics.get('src', 'https://analytics.umami.is/script.js'))
+        script_extra = f"{connect_extra} {umami_src}"
+    elif provider == 'fathom':
+        fathom_src = str(analytics.get('src', 'https://cdn.usefathom.com/script.js'))
+        script_extra = f"{connect_extra} {fathom_src}"
+
+    return (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
+        "https://code.iconify.design https://unpkg.com https://fonts.googleapis.com https://www.googletagmanager.com "
+        f"{script_extra}; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
+        "img-src 'self' data: https:; "
+        f"connect-src 'self' {connect_extra}; "
+        "media-src 'self'; "
+        "manifest-src 'self'; "
+        "worker-src 'self'; "
+        "child-src 'self'; "
+        "object-src 'none'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "upgrade-insecure-requests;"
+    )
+
 def generate_pwa_files(pages, output_dir):
     """Generate a web app manifest, PWA icons, offline fallback, and service worker."""
     os.makedirs(output_dir, exist_ok=True)
@@ -1129,6 +1186,13 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # Custom <head> snippet (analytics, scripts, verification tags, etc.)
     head_snippet = _build_head_snippet(front_matter)
 
+    # Content Security Policy meta tag (optional, disabled by default)
+    csp_meta = _build_csp(front_matter)
+    if csp_meta:
+        csp_meta = f'<meta http-equiv="Content-Security-Policy" content="{html_module.escape(csp_meta, quote=False)}">'
+    else:
+        csp_meta = ''
+
     # Determine raw markdown content to pass to template
     raw_markdown_for_template = ""
     if add_edit_link: # Only try to read if it's a page that would have source
@@ -1297,6 +1361,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         icon_192_url=icon_192_url,
         icon_512_url=icon_512_url,
         head_snippet=head_snippet,
+        csp_meta=csp_meta,
         raw_markdown_content=raw_markdown_for_template,
         custom_theme_variables_style=custom_theme_variables_style,
         json_ld=json_ld_script
