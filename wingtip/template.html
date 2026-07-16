@@ -37,7 +37,7 @@
   $json_ld
 
   <!-- Light/Dark mode via OS/browser -->
-  <link id="watercss-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/light.css">
+  <link id="watercss-theme" rel="stylesheet" href="${base_url}/static/vendor/light.css">
 
   <!-- Custom Theme CSS Variables -->
   ${custom_theme_variables_style}
@@ -47,18 +47,18 @@
   <link rel="stylesheet" href="${base_url}/static/css/custom.css">
   <link rel="stylesheet" href="${base_url}/static/css/admonitions.css">
   <!-- Material Icons font for admonitions -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="${base_url}/static/vendor/material-icons.css" rel="stylesheet">
   <!-- KaTeX CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/katex@0.16.9/dist/katex.min.css">
+  <link rel="stylesheet" href="${base_url}/static/vendor/katex.min.css">
 
   <!-- Custom favicon -->
   <link rel="icon" type="image/png" href="${favicon_url}">
 
   <!-- Optional: Iconify for sun/moon toggle -->
-  <script src="https://code.iconify.design/1/1.0.4/iconify.min.js"></script>
+  <script src="${base_url}/static/vendor/iconify.min.js"></script>
 
   <!-- Code block copy button -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.8/clipboard.min.js"></script>
+  <script src="${base_url}/static/vendor/clipboard.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Initialize clipboard.js
@@ -1159,11 +1159,11 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
 
     function setTheme(mode) {
       if (mode === "dark") {
-        themeLink.href = "https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css";
+        themeLink.href = "${base_url}/static/vendor/dark.css";
         document.documentElement.classList.add("dark");
         document.documentElement.classList.remove("light");
       } else {
-        themeLink.href = "https://cdn.jsdelivr.net/npm/water.css@2/out/light.css";
+        themeLink.href = "${base_url}/static/vendor/light.css";
         document.documentElement.classList.remove("dark");
         document.documentElement.classList.add("light");
       }
@@ -1252,8 +1252,8 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   <script src="${base_url}/static/js/search.js" defer></script>
 
   <!-- KaTeX JS and auto-render extension -->
-  <script defer src="https://unpkg.com/katex@0.16.9/dist/katex.min.js"></script>
-  <script defer src="https://unpkg.com/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <script defer src="${base_url}/static/vendor/katex.min.js"></script>
+  <script defer src="${base_url}/static/vendor/auto-render.min.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       renderMathInElement(document.body, {
