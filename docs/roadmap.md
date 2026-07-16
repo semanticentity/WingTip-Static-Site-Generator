@@ -73,7 +73,7 @@
 * ~~Image lazy loading and intrinsic size attributes for local images~~ (Implemented in v0.5.0)
 * ~~Analytics / custom `<head>` snippet hook~~ (Implemented in v0.5.0)
 * ~~Default Content Security Policy meta tag~~ (Implemented in v0.5.0)
-* Responsive `srcset` image generation
+* ~~Responsive `srcset` image generation~~ (Implemented in v0.5.0)
 
 ### Longer-Term Ideas
 
