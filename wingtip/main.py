@@ -889,9 +889,9 @@ def _get_image_size(path):
     except Exception:
         return None
 
-def _image_size_for_src(src, input_path):
-    """Resolve an <img src> to a local file and return its intrinsic size."""
-    if not src or src.startswith(('http://', 'https://', '//', 'data:')):
+def _resolve_image_source(src, input_path):
+    """Resolve an <img src> to a local file path, or None if it is remote/missing."""
+    if not src or src.startswith(('http://', 'https://', '//', 'data:', 'mailto:')):
         return None
 
     candidates = []
@@ -917,10 +917,76 @@ def _image_size_for_src(src, input_path):
             continue
         seen.add(norm)
         if os.path.exists(norm):
-            size = _get_image_size(norm)
-            if size:
-                return size
+            return norm
     return None
+
+def _process_content_images(soup, input_path, output_filename):
+    """Copy local content images to output, generate responsive srcset sizes, and add lazy loading."""
+    try:
+        from PIL import Image
+    except ImportError:
+        # If Pillow is missing, skip image processing but still add lazy loading attributes
+        Image = None
+
+    page_output_dir = os.path.dirname(output_filename)
+    source_root = os.getcwd()
+
+    for img in soup.find_all('img'):
+        if not img.get('loading'):
+            img['loading'] = 'lazy'
+        if not img.get('decoding'):
+            img['decoding'] = 'async'
+
+        src = img.get('src', '')
+        src_path = _resolve_image_source(src, input_path)
+        if not src_path:
+            continue
+
+        # Determine output destination preserving source directory layout
+        src_rel = os.path.relpath(src_path, source_root)
+        output_image_path = os.path.normpath(os.path.join(OUTPUT_DIR, src_rel))
+        if not os.path.exists(os.path.dirname(output_image_path)):
+            os.makedirs(os.path.dirname(output_image_path), exist_ok=True)
+
+        # Copy the original image to the output tree and update the src attribute
+        new_src = os.path.relpath(output_image_path, page_output_dir).replace(os.sep, '/')
+        if not os.path.exists(output_image_path) or os.path.getmtime(src_path) > os.path.getmtime(output_image_path):
+            shutil.copy2(src_path, output_image_path)
+        img['src'] = new_src
+
+        try:
+            if Image is None:
+                continue
+            with Image.open(src_path) as im:
+                width, height = im.size
+                if 'width' not in img.attrs and 'height' not in img.attrs:
+                    img['width'], img['height'] = str(width), str(height)
+
+                # Generate a few standard responsive widths. Always include the original width.
+                target_widths = sorted(set([w for w in (480, 800, 1200, 1600) if w < width] + [width]))
+                if len(target_widths) <= 1:
+                    # Image is small enough that extra sizes don't help
+                    continue
+
+                srcset_parts = []
+                for w in target_widths:
+                    if w == width:
+                        entry_rel = new_src
+                    else:
+                        name, ext = os.path.splitext(output_image_path)
+                        scaled_path = f"{name}-{w}w{ext}"
+                        entry_rel = os.path.relpath(scaled_path, page_output_dir).replace(os.sep, '/')
+                        if not os.path.exists(scaled_path) or os.path.getmtime(src_path) > os.path.getmtime(scaled_path):
+                            ratio = w / width
+                            h = max(1, int(height * ratio))
+                            im_resized = im.resize((w, h), Image.LANCZOS)
+                            im_resized.save(scaled_path)
+                    srcset_parts.append(f"{entry_rel} {w}w")
+
+                img['srcset'] = ', '.join(srcset_parts)
+                img['sizes'] = '(max-width: 900px) 100vw, 900px'
+        except Exception as e:
+            print(f"Warning: Could not process image {src}: {e}")
 
 def remove_frontmatter(md_text):
     """Removes frontmatter from markdown text."""
@@ -1103,16 +1169,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         table.insert_before(wrapper)
         wrapper.append(table)
 
-    # Optimize images: lazy load and add intrinsic dimensions for local images
-    for img in soup.find_all('img'):
-        if not img.get('loading'):
-            img['loading'] = 'lazy'
-        if not img.get('decoding'):
-            img['decoding'] = 'async'
-        if 'width' not in img.attrs and 'height' not in img.attrs:
-            size = _image_size_for_src(img.get('src', ''), input_path)
-            if size:
-                img['width'], img['height'] = size
+    # Optimize content images: copy to output, generate responsive srcset, lazy load
+    _process_content_images(soup, input_path, output_filename)
 
     # Serialize soup back to HTML for further processing
     html = str(soup)
