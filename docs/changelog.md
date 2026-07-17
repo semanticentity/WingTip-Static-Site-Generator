@@ -1,6 +1,6 @@
 # WingTip Changelog
 
-## [Unreleased]
+## [v0.6.0] - 2026-07-17
 
 ### Migration importer
 
@@ -16,6 +16,12 @@
 - MDX comments (`{/* ... */}`) are stripped; multi-line JSX/HTML tags are joined before conversion.
 - Fixed WingTip's link rewriter stripping the `docs/` prefix from links whose URL space legitimately contains `docs/…`.
 - Validated against real public hosted-docs repositories of 46, 249, 315, and 5,387 pages: URLs preserved on every page, and every remaining audit finding is an itemized pre-existing source defect (stale links, OpenAPI-generated pages, platform runtime paths).
+
+### Audit gate
+
+- The post-build auditor now parses pages instead of regex-scanning raw text: only `href`/`src` attributes on rendered elements are checked, so code samples and the raw-markdown embed no longer produce false positives; custom URL schemes (`cursor:`, `vscode:`, …) are treated as external.
+- Link-resolution verdicts are memoized, making large-site audits fast (one filesystem check per unique target instead of pages × links).
+- The 5,387-page stress test recorded a scaling finding for the roadmap: per-page full navigation makes total output size quadratic in page count; migration and build times scale linearly.
 
 ## [v0.5.0] - 2026-07-17
 
