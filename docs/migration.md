@@ -26,9 +26,12 @@ The importer is **strictly read-only** — the source project is never modified.
 
 - Every `.md` and `.mdx` page, with nested paths preserved in URLs
 - Navigation order (`order` frontmatter) and directory groups (`_category.json`) derived from the source navigation
-- Internal links rewritten from platform-style absolute paths to portable relative links
+- Internal links rewritten to portable relative links — Markdown links and raw `href`/`src` attributes, absolute or extensionless, with case-insensitive resolution
+- Common MDX components approximated as Markdown (callouts, steps, tabs, cards, images); anything unhandled is inventoried per page
 - Site name, description, brand colors, and favicon carried into `config.json` and `theme.json`
-- `migration-report.md` — a scored summary of what converted cleanly and what needs manual attention (custom components, redirects, unmapped navigation, configuration not carried)
+- `migration-report.md` — a scored summary of what converted cleanly and what needs manual attention (custom components, dynamic link expressions, suspected broken links in the source, redirects, unmapped navigation, configuration not carried)
+
+The importer is validated against real public hosted-docs repositories ranging from 46 to over 5,000 pages.
 
 Then preview and iterate:
 
