@@ -30,7 +30,7 @@ Status reflects the repository as of July 16, 2026. Competitor capabilities chan
 | Recursive content trees | No | Parity blocker | P0 |
 | Grouped, nested, tabbed navigation | No | Parity blocker | P0 |
 | Redirect migration and static-host outputs | No | Migration blocker | P0 |
-| Mintlify `docs.json`/legacy `mint.json` import | No | Acquisition blocker | P0 |
+| Hosted-platform configuration import | No | Acquisition blocker | P0 |
 | MDX compatibility analysis | No | Migration blocker | P0 |
 | OpenAPI reference generation | No | Major parity blocker | P1 |
 | API playground | No | Major parity blocker | P1 |
@@ -39,22 +39,20 @@ Status reflects the repository as of July 16, 2026. Competitor capabilities chan
 | Authentication and private docs | No | Enterprise gap | P3/partner |
 | Hosted collaborative editor | No | Intentionally not core | Ecosystem |
 
-Mintlify capability references used to define migration scope: [global settings](https://www.mintlify.com/docs/organize/settings), [navigation](https://www.mintlify.com/docs/organize/navigation), [migration](https://www.mintlify.com/docs/migration), and [`skill.md`](https://www.mintlify.com/docs/ai/skillmd).
-
 ## Delivery plan
 
 ### Phase 0 — Capture the switching window
 
 Ship the acquisition surface before broad feature work:
 
-- Publish “Open-source Mintlify alternative” and “Migrate from Mintlify” guides
+- Publish open-source hosted-platform alternative and migration guides
 - Offer a migration concierge through a dedicated GitHub issue template
-- Create a sanitized real-world Mintlify fixture for regression testing
+- Create a sanitized real-world hosted-platform fixture for regression testing
 - Record a repository-to-deployed-site migration demo
 - Document output ownership, supported hosts, and unsupported constructs plainly
 - Do not use founder controversy in product copy; meet newly receptive users with a concrete exit path
 
-**Exit criteria:** A Mintlify user can submit a repository and receive a repeatable migration report rather than an informal promise.
+**Exit criteria:** A hosted-platform user can submit a repository and receive a repeatable migration report rather than an informal promise.
 
 ### Phase 1 — Migration wedge (P0)
 
@@ -66,17 +64,17 @@ Ship the acquisition surface before broad feature work:
 - Render grouped/collapsible navigation and breadcrumbs from that model
 - Detect orphaned and duplicate navigation entries
 
-#### Mintlify importer
+#### Hosted-platform importer
 
 Add a command equivalent to:
 
 ```bash
-wingtip migrate mintlify --source ./mintlify-docs --output ./wingtip-docs
+wingtip migrate hosted-docs --source ./existing-docs --output ./wingtip-docs
 ```
 
 The importer should:
 
-- Read current `docs.json` and legacy `mint.json`
+- Read supported current and legacy platform configuration formats
 - Resolve local JSON `$ref` configuration
 - Import project name, description, colors, logo/favicon, repository links, footer links, and social links where supported
 - Convert navigation groups, nested pages, tabs, products, versions, and languages
@@ -97,7 +95,7 @@ Every migration emits human-readable and JSON reports containing:
 - Metadata, canonical, language, and noindex changes
 - Manual actions required before deployment
 
-**Exit criteria:** Representative Mintlify repositories build without lost pages, URLs, metadata, or unreported incompatibilities.
+**Exit criteria:** Representative hosted-platform repositories build without lost pages, URLs, metadata, or unreported incompatibilities.
 
 ### Phase 2 — Documentation parity (P1)
 
@@ -111,12 +109,12 @@ Prioritize capabilities that block real migrations:
 - Visible version, product, and language switchers
 - Redirect validation and redirect-chain detection
 - Mermaid diagrams
-- Common Mintlify MDX compatibility components: cards, columns, tabs, accordions, steps, callouts, frames, and code groups
+- Common hosted-platform MDX compatibility components: cards, columns, tabs, accordions, steps, callouts, frames, and code groups
 - Reusable snippets/includes and content variables
 - Navigation banners, badges, deprecation labels, and hidden-page controls
 - Formal, versioned plugin API and template/theme extension points
 
-**Exit criteria:** A typical public SaaS documentation repository does not need to remain on Mintlify solely for navigation, common MDX presentation, or OpenAPI reference pages.
+**Exit criteria:** A typical public SaaS documentation repository does not need to remain on a hosted documentation platform solely for navigation, common MDX presentation, or OpenAPI reference pages.
 
 ### Phase 3 — Search-engineering leadership (P1)
 
@@ -137,7 +135,7 @@ Turn the existing auditor into a differentiated discovery system:
 
 ### Phase 4 — Reproducible competitive benchmark (P1)
 
-Build the same public fixture with WingTip, Mintlify, MkDocs Material, Docusaurus, and VitePress. Record:
+Build the same public fixture with WingTip and representative hosted and open-source documentation generators. Record:
 
 - Build inputs, product versions, commands, and generated artifacts
 - HTML availability without client-side JavaScript
