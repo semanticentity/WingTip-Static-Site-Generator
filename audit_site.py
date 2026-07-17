@@ -35,6 +35,7 @@ REQUIRED_FILES = [
     "sw.js",
     "offline.html",
     "llms.txt",
+    "skill.md",
     "llms-full.txt",
     "feed.xml",
     "sitemap.xml",

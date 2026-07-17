@@ -273,6 +273,42 @@ def write_llms_txt(nav_pages):
         f.write("\n".join(lines) + "\n")
     print(f"Generated llms.txt: {output_path}")
 
+def write_skill_md(nav_pages):
+    """Generate skill.md: instructions for AI agents consuming this site.
+
+    Complements llms.txt (which indexes pages) by telling an agent how to
+    retrieve content efficiently: the concatenated corpus, per-page
+    Markdown alternates, and the machine-readable artifacts.
+    """
+    project = CONFIG.get("project_name") or "Documentation"
+    description = CONFIG.get("description") or f"{project} documentation"
+    base = "" if BASE_URL == "." else f"{BASE_URL}/"
+    concat_name = CONFIG.get("concat_docs_filename", "llms-full.txt")
+
+    lines = [
+        "---",
+        f"name: {_slugify(project)}-docs",
+        f"description: Retrieve and cite {project} documentation. {description}",
+        "---",
+        "",
+        f"# Using the {project} documentation",
+        "",
+        "This is a static documentation site with machine-readable artifacts:",
+        "",
+        f"- **Whole corpus in one request:** [{concat_name}]({base}{concat_name}) — every page concatenated as Markdown with file markers. Prefer this for broad questions.",
+        f"- **Page index:** [llms.txt]({base}llms.txt) — one link per page, per the llmstxt.org convention.",
+        f"- **Any single page as Markdown:** append `.md` to its URL (e.g. `{base}page.html.md`). Prefer this over parsing HTML.",
+        f"- **Sitemap:** [sitemap.xml]({base}sitemap.xml) · **Feed:** [{CONFIG.get('rss_filename', 'feed.xml')}]({base}{CONFIG.get('rss_filename', 'feed.xml')})",
+        "",
+        "When citing, link the `.html` page URL, not the `.md` alternate.",
+        "",
+    ]
+
+    output_path = os.path.join(OUTPUT_DIR, "skill.md")
+    with open(output_path, "w", encoding="utf8") as f:
+        f.write("\n".join(lines))
+    print(f"Generated skill.md: {output_path}")
+
 def write_robots_txt():
     lines = [
         "User-agent: *",
@@ -2082,6 +2118,7 @@ def main():
     write_sitemap_xml(sitemap_pages)
     generate_rss_feed(sitemap_pages, OUTPUT_DIR)
     write_llms_txt(nav_pages)
+    write_skill_md(nav_pages)
     write_robots_txt()
     
     # Clean up obsolete files

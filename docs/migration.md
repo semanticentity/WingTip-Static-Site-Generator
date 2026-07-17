@@ -30,6 +30,7 @@ The importer is **strictly read-only** — the source project is never modified.
 - Common MDX components approximated as Markdown (callouts, steps, tabs, cards, images); anything unhandled is inventoried per page
 - Site name, description, brand colors, and favicon carried into `config.json` and `theme.json`
 - `migration-report.md` — a scored summary of what converted cleanly and what needs manual attention (custom components, dynamic link expressions, suspected broken links in the source, redirects, unmapped navigation, configuration not carried)
+- `AGENTS.md` — maintenance instructions for coding agents, so the AI assistant your team already uses can build, verify, and extend the docs (no hosted platform required)
 
 The importer is validated against real public hosted-docs repositories ranging from 46 to over 5,000 pages.
 
@@ -162,6 +163,80 @@ Confirm that:
 - `llms.txt`, `llms-full.txt`, `feed.xml`, and Markdown alternates are present
 - Mobile, keyboard, light-mode, dark-mode, and offline behavior are acceptable
 - Analytics and custom scripts are explicitly configured rather than inherited
+
+## Serving your migrated site
+
+WingTip emits ordinary static files, so both common documentation topologies work. Pick one, set `base_url` to match, rebuild, and deploy `docs/site/`.
+
+### Topology A — dedicated docs domain (`docs.example.com`)
+
+Set `"base_url": "https://docs.example.com"` and serve `docs/site/` as the web root.
+
+**GitHub Pages / Netlify / Vercel / Cloudflare Pages:** point the project at the `docs/site` output directory (or publish it from CI) and attach the custom domain in the host's dashboard. No further configuration.
+
+**nginx:**
+
+```nginx
+server {
+  server_name docs.example.com;
+  root /var/www/docs-site;      # contents of docs/site/
+  index index.html;
+  error_page 404 /404.html;
+}
+```
+
+**Caddy:**
+
+```caddy
+docs.example.com {
+  root * /var/www/docs-site
+  file_server
+  handle_errors {
+    rewrite * /404.html
+    file_server
+  }
+}
+```
+
+### Topology B — subpath on the main domain (`example.com/docs`)
+
+Set `"base_url": "https://example.com/docs"` — generated URLs, canonicals, feeds, and the service worker all carry the `/docs` prefix — then map that prefix to the static files on your main site's proxy.
+
+**nginx (in the main site's server block):**
+
+```nginx
+location /docs/ {
+  alias /var/www/docs-site/;    # contents of docs/site/
+  index index.html;
+  try_files $uri $uri/ /docs/404.html;
+}
+```
+
+**Caddy:**
+
+```caddy
+example.com {
+  handle_path /docs/* {
+    root * /var/www/docs-site
+    file_server
+  }
+  # ... your main site ...
+}
+```
+
+**Vercel (`vercel.json` on the main site):**
+
+```json
+{ "rewrites": [{ "source": "/docs/:path*", "destination": "https://your-docs-deployment.example/:path*" }] }
+```
+
+**Netlify (`_redirects` on the main site):**
+
+```text
+/docs/* https://your-docs-deployment.example/:splat 200
+```
+
+The subpath topology is the one search engineers usually prefer: documentation authority accrues to the main domain rather than a subdomain. Both are fully supported — the demo site itself runs at a subpath (`/WingTip-Static-Site-Generator/` on GitHub Pages), so every generated URL scheme is exercised there.
 
 ## Request a migration review
 

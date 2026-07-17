@@ -615,8 +615,78 @@ def migrate(source_dir, output_dir):
     handled_keys = {"name", "description", "colors", "favicon", "navigation", "redirects", "$schema", "theme"}
     report["config_not_carried"] = sorted(k for k in platform_config if k not in handled_keys)
 
+    _write_agents_md(output_dir, platform_config.get("name") or os.path.basename(source_dir))
+    report["notes"].append("`AGENTS.md` written — docs-maintenance instructions any coding agent can follow (build, verify, add pages, preserve URLs).")
+
     report_path = _write_report(output_dir, report)
     return report_path
+
+
+def _write_agents_md(output_dir, project_name):
+    """Emit AGENTS.md: a docs-maintenance skill for coding agents.
+
+    The migrated project carries its own maintenance instructions, so any
+    agent the team already uses (not a hosted platform's) can keep the
+    docs healthy: build, verify, add pages, preserve URLs.
+    """
+    content = f"""# AGENTS.md — maintaining the {project_name} documentation
+
+This project is a [WingTip](https://pypi.org/project/wingtip/) documentation site.
+Source of truth is Markdown in this repository; the generated site is `docs/site/`.
+
+## Build and verify
+
+```bash
+pip install wingtip
+wingtip                 # build -> docs/site/
+wingtip --serve         # build + live-reload preview
+```
+
+A healthy build prints no warnings. Treat any `Warning:` line as a task.
+
+## Adding a page
+
+1. Create `docs/<section>/<slug>.md`. The URL mirrors the path:
+   `docs/guides/intro.md` → `guides/intro.html`.
+2. Start with frontmatter:
+
+   ```yaml
+   ---
+   title: Page title
+   description: One-sentence summary used for search and social previews.
+   order: 3            # position within its sidebar group (lower = higher)
+   ---
+   ```
+
+3. Rebuild. The page appears in the sidebar, search index, sitemap,
+   llms.txt, and feed automatically.
+
+## Rules that keep the site healthy
+
+- **Never rename or move a published page path** — URLs are the public
+  contract. If a move is unavoidable, add a redirect at the host.
+- Link between pages with relative Markdown links to the `.md` file
+  (`[intro](../guides/intro.md)`); WingTip rewrites them at build time.
+- Reference images relative to the page; WingTip copies them and
+  generates responsive variants.
+- Name sidebar groups with `docs/<dir>/_category.json`:
+  `{{"name": "Guides", "order": 1}}`.
+- Frontmatter `noindex: true` hides a page from search engines, search,
+  sitemap, and feeds while keeping it reachable by URL.
+- Dates: `date:` (published) and `lastmod:` feed the feed and JSON-LD.
+
+## After a migration
+
+`migration-report.md` lists outstanding manual work (custom components,
+suspected broken links, redirects). Work through its ⚠ items and delete
+each from the report as it lands; the report is done when only ✓ remain.
+
+## Definition of done
+
+`wingtip` builds without warnings and every changed page renders
+correctly in `wingtip --serve`.
+"""
+    pathlib.Path(os.path.join(output_dir, "AGENTS.md")).write_text(content, encoding="utf8")
 
 
 def _write_report(output_dir, r):
