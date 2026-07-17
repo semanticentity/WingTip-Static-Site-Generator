@@ -92,9 +92,10 @@ OUTPUT_DIR = "docs/site"
 def show_help():
     """Build portable, SEO-first documentation sites from Markdown.
 
-WingTip converts README.md and docs/*.md into static HTML with local search,
-structured data, RSS, sitemaps, AI-readable Markdown artifacts, and optional
-offline support. Generated output can be hosted on any static file server.
+WingTip converts README.md and the docs/ tree (discovered recursively, with
+nested paths preserved in URLs) into static HTML with local search, structured
+data, RSS, sitemaps, AI-readable Markdown artifacts, and optional offline
+support. Generated output can be hosted on any static file server.
 """
     print(show_help.__doc__)
 
