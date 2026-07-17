@@ -78,8 +78,8 @@ def generate_social_card(title, tagline, theme="light", font="Poppins", logo=Non
     
     # Logo is opt-in and project-relative. Hardcoding "wingtip-logo.png" meant
     # every user's build printed a failure for an asset only this repo has.
-    logo_path = logo or "wingtip-logo.png"
-    if not os.path.exists(logo_path):
+    logo_path = logo
+    if logo_path and not os.path.exists(logo_path):
         logo_path = None
 
     try:

@@ -1,8 +1,8 @@
 {
     "base_url": "https://semanticentity.github.io/WingTip-Static-Site-Generator",
     "project_name": "WingTip",
-    "version": "0.3.0",
-    "description": "SEO-friendly Markdown-to-HTML static site generator for GitHub Pages",
+    "version": "0.4.1",
+    "description": "Open-source, SEO-first documentation sites from Markdown",
     "author": "SemanticEntity",
     "repo_url": "https://github.com/semanticentity/WingTip-Static-Site-Generator/",
     "og_image": "social-card.png",
@@ -28,6 +28,7 @@
         "emoji": "🦉",              
         "theme": "light",  
         "font": "Poppins",
+        "logo": "wingtip-logo.webp",
         "image": "social-card.png"      
     }
 }

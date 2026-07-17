@@ -1,5 +1,44 @@
 # WingTip Changelog
 
+## [v0.4.1] - 2026-07-17
+
+### Packaging and first-run experience
+
+- Added a standard Python package with `pyproject.toml` and the `wingtip` console command.
+- Bundled templates, styles, scripts, fonts, and other runtime assets in the wheel.
+- Added `--source`, `--serve`, `--regen-card`, `--output`, and `--version` CLI options.
+- Made zero-configuration builds derive project identity from the source repository instead of inheriting WingTip branding.
+- Added a cold-install wheel fixture to verify the first-run experience outside the source checkout.
+
+### Search and discovery
+
+- Added per-page title, description, keywords, canonical, robots/noindex, Open Graph, Twitter, author, date, language, category, and version metadata.
+- Added `TechArticle` and breadcrumb JSON-LD, RSS, `llms.txt`, concatenated documentation, and per-page Markdown alternates.
+- Added hreflang alternates and language-aware page metadata.
+- Excluded noindexed pages from search, sitemap, category/version indexes, and structured data.
+
+### Performance, offline use, and security
+
+- Vendored core frontend dependencies so generated sites do not require dependency CDNs.
+- Added responsive local-image variants, intrinsic dimensions, and lazy loading.
+- Added a PWA manifest, service worker, and offline fallback.
+- Made favicon and PWA icon generation opt-in to project-provided branding.
+- Added configurable analytics, custom head snippets, and Content Security Policy output.
+
+### Quality and extensibility
+
+- Added plugin hooks before and after conversion/build plus plugin-provided Markdown extensions.
+- Added a post-build auditor for missing local files, CDN regressions, required artifacts, PWA consistency, and branding leaks.
+- Added a CI negative test proving that the auditor rejects deliberately broken output.
+- Fixed Markdown links containing fragments or query strings and removed stale raw-documentation links.
+
+### Documentation
+
+- Repositioned WingTip around portable, SEO-first documentation output.
+- Added an honest current-capability roadmap and hosted-platform migration guide.
+- Added a structured public migration-review intake form.
+- Documented current limitations, including top-level-only content discovery, MDX compatibility, and OpenAPI generation.
+
 ## [v0.4.0]
 
 ### ✨ Features
