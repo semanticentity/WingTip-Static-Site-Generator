@@ -58,11 +58,14 @@ Ship the acquisition surface before broad feature work:
 
 #### Content and navigation model
 
-- Recursively discover `.md` and `.mdx` content
-- Preserve nested source paths in generated URLs
-- Introduce an ordered navigation model with groups, nested groups, tabs, products, versions, and languages
-- Render grouped/collapsible navigation and breadcrumbs from that model
-- Detect orphaned and duplicate navigation entries
+- ✅ Recursively discover `.md` content (`.mdx` compatibility still pending)
+- ✅ Preserve nested source paths in generated URLs (`docs/guides/intro.md` → `guides/intro.html`)
+- ✅ Ordered navigation groups: `_category.json` (`name`, `order`) per directory, `order`/`nav_order` frontmatter per page
+- ✅ Render grouped/collapsible navigation from the directory tree
+- ✅ Detect duplicate output paths (collisions are warned and skipped)
+- Introduce tabs, products, versions, and languages in the navigation model
+- Render breadcrumb navigation in the page body (JSON-LD breadcrumbs already ship)
+- Detect orphaned navigation entries
 
 #### Hosted-platform importer
 

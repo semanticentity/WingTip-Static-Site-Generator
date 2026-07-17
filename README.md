@@ -41,8 +41,8 @@ Use the [migration guide](docs/migration.md) to assess what WingTip supports tod
 
 ### Documentation experience
 
-- `README.md` becomes `index.html`; top-level `docs/*.md` files become standalone pages
-- Automatic sidebar, table of contents, and previous/next navigation
+- `README.md` becomes `index.html`; `docs/` is discovered recursively with nested paths preserved in URLs (`docs/guides/intro.md` → `guides/intro.html`)
+- Automatic sidebar with collapsible directory groups (`_category.json` for names and ordering, `order` frontmatter for pages), table of contents, and previous/next navigation
 - GitHub “Edit this page” links
 - Responsive layout with light/dark mode and screen-reader/keyboard support
 - Pygments syntax highlighting and copy-to-clipboard controls
@@ -297,7 +297,7 @@ docs/site/
 
 ## Current limitations and roadmap
 
-WingTip currently processes `README.md` and top-level `docs/*.md`; nested documentation trees and grouped/collapsible navigation remain roadmap work. Mermaid diagrams, broad MDX compatibility, and a theme marketplace are not yet built.
+Mermaid diagrams, broad MDX compatibility, an automated hosted-platform importer, and a theme marketplace are not yet built.
 
 See the [roadmap and feature comparison](docs/roadmap.md) for planned work.
 
