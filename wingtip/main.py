@@ -90,48 +90,30 @@ def _display_date(value):
 OUTPUT_DIR = "docs/site"
 
 def show_help():
-    """
-wingtip/main.py - Minimal Markdown to HTML static site generator
+    """Build portable, SEO-first documentation sites from Markdown.
 
-USAGE:
-  python wingtip/main.py [options]
-
-OPTIONS:
-  --output DIR        Output directory (default: docs/site)
-  --regen-card        Force regenerate social card
-
-OUTPUT:
-  ./README.md          -> ./docs/site/index.html
-  ./docs/*.md          -> ./docs/site/*.html
-  ./docs/site/index.html    -> generated doc index
-  ./sitemap.xml        -> XML sitemap for all .html files
-
-REQUIREMENTS:
-  pip install markdown beautifulsoup4
-
-NOTES:
-  - Adds top-right Docs link
-  - Adds custom favicon support
-  - Adds light/dark mode toggle
-  - Adds TOC, .md link rewrite, GitHub edit link
-  - Adds copy buttons to all code blocks
+WingTip converts README.md and docs/*.md into static HTML with local search,
+structured data, RSS, sitemaps, AI-readable Markdown artifacts, and optional
+offline support. Generated output can be hosted on any static file server.
 """
     print(show_help.__doc__)
 
 def _package_version(default="0.0.0"):
-    """Read the version from installed package metadata, not a hardcoded string.
-
-    pyproject.toml is the single source of truth. Falls back for a bare
-    checkout that was never pip-installed.
-    """
+    """Read the version from installed metadata or a source checkout."""
     try:
-        from importlib.metadata import version, PackageNotFoundError
-        try:
-            return version("wingtip")
-        except PackageNotFoundError:
-            return default
+        from importlib.metadata import version
+        return version("wingtip")
     except Exception:
-        return default
+        pass
+
+    try:
+        pyproject = pathlib.Path(__file__).resolve().parents[1] / "pyproject.toml"
+        match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', pyproject.read_text(encoding="utf8"), re.MULTILINE)
+        if match:
+            return match.group(1)
+    except Exception:
+        pass
+    return default
 
 
 # Load config
@@ -1735,11 +1717,21 @@ def cleanup_output_dir(generated_files):
                     os.remove(full_path)
 
 def main():
-    parser = argparse.ArgumentParser(description=show_help.__doc__ or "Minimal Markdown to HTML static site generator")
-    parser.add_argument("--regen-card", action="store_true", help="Force regenerate social card")
-    parser.add_argument("--output", help="Output directory (default: docs/site)")
-    parser.add_argument("--serve", action="store_true", help="Start dev server after build")
-    parser.add_argument("--source", help="Source content directory (default: current directory)", default=".")
+    parser = argparse.ArgumentParser(
+        prog="wingtip",
+        description=show_help.__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""examples:
+  wingtip
+  wingtip --serve
+  wingtip --source ./docs-project --output ./build
+  wingtip --regen-card""",
+    )
+    parser.add_argument("--regen-card", action="store_true", help="force regeneration of the Open Graph social card")
+    parser.add_argument("--output", metavar="DIR", help="output directory (default: docs/site)")
+    parser.add_argument("--serve", action="store_true", help="start the live development server after building")
+    parser.add_argument("--source", metavar="DIR", help="source project directory (default: current directory)", default=".")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {_package_version()}")
     args = parser.parse_args()
 
     # Update output dir if specified. Resolve it before changing directories so
