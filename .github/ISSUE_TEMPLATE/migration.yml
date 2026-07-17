@@ -1,0 +1,117 @@
+name: Migration review
+description: Request a compatibility assessment for moving existing documentation to WingTip.
+title: "Migration review: "
+labels:
+  - migration
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Request a structured review of your documentation repository, information architecture, URLs, and unsupported constructs. Public issues are visible to everyone. Do not include secrets, private repository access, customer data, or proprietary content.
+  - type: checkboxes
+    id: public-safety
+    attributes:
+      label: Public information confirmation
+      options:
+        - label: I confirm that everything submitted here is safe to publish in a public GitHub issue.
+          required: true
+  - type: input
+    id: repository
+    attributes:
+      label: Public repository or sanitized reproduction
+      description: Provide a public URL. If the source is private, link a sanitized reproduction or leave this blank.
+      placeholder: https://github.com/example/docs
+  - type: dropdown
+    id: current-system
+    attributes:
+      label: Current documentation system
+      options:
+        - Hosted documentation platform
+        - Static site generator
+        - Custom application
+        - Markdown repository without a generator
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: page-count
+    attributes:
+      label: Approximate page count
+      placeholder: "75"
+    validations:
+      required: true
+  - type: checkboxes
+    id: formats
+    attributes:
+      label: Content and specification formats
+      options:
+        - label: Markdown
+        - label: MDX
+        - label: OpenAPI
+        - label: AsyncAPI
+        - label: Framework-specific components
+        - label: Generated or remote content
+  - type: checkboxes
+    id: structure
+    attributes:
+      label: Information architecture
+      options:
+        - label: Nested directories
+        - label: Navigation groups
+        - label: Tabs or product sections
+        - label: Multiple versions
+        - label: Multiple languages
+        - label: Hidden or private pages
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration files
+      description: List the relevant configuration filenames and what they control. Do not paste credentials.
+      placeholder: docs configuration, navigation configuration, redirects, deployment configuration
+    validations:
+      required: true
+  - type: textarea
+    id: components
+    attributes:
+      label: Custom components and extensions
+      description: List MDX components, plugins, directives, includes, or other nonstandard syntax used by the documentation.
+      placeholder: Tabs, cards, accordions, code groups, reusable snippets
+  - type: textarea
+    id: urls
+    attributes:
+      label: URL preservation requirements
+      description: Describe URL patterns that must remain stable and whether an existing redirect inventory is available.
+      placeholder: Existing pages omit .html; approximately 20 redirects must be preserved.
+    validations:
+      required: true
+  - type: dropdown
+    id: target-host
+    attributes:
+      label: Intended static host
+      options:
+        - GitHub Pages
+        - Netlify
+        - Cloudflare Pages
+        - Vercel
+        - Object storage or CDN
+        - Self-hosted static server
+        - Undecided
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: required-features
+    attributes:
+      label: Required capabilities
+      description: Identify features that would block a production migration if unavailable.
+      placeholder: API reference, redirects, version switcher, analytics, private docs, preview deployments
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: Definition of a successful migration
+      description: Explain what must be preserved and how you will validate the result.
+      placeholder: All public pages and canonical URLs preserved, no broken assets, equivalent navigation, successful static deployment.
+    validations:
+      required: true
