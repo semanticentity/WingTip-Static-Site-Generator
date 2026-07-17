@@ -94,6 +94,9 @@ Still pending:
 - Convert tabs, products, versions, and languages beyond flat group mapping
 - Emit static redirect pages plus host-specific `_redirects` files
 - Preserve OpenAPI references for Phase 2 endpoint rendering
+- Unique-basename fallback for bare links that the source platform resolved via navigation context (found at the 5,000-page tail)
+- Treat `snippets/` include-partials as includes (inline where referenced, or skip and report) instead of standalone pages
+- Copy non-image media (video, PDF, downloads) referenced by pages into the build output — currently only rendered images and `static/` ship
 
 #### Migration report
 
