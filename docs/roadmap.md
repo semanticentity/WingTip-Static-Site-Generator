@@ -135,6 +135,7 @@ Turn the existing auditor into a differentiated discovery system:
 - Validate hreflang reciprocity, language codes, canonicals, and `x-default` clusters
 - Audit internal-link depth and surface pages with weak contextual connectivity
 - Add configurable HTML, CSS, JavaScript, image, request-count, and font performance budgets
+- Shard or lazy-load sidebar navigation for very large sites: per-page full navigation makes total output size quadratic in page count (measured: a 5,387-page site emits a ~5,300-entry sidebar on every page, ~3.9GB total). Migration and build times scale linearly; navigation weight is the limit
 - Emit machine-readable audit output for CI annotations
 - Generate a crawl graph and diff it between builds
 - Add optional answer-first/content-structure linting without making ranking promises
