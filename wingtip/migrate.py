@@ -85,16 +85,159 @@ def _find_page_file(source_dir, page_path):
     return None
 
 
-def _convert_mdx(text):
-    """Strip module-level import/export lines and inventory JSX components.
+# Component approximations: callout tags become admonitions, titled
+# sections become bold labels, layout wrappers are dropped (their content
+# stands on its own in linear Markdown).
+ADMONITION_TAGS = {"Note": "note", "Warning": "warning", "Tip": "tip", "Info": "info", "Check": "success"}
+TITLE_TAGS = {"Step", "Tab", "Accordion", "Expandable", "ParamField", "ResponseField"}
+DROP_TAGS = {"Frame", "Steps", "Tabs", "CardGroup", "AccordionGroup", "CodeGroup", "Columns", "Col", "Tooltip", "Icon"}
 
-    Component markup itself is left in place — it is visible in the page and
-    listed in the report as manual work, rather than silently deleted.
+_TAG_ATTR = re.compile(r'(\w+)=(?:"([^"]*)"|\'([^\']*)\')')
+_FENCE = re.compile(r"^\s*(```|~~~)")
+
+
+def _tag_attrs(tag_text):
+    return {m.group(1): (m.group(2) if m.group(2) is not None else m.group(3)) for m in _TAG_ATTR.finditer(tag_text)}
+
+
+def _convert_mdx(text):
+    """Convert MDX to renderable Markdown.
+
+    - Strips module-level import/export lines.
+    - Approximates common components: callouts -> admonitions, titled
+      sections (Step/Tab/Accordion) -> bold labels, Card -> a link,
+      pure layout wrappers dropped.
+    - Removes JSX nesting indentation outside code fences (Markdown would
+      read 4+ leading spaces as an indented code block; MDX has no indented
+      code blocks, so this is safe for .mdx sources).
+    - Inventories any component that was NOT cleanly approximated.
+
+    Returns (converted_text, unhandled_components, approximated_components).
     """
-    components = sorted(set(_JSX_COMPONENT.findall(text)))
-    stripped = _IMPORT_EXPORT.sub("", text)
-    stripped = re.sub(r"\n{3,}", "\n\n", stripped)
-    return stripped, components
+    text = _IMPORT_EXPORT.sub("", text)
+    # MDX comments ({/* ... */}) are never rendered; drop them entirely.
+    text = re.sub(r"\{/\*.*?\*/\}", "", text, flags=re.DOTALL)
+    approximated = set()
+    lines = []
+    fence_open = None  # indent width of the opening fence line, else None
+
+    for raw in text.split("\n"):
+        if fence_open is not None:
+            # Inside a fence: remove the fence's own indentation, keep
+            # relative indentation of its content.
+            lines.append(raw[fence_open:] if raw[:fence_open].strip() == "" else raw)
+            if _FENCE.match(raw):
+                fence_open = None
+            continue
+        fence_match = _FENCE.match(raw)
+        if fence_match:
+            fence_open = len(raw) - len(raw.lstrip())
+            lines.append(raw.lstrip())
+            continue
+
+        line = raw
+        stripped = line.strip()
+
+        # Whole-line component tags
+        m = re.match(r"^</?([A-Z][A-Za-z0-9]*)([^>]*?)/?>$", stripped)
+        if m:
+            name, rest = m.group(1), m.group(2)
+            closing = stripped.startswith("</")
+            if name in DROP_TAGS:
+                approximated.add(name)
+                lines.append("")
+                continue
+            if name in ADMONITION_TAGS and not closing:
+                approximated.add(name)
+                lines.append(f"\x00ADMON\x00{ADMONITION_TAGS[name]}")
+                continue
+            if name in ADMONITION_TAGS and closing:
+                lines.append("\x00ENDADMON\x00")
+                continue
+            if name in TITLE_TAGS:
+                approximated.add(name)
+                if closing:
+                    lines.append("")
+                else:
+                    title = _tag_attrs(rest).get("title") or _tag_attrs(rest).get("name") or ""
+                    lines.append(f"**{title}**" if title else "")
+                continue
+            if name == "Card":
+                approximated.add(name)
+                if closing:
+                    lines.append("")
+                else:
+                    attrs = _tag_attrs(rest)
+                    title, href = attrs.get("title", ""), attrs.get("href", "")
+                    if title and href:
+                        lines.append(f"[**{title}**]({href})")
+                    elif title:
+                        lines.append(f"**{title}**")
+                    else:
+                        lines.append("")
+                continue
+        # Inline single-line callout: <Note>text</Note>
+        m = re.match(r"^<([A-Z][A-Za-z0-9]*)>(.*)</\1>$", stripped)
+        if m and m.group(1) in ADMONITION_TAGS:
+            approximated.add(m.group(1))
+            lines.append(f"\x00ADMON\x00{ADMONITION_TAGS[m.group(1)]}")
+            lines.append(m.group(2).strip())
+            lines.append("\x00ENDADMON\x00")
+            continue
+        lines.append(line)
+
+    # Dedent JSX nesting outside fences, block by block, preserving
+    # relative indentation (nested lists survive).
+    dedented = []
+    block = []
+    fence_state = False
+
+    def _flush(block):
+        if not block:
+            return
+        indents = [len(l) - len(l.lstrip()) for l in block if l.strip()]
+        cut = min(indents) if indents else 0
+        if cut >= 2:
+            dedented.extend(l[cut:] if l.strip() else "" for l in block)
+        else:
+            dedented.extend(block)
+
+    for line in lines:
+        if _FENCE.match(line):
+            fence_state = not fence_state
+            _flush(block)
+            block = []
+            dedented.append(line)
+            continue
+        if fence_state:
+            dedented.append(line)
+            continue
+        if not line.strip():
+            _flush(block)
+            block = []
+            dedented.append(line)
+        else:
+            block.append(line)
+    _flush(block)
+
+    # Assemble admonition regions: indent body lines by 4 spaces.
+    final = []
+    admon_depth = 0
+    for line in dedented:
+        if line.startswith("\x00ADMON\x00"):
+            final.append(f"!!! {line.split(chr(0))[2]}")
+            admon_depth += 1
+        elif line == "\x00ENDADMON\x00":
+            admon_depth = max(0, admon_depth - 1)
+            final.append("")
+        elif admon_depth and line.strip():
+            final.append("    " * admon_depth + line)
+        else:
+            final.append(line)
+
+    result = re.sub(r"\n{3,}", "\n\n", "\n".join(final))
+    unhandled = sorted(set(_JSX_COMPONENT.findall(result)))
+    return result, unhandled, sorted(approximated)
 
 
 def _patch_frontmatter_order(text, order):
@@ -114,40 +257,97 @@ def _slugify(name):
 
 
 _MD_LINK = re.compile(r"(\]\()([^)\s]+)(\))")
+_ATTR_LINK = re.compile(r"((?:href|src)=)([\"'])([^\"']*)\2")
+_ATTR_EXPR = re.compile(r"(?:href|src)=\{([^}]+)\}")
+_SKIP_SCHEMES = ("http://", "https://", "mailto:", "tel:", "data:", "#")
 
 
-def _rewrite_content_links(text, page_key, all_page_keys):
-    """Rewrite internal links to point at the migrated .md files.
+def _resolve_internal(href, page_dir, pages, assets):
+    """Resolve an internal href to ('page'|'asset', key) or (None, None).
 
-    Hosted platforms use root-absolute, extensionless page links
-    (`/guides/intro`); WingTip resolves ordinary relative Markdown links.
-    Every link that resolves to a migrated page becomes a relative .md link
-    so WingTip's link rewriter takes it from there.
+    Tries the path relative to the current page first, then as a site-root
+    path — hosted platforms use both, often without a leading slash or file
+    extension because their router resolves them.
+    """
+    path = href.lstrip("/") if href.startswith("/") else href
+    stripped = path[:-4] if path.endswith(".mdx") else path[:-3] if path.endswith(".md") else path
+    candidates = []
+    if not href.startswith("/") and page_dir:
+        candidates.append(os.path.normpath(os.path.join(page_dir, stripped)).replace(os.sep, "/"))
+    candidates.append(os.path.normpath(stripped).replace(os.sep, "/") if stripped else "index")
+    for key in candidates:
+        if key in ("", "."):
+            key = "index"
+        if key in pages:
+            return "page", key
+    # Asset candidates keep their extension.
+    asset_candidates = []
+    if not href.startswith("/") and page_dir:
+        asset_candidates.append(os.path.normpath(os.path.join(page_dir, path)).replace(os.sep, "/"))
+    asset_candidates.append(os.path.normpath(path).replace(os.sep, "/"))
+    for key in asset_candidates:
+        if key in assets:
+            return "asset", key
+    return None, None
+
+
+def _rewrite_content_links(text, page_key, pages, assets, report):
+    """Rewrite internal links — Markdown links and raw href/src attributes —
+    to portable relative paths in the migrated tree.
+
+    Page links in Markdown become relative .md links (WingTip's pipeline
+    converts those); page links in raw attributes become relative .html
+    links (raw markup bypasses that pipeline). Brace-expression targets
+    (`href={variable}`) are stubbed to '#' and reported — the variable only
+    exists in the platform's JavaScript. Unresolvable internal links are
+    reported as suspected broken links in the source.
     """
     page_dir = page_key.rpartition("/")[0]
     is_home = page_key == "index"
 
-    def _replace(match):
-        href = match.group(2)
-        if href.startswith(("http://", "https://", "mailto:", "#")):
-            return match.group(0)
+    def _target(href, as_markdown):
+        """Return replacement href, or None to leave unchanged."""
+        if not href or href.startswith(_SKIP_SCHEMES):
+            return None
+        if "{" in href:
+            report["expression_links"].setdefault(page_key, []).append(href)
+            return "#"
         path, hash_sep, fragment = href.partition("#")
-        stripped = path[:-4] if path.endswith(".mdx") else path[:-3] if path.endswith(".md") else path
+        kind, key = _resolve_internal(path, page_dir, pages, assets)
+        if kind == "page":
+            if as_markdown:
+                new = ("index.md" if key == "index" else f"docs/{key}.md") if is_home \
+                    else os.path.relpath(key + ".md", page_dir or ".").replace(os.sep, "/")
+            else:
+                # Raw markup is not rewritten by the build pipeline; link
+                # straight to the generated page.
+                new = os.path.relpath(key + ".html", page_dir or ".").replace(os.sep, "/")
+            return new + hash_sep + fragment
+        if kind == "asset":
+            # Assets live in the docs/ tree; the home page (README.md at the
+            # project root) reaches them through the docs/ prefix.
+            new = f"docs/{key}" if is_home else os.path.relpath(key, page_dir or ".").replace(os.sep, "/")
+            return new + hash_sep + fragment
         if path.startswith("/"):
-            key = stripped.lstrip("/")
-        else:
-            key = os.path.normpath(os.path.join(page_dir, stripped)).replace(os.sep, "/")
-        if key not in all_page_keys:
-            return match.group(0)
-        if is_home:
-            # The home page becomes README.md at the project root, where the
-            # docs/ prefix convention applies.
-            new = "index.md" if key == "index" else f"docs/{key}.md"
-        else:
-            new = os.path.relpath(key + ".md", page_dir or ".").replace(os.sep, "/")
-        return match.group(1) + new + hash_sep + fragment + match.group(3)
+            report["broken_links"].setdefault(page_key, []).append(href)
+        return None
 
-    return _MD_LINK.sub(_replace, text)
+    def _md_replace(match):
+        new = _target(match.group(2), as_markdown=True)
+        return match.group(0) if new is None else match.group(1) + new + match.group(3)
+
+    def _attr_replace(match):
+        new = _target(match.group(3), as_markdown=False)
+        return match.group(0) if new is None else match.group(1) + match.group(2) + new + match.group(2)
+
+    def _expr_replace(match):
+        report["expression_links"].setdefault(page_key, []).append(match.group(1).strip())
+        return 'href="#"'
+
+    text = _MD_LINK.sub(_md_replace, text)
+    text = _ATTR_LINK.sub(_attr_replace, text)
+    text = _ATTR_EXPR.sub(_expr_replace, text)
+    return text
 
 
 def migrate(source_dir, output_dir):
@@ -182,6 +382,9 @@ def migrate(source_dir, output_dir):
         "groups_mapped": [],
         "groups_unmapped": [],
         "orphan_pages": [],
+        "components_approximated": {},  # component name -> page count
+        "expression_links": {},  # page -> [expressions]
+        "broken_links": {},      # page -> [unresolvable internal hrefs]
         "redirects": platform_config.get("redirects") or [],
         "config_carried": [],
         "config_not_carried": [],
@@ -201,9 +404,11 @@ def migrate(source_dir, output_dir):
     # Project-level assets are handled separately below, not copied into docs/.
     favicon_rel = str(platform_config.get("favicon") or "").lstrip("/")
 
-    # Pass 1: inventory pages and copy static assets. The full page set is
-    # needed before any page is written so internal links can be rewritten.
+    # Pass 1: inventory pages and copy static assets. The full page and
+    # asset sets are needed before any page is written so internal links
+    # can be rewritten.
     page_files = []  # (source path, page key)
+    asset_keys = set()
     for dirpath, dirnames, filenames in os.walk(source_dir):
         dirnames[:] = sorted(d for d in dirnames if not d.startswith(".") and d not in SKIP_DIRS)
         for name in sorted(filenames):
@@ -221,6 +426,7 @@ def migrate(source_dir, output_dir):
                 dest = os.path.join(docs_out, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 shutil.copy2(src, dest)
+                asset_keys.add(rel.replace(os.sep, "/"))
 
     all_page_keys = {key for _, key, _ in page_files}
 
@@ -229,17 +435,19 @@ def migrate(source_dir, output_dir):
     for src, page_key, ext in page_files:
         text = pathlib.Path(src).read_text(encoding="utf8")
         if ext == ".mdx":
-            text, components = _convert_mdx(text)
+            text, components, approximated = _convert_mdx(text)
             report["pages_mdx"] += 1
             if components:
                 report["mdx_components"][page_key + ".md"] = components
+            for name in approximated:
+                report["components_approximated"][name] = report["components_approximated"].get(name, 0) + 1
         else:
             report["pages_md"] += 1
         if page_key in nav_page_order:
             text = _patch_frontmatter_order(text, nav_page_order[page_key])
         else:
             report["orphan_pages"].append(page_key)
-        text = _rewrite_content_links(text, page_key, all_page_keys)
+        text = _rewrite_content_links(text, page_key, all_page_keys, asset_keys, report)
         dest = os.path.join(docs_out, page_key.replace("/", os.sep) + ".md")
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         pathlib.Path(dest).write_text(text, encoding="utf8")
@@ -338,7 +546,14 @@ def migrate(source_dir, output_dir):
 
 def _write_report(output_dir, r):
     total_pages = r["pages_md"] + r["pages_mdx"]
-    manual = len(r["mdx_components"]) + (1 if r["redirects"] else 0) + len(r["config_not_carried"]) + len(r["groups_unmapped"])
+    manual = (
+        len(r["mdx_components"])
+        + len(r["expression_links"])
+        + len(r["broken_links"])
+        + (1 if r["redirects"] else 0)
+        + len(r["config_not_carried"])
+        + len(r["groups_unmapped"])
+    )
 
     lines = []
     lines.append("# Migration Report")
@@ -361,13 +576,16 @@ def _write_report(output_dir, r):
         lines.append(f"- ✓ Group **{name}** → `docs/{target}/_category.json`")
     if r["urls_preserved"]:
         lines.append(f"- ✓ {len(r['urls_preserved'])} page URLs preserved (nested paths kept intact)")
+    if r["components_approximated"]:
+        summary = ", ".join(f"`<{name}>` ({count})" for name, count in sorted(r["components_approximated"].items()))
+        lines.append(f"- ✓ Components approximated as Markdown: {summary}")
     for item in r["config_carried"]:
         lines.append(f"- ✓ Config: {item}")
     for note in r["notes"]:
         lines.append(f"- ✓ {note}")
     lines.append("")
 
-    if r["mdx_components"] or r["redirects"] or r["config_not_carried"] or r["groups_unmapped"] or r["orphan_pages"]:
+    if r["mdx_components"] or r["redirects"] or r["config_not_carried"] or r["groups_unmapped"] or r["orphan_pages"] or r["expression_links"] or r["broken_links"]:
         lines.append("## Needs manual work")
         lines.append("")
         if r["mdx_components"]:
@@ -377,6 +595,22 @@ def _write_report(output_dir, r):
             lines.append("")
             for page, comps in sorted(r["mdx_components"].items()):
                 lines.append(f"- ⚠ `docs/{page}`: {', '.join(f'`<{c}>`' for c in comps)}")
+            lines.append("")
+        if r["expression_links"]:
+            lines.append(f"### Dynamic link expressions ({len(r['expression_links'])} pages)")
+            lines.append("")
+            lines.append("These links used JavaScript expressions (`href={variable}`) that only exist in the source platform's runtime. They were stubbed to `#` — replace each with a real URL:")
+            lines.append("")
+            for page, exprs in sorted(r["expression_links"].items()):
+                lines.append(f"- ⚠ `docs/{page}.md`: {', '.join(f'`{e}`' for e in sorted(set(exprs)))}")
+            lines.append("")
+        if r["broken_links"]:
+            lines.append(f"### Suspected broken links in the source ({len(r['broken_links'])} pages)")
+            lines.append("")
+            lines.append("These internal links did not resolve to any page or asset in the source project — they were likely already broken before migration. Left unchanged for review:")
+            lines.append("")
+            for page, hrefs in sorted(r["broken_links"].items()):
+                lines.append(f"- ⚠ `docs/{page}.md`: {', '.join(f'`{h}`' for h in sorted(set(hrefs)))}")
             lines.append("")
         if r["groups_unmapped"]:
             lines.append("### Navigation groups needing review")
