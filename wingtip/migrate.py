@@ -121,7 +121,30 @@ def _convert_mdx(text):
     lines = []
     fence_open = None  # indent width of the opening fence line, else None
 
+    # Join JSX tags that span multiple lines (multi-attribute components are
+    # usually written one attribute per line) so the whole-line handling
+    # below sees them. Fence-aware: code samples are left alone.
+    joined = []
+    pending = None
+    fence_state = False
     for raw in text.split("\n"):
+        if _FENCE.match(raw):
+            fence_state = not fence_state
+        if pending is not None:
+            pending += " " + raw.strip()
+            if ">" in raw:
+                joined.append(pending)
+                pending = None
+            continue
+        stripped = raw.strip()
+        if not fence_state and re.match(r"^<[A-Za-z][A-Za-z0-9]*(\s|$)", stripped) and ">" not in stripped:
+            pending = raw.rstrip()
+            continue
+        joined.append(raw)
+    if pending is not None:
+        joined.append(pending)
+
+    for raw in joined:
         if fence_open is not None:
             # Inside a fence: remove the fence's own indentation, keep
             # relative indentation of its content.
@@ -176,6 +199,16 @@ def _convert_mdx(text):
                     else:
                         lines.append("")
                 continue
+            # Any other leaf component carrying a src attribute is
+            # approximated as an image (linked if it also has an href) so
+            # the referenced asset renders and gets copied into the build.
+            if not closing and stripped.endswith("/>"):
+                attrs = _tag_attrs(rest)
+                if attrs.get("src"):
+                    approximated.add(name)
+                    img = f"![{attrs.get('alt', '')}]({attrs['src']})"
+                    lines.append(f"[{img}]({attrs['href']})" if attrs.get("href") else img)
+                    continue
         # Inline single-line callout: <Note>text</Note>
         m = re.match(r"^<([A-Z][A-Za-z0-9]*)>(.*)</\1>$", stripped)
         if m and m.group(1) in ADMONITION_TAGS:
@@ -220,20 +253,40 @@ def _convert_mdx(text):
             block.append(line)
     _flush(block)
 
-    # Assemble admonition regions: indent body lines by 4 spaces.
+    # Assemble callout regions as blockquotes. Blockquotes have no
+    # indentation semantics, so raw HTML and images inside a callout can't
+    # accidentally become indented code blocks. Callouts containing fenced
+    # code degrade to a bold label instead (quoted fences don't parse).
     final = []
-    admon_depth = 0
+    admon_stack = []  # (label, body_lines)
+
+    def _flush_admon(target):
+        label, body = admon_stack.pop()
+        while body and not body[0].strip():
+            body.pop(0)
+        while body and not body[-1].strip():
+            body.pop()
+        if any(_FENCE.match(b) for b in body):
+            target.append(f"**{label.title()}:**")
+            target.append("")
+            target.extend(body)
+        else:
+            target.append(f"> **{label.title()}**")
+            target.append(">")
+            target.extend("> " + b if b.strip() else ">" for b in body)
+        target.append("")
+
     for line in dedented:
         if line.startswith("\x00ADMON\x00"):
-            final.append(f"!!! {line.split(chr(0))[2]}")
-            admon_depth += 1
-        elif line == "\x00ENDADMON\x00":
-            admon_depth = max(0, admon_depth - 1)
-            final.append("")
-        elif admon_depth and line.strip():
-            final.append("    " * admon_depth + line)
+            admon_stack.append((line.split(chr(0))[2], []))
+        elif line == "\x00ENDADMON\x00" and admon_stack:
+            _flush_admon(admon_stack[-1][1] if len(admon_stack) > 1 else final)
+        elif admon_stack:
+            admon_stack[-1][1].append(line)
         else:
             final.append(line)
+    while admon_stack:
+        _flush_admon(admon_stack[-1][1] if len(admon_stack) > 1 else final)
 
     result = re.sub(r"\n{3,}", "\n\n", "\n".join(final))
     unhandled = sorted(set(_JSX_COMPONENT.findall(result)))

@@ -982,6 +982,15 @@ def extract_title(md):
 
 
 _NAV_CACHE = None
+_PAGE_URL_CACHE = None
+
+def _all_page_urls():
+    """Set of every output-relative page URL in this build (cached)."""
+    global _PAGE_URL_CACHE
+    if _PAGE_URL_CACHE is None:
+        _PAGE_URL_CACHE = {_doc_html_filename(p) for p in _discover_doc_files('docs')}
+        _PAGE_URL_CACHE.add('index.html')
+    return _PAGE_URL_CACHE
 
 def _nav_page_order(front):
     """Numeric sort order from `order`/`nav_order` frontmatter, or None."""
@@ -1393,13 +1402,14 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
                         if not suffix or suffix.startswith(('#', '?')):
                             href = base + '.html' + suffix
 
-                    # Handle docs/ prefix for local development vs GitHub Pages
+                    # Handle docs/ prefix for local development vs GitHub Pages.
+                    # Only strip it when the docs/-prefixed path is not itself
+                    # a real page — a project may legitimately have a docs/
+                    # directory inside its docs tree (URL space docs/...).
                     if href.startswith('docs/'):
-                        href = href[5:]  # Remove docs/ prefix
-                    elif not any(href.startswith(prefix) for prefix in ['index.html', 'assets/', 'static/', 'images/']):
-                        # For files that aren't in special directories and don't start with docs/
-                        # we need to ensure they're relative to the current file
-                        href = href
+                        path_only = href.split('#')[0].split('?')[0]
+                        if path_only not in _all_page_urls():
+                            href = href[5:]  # Remove docs/ prefix
 
                     element.set('href', href)
             return root
@@ -1835,8 +1845,9 @@ def cleanup_output_dir(generated_files):
                     os.remove(full_path)
 
 def main():
-    global _NAV_CACHE
+    global _NAV_CACHE, _PAGE_URL_CACHE
     _NAV_CACHE = None
+    _PAGE_URL_CACHE = None
 
     # Subcommand routing: `wingtip migrate <path>` converts an existing
     # hosted documentation project into a new WingTip project.
