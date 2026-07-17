@@ -136,6 +136,7 @@ Turn the existing auditor into a differentiated discovery system:
 - Audit internal-link depth and surface pages with weak contextual connectivity
 - Add configurable HTML, CSS, JavaScript, image, request-count, and font performance budgets
 - Shard or lazy-load sidebar navigation for very large sites: per-page full navigation makes total output size quadratic in page count (measured: a 5,387-page site emits a ~5,300-entry sidebar on every page, ~3.9GB total). Migration and build times scale linearly; navigation weight is the limit
+- Audit at scale: parallelize the post-build audit per file (it is embarrassingly parallel) and add incremental auditing keyed on content hash so CI re-audits only changed pages. At the 5,387-page tail the full audit takes tens of minutes — a gate that slow gets skipped, and a skipped gate protects nothing. (Typical 50–300 page sites audit in seconds.)
 - Emit machine-readable audit output for CI annotations
 - Generate a crawl graph and diff it between builds
 - Add optional answer-first/content-structure linting without making ranking promises
