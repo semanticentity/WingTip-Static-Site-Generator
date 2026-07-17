@@ -1837,6 +1837,13 @@ def cleanup_output_dir(generated_files):
 def main():
     global _NAV_CACHE
     _NAV_CACHE = None
+
+    # Subcommand routing: `wingtip migrate <path>` converts an existing
+    # hosted documentation project into a new WingTip project.
+    if len(sys.argv) > 1 and sys.argv[1] == "migrate":
+        from wingtip.migrate import main as migrate_main
+        return migrate_main(sys.argv[2:])
+
     parser = argparse.ArgumentParser(
         prog="wingtip",
         description=show_help.__doc__,
@@ -1845,6 +1852,7 @@ def main():
   wingtip
   wingtip --serve
   wingtip --source ./docs-project --output ./build
+  wingtip migrate ./their-docs --output ./our-docs
   wingtip --regen-card""",
     )
     parser.add_argument("--regen-card", action="store_true", help="force regeneration of the Open Graph social card")
@@ -2083,7 +2091,6 @@ def main():
     # Start dev server if requested
     if args.serve:
         import subprocess
-        import sys
         import time
         from pathlib import Path
         

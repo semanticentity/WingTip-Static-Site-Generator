@@ -1,5 +1,16 @@
 # WingTip Changelog
 
+## [Unreleased]
+
+### Migration importer
+
+- New `wingtip migrate <source> [--output DIR]` command converts a hosted documentation project (`docs.json` / `mint.json` configuration) into a new WingTip project. Strictly read-only: the source is never modified.
+- Pages (`.md` and `.mdx`) copy with nested paths preserved in URLs; module `import`/`export` lines are stripped from MDX and JSX components are inventoried per page.
+- Navigation groups map to directory `_category.json` files where they align with directories; page order carries over as `order` frontmatter.
+- Platform-style absolute internal links (`/guides/intro`) rewrite to portable relative Markdown links.
+- Site name, description, brand colors, and favicon carry into `config.json` and `theme.json`.
+- Every migration emits `migration-report.md`: an executive summary (pages converted, URLs preserved, groups mapped, manual follow-ups) followed by converted items, manual-work details, and next steps.
+
 ## [v0.5.0] - 2026-07-17
 
 ### Nested content and navigation
