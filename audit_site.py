@@ -170,9 +170,16 @@ def main():
     except ImportError:
         parser = "html.parser"
 
+    # Navigation links repeat on every page; memoize per-(page-dir, url)
+    # verdicts so a large site costs one check per unique target instead
+    # of pages x links. Verdict: None = fine, str = error message suffix.
+    resolution_cache = {}
+
     for html in site.rglob("*.html"):
         text = html.read_text(encoding="utf8")
-        soup = BeautifulSoup(text, parser)
+        # lxml drops content appended after </html>; strip the closers so
+        # trailing markup (a corruption the audit must catch) is parsed too.
+        soup = BeautifulSoup(re.sub(r"</(?:body|html)>", "", text, flags=re.I), parser)
 
         # Remove non-rendered regions up front (linear), so the attribute
         # scan below never sees code samples or embedded raw markdown.
@@ -186,6 +193,14 @@ def main():
             urls.add(el["src"])
 
         for url in urls:
+            cache_key = (html.parent, url)
+            if cache_key in resolution_cache:
+                verdict = resolution_cache[cache_key]
+                if verdict:
+                    errors.append(f"{html.relative_to(site)} {verdict}")
+                continue
+
+            verdict = None
             parsed = urlparse(url)
 
             # External / CDN check
@@ -193,38 +208,39 @@ def main():
                 origin = parsed.netloc.lower().lstrip("www.")
                 origin = origin.split(":")[0]
                 if origin in CDN_ORIGINS:
-                    errors.append(f"{html.relative_to(site)} references CDN {url}")
-                continue
-
-            # Any other scheme (mailto:, tel:, cursor:, vscode:, data:,
-            # javascript:, ...) is not a local file reference.
-            if parsed.scheme:
-                continue
-
-            # Skip fragment-only anchors.
-            if not url or url.startswith("#"):
-                continue
-
-            # Resolve local reference. Treat leading / as site-root relative,
-            # otherwise relative to the HTML file.
-            if url.startswith("/"):
-                target = site / url.lstrip("/")
+                    verdict = f"references CDN {url}"
+            elif parsed.scheme:
+                # Any other scheme (mailto:, tel:, cursor:, vscode:, data:,
+                # javascript:, ...) is not a local file reference.
+                pass
+            elif not url or url.startswith("#"):
+                # Fragment-only anchor.
+                pass
             else:
-                target = (html.parent / url).resolve()
-                try:
-                    target.relative_to(site)
-                except ValueError:
-                    warnings.append(
-                        f"{html.relative_to(site)} references file outside site: {url}"
-                    )
-                    continue
+                # Resolve local reference. Treat leading / as site-root
+                # relative, otherwise relative to the HTML file.
+                if url.startswith("/"):
+                    target = site / url.lstrip("/")
+                    outside = False
+                else:
+                    target = (html.parent / url).resolve()
+                    outside = False
+                    try:
+                        target.relative_to(site)
+                    except ValueError:
+                        outside = True
+                        warnings.append(
+                            f"{html.relative_to(site)} references file outside site: {url}"
+                        )
+                if not outside:
+                    # Drop fragment/query for filesystem check
+                    target_path = str(target).split("#")[0].split("?")[0]
+                    if not Path(target_path).exists():
+                        verdict = f"references missing file: {url}"
 
-            # Drop fragment/query for filesystem check
-            target_path = str(target).split("#")[0].split("?")[0]
-            if not Path(target_path).exists():
-                errors.append(
-                    f"{html.relative_to(site)} references missing file: {url}"
-                )
+            resolution_cache[cache_key] = verdict
+            if verdict:
+                errors.append(f"{html.relative_to(site)} {verdict}")
 
     _branding_check(site, project_name, errors)
 
