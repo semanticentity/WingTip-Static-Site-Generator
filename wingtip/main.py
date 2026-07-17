@@ -894,17 +894,51 @@ def _slugify(name):
     return slug.strip('-')
 
 def _doc_html_filename(md_path, docs_dir='docs'):
-    """Convert a markdown source path to its flat output HTML filename.
+    """Convert a markdown source path to its output HTML path.
 
-    Files inside docs/ subdirectories are prefixed with the directory path
-    (e.g. docs/category/page.md -> category--page.html) so all pages can live
-    in a single output directory without collisions.
+    Nested source paths are preserved in generated URLs
+    (docs/guides/intro.md -> guides/intro.html) so existing site structures
+    and inbound links survive a migration. A README.md maps to index.html
+    within its directory.
     """
-    if os.path.basename(md_path).lower() == 'readme.md' and (md_path == 'README.md' or md_path == os.path.join(docs_dir, 'README.md')):
+    if md_path == 'README.md':
         return 'index.html'
     rel = os.path.relpath(md_path, docs_dir)
-    base = os.path.splitext(rel)[0].replace(os.sep, '--').replace('/', '--')
-    return f"{base}.html"
+    if rel.startswith('..'):
+        # Source outside docs/ (e.g. 404.md in the project root)
+        rel = os.path.basename(md_path)
+    rel = rel.replace(os.sep, '/')
+    dirname, _, basename = rel.rpartition('/')
+    if basename.lower() == 'readme.md':
+        basename = 'index.md'
+    stem = os.path.splitext(basename)[0]
+    return f"{dirname}/{stem}.html" if dirname else f"{stem}.html"
+
+def _discover_doc_files(docs_dir='docs'):
+    """Recursively find markdown files under docs_dir in stable sorted order.
+
+    Skips hidden and underscore-prefixed directories and never descends into
+    the build output directory (docs/site by default lives inside docs/).
+    """
+    found = []
+    if not os.path.isdir(docs_dir):
+        return found
+    out_abs = os.path.abspath(OUTPUT_DIR)
+    for dirpath, dirnames, filenames in os.walk(docs_dir):
+        dirnames[:] = sorted(
+            d for d in dirnames
+            if not d.startswith(('.', '_'))
+            and os.path.abspath(os.path.join(dirpath, d)) != out_abs
+        )
+        for name in sorted(filenames):
+            if name.endswith('.md'):
+                found.append(os.path.join(dirpath, name))
+    return found
+
+def _rel_href(from_rel, to_rel):
+    """Relative URL from one output-relative page path to another."""
+    rel = os.path.relpath(to_rel, os.path.dirname(from_rel) or '.')
+    return rel.replace(os.sep, '/')
 
 def _load_category_meta(category_dir):
     """Read _category.json metadata if present."""
@@ -946,61 +980,128 @@ def extract_title(md):
 
 
 
+_NAV_CACHE = None
+
+def _nav_page_order(front):
+    """Numeric sort order from `order`/`nav_order` frontmatter, or None."""
+    value = front.get('order', front.get('nav_order')) if isinstance(front, dict) else None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+def _sorted_nav_pages(entries):
+    """Order pages by explicit `order` frontmatter first, then title."""
+    return sorted(entries, key=lambda p: (p['order'] is None, p['order'] or 0, p['title'].lower()))
+
+def _collect_nav_data(docs_dir='docs'):
+    """Build the navigation model once per build.
+
+    Returns (tree, categories) where tree is a nested dict of directory
+    groups ({'pages': [...], 'children': {dirname: subtree}}) and categories
+    maps frontmatter `category` names to top-level pages that declare one.
+    """
+    global _NAV_CACHE
+    if _NAV_CACHE is not None:
+        return _NAV_CACHE
+
+    tree = {'pages': [], 'children': {}}
+    categories = {}
+    for md_path in _discover_doc_files(docs_dir):
+        if os.path.basename(md_path) == '404.md':
+            continue
+        try:
+            text = pathlib.Path(md_path).read_text(encoding='utf8')
+            front = parse_frontmatter(text)
+            title = extract_title(text)
+        except Exception:
+            front, title = {}, os.path.splitext(os.path.basename(md_path))[0]
+        entry = {
+            'title': title,
+            'href': _doc_html_filename(md_path, docs_dir),
+            'order': _nav_page_order(front),
+        }
+        rel_dir = os.path.relpath(os.path.dirname(md_path), docs_dir)
+        if rel_dir == '.':
+            category = str(front.get('category', '') or '').strip() if isinstance(front, dict) else ''
+            if category:
+                categories.setdefault(category, []).append(entry)
+            else:
+                tree['pages'].append(entry)
+        else:
+            node = tree
+            for part in rel_dir.split(os.sep):
+                node = node['children'].setdefault(part, {'pages': [], 'children': {}})
+            node['pages'].append(entry)
+
+    _NAV_CACHE = (tree, categories)
+    return _NAV_CACHE
+
+def _render_nav_group(dirname, rel_dir, node, docs_dir, active_html, prefix):
+    """Render one directory group as a collapsible <details> block."""
+    meta = _load_category_meta(os.path.join(docs_dir, rel_dir))
+    name = meta.get('name') or dirname.replace('-', ' ').replace('_', ' ').title()
+    group_prefix = rel_dir.replace(os.sep, '/') + '/'
+    is_open = ' open' if active_html.startswith(group_prefix) else ''
+
+    parts = [f'<li class="nav-group"><details{is_open}><summary>{html_module.escape(str(name))}</summary><ul>']
+    for page in _sorted_nav_pages(node['pages']):
+        active_class = ' class="active"' if page['href'] == active_html else ''
+        parts.append(f'<li><a href="{prefix}{page["href"]}"{active_class}>{html_module.escape(page["title"])}</a></li>')
+    for child in _sorted_nav_groups(node['children'], rel_dir, docs_dir):
+        parts.append(_render_nav_group(child, os.path.join(rel_dir, child), node['children'][child], docs_dir, active_html, prefix))
+    parts.append('</ul></details></li>')
+    return '\n'.join(parts)
+
+def _sorted_nav_groups(children, parent_rel, docs_dir):
+    """Order sibling directory groups by _category.json `order`, then name."""
+    def key(dirname):
+        meta = _load_category_meta(os.path.join(docs_dir, parent_rel, dirname) if parent_rel else os.path.join(docs_dir, dirname))
+        order = meta.get('order')
+        try:
+            order = float(order)
+        except (TypeError, ValueError):
+            order = None
+        return (order is None, order or 0, dirname.lower())
+    return sorted(children, key=key)
+
 def build_navigation(current_file: str) -> str:
-    """Build the navigation section HTML, grouping pages by frontmatter category."""
+    """Build the sidebar navigation HTML: root pages, frontmatter category
+    groups, and nested directory groups with collapsible sections."""
+    docs_dir = 'docs'
+    active_html = _doc_html_filename(current_file, docs_dir)
+    # Links are emitted relative to the current page's depth so they work on
+    # any hosting setup, including file:// and zero-config local previews.
+    prefix = '../' * active_html.count('/')
+
+    tree, categories = _collect_nav_data(docs_dir)
+
     nav_html = ['<div class="navigation">']
     nav_html.append('<h2>Documentation</h2>')
-
-    # Determine the active HTML filename from the current markdown source path
-    if os.path.basename(current_file).lower() == 'readme.md':
-        active_html = 'index.html'
-    else:
-        active_html = f"{os.path.splitext(os.path.basename(current_file))[0]}.html"
-
-    # Collect pages and their frontmatter categories
-    pages_by_category = {}
-    root_pages = []
-    docs_dir = 'docs'
-    if os.path.isdir(docs_dir):
-        for name in sorted(os.listdir(docs_dir)):
-            if not name.endswith('.md'):
-                continue
-            md_path = os.path.join(docs_dir, name)
-            try:
-                front = parse_frontmatter(pathlib.Path(md_path).read_text(encoding='utf8'))
-                title = extract_title(pathlib.Path(md_path).read_text(encoding='utf8'))
-            except Exception:
-                front = {}
-                title = name[:-3]
-            category = str(front.get('category', '')).strip() if isinstance(front, dict) else ''
-            base = os.path.splitext(name)[0]
-            html_file = f"{base}.html"
-            item = (title, html_file)
-            if category:
-                pages_by_category.setdefault(category, []).append(item)
-            else:
-                root_pages.append(item)
-
     nav_html.append('<ul>')
 
     # README / Home
     if os.path.exists('README.md'):
         active_class = ' class="active"' if active_html == 'index.html' else ''
-        nav_html.append(f'<li><a href="index.html"{active_class}>README</a></li>')
+        nav_html.append(f'<li><a href="{prefix}index.html"{active_class}>README</a></li>')
 
-    # Uncategorized pages
-    for title, href in sorted(root_pages, key=lambda x: x[0].lower()):
-        active_class = ' class="active"' if href == active_html else ''
-        nav_html.append(f'<li><a href="{href}"{active_class}>{html_module.escape(title)}</a></li>')
+    # Uncategorized top-level pages
+    for page in _sorted_nav_pages(tree['pages']):
+        active_class = ' class="active"' if page['href'] == active_html else ''
+        nav_html.append(f'<li><a href="{prefix}{page["href"]}"{active_class}>{html_module.escape(page["title"])}</a></li>')
 
-    # Categorized pages
-    for category in sorted(pages_by_category, key=lambda x: x.lower()):
+    # Frontmatter category groups
+    for category in sorted(categories, key=str.lower):
         nav_html.append('</ul>')
         nav_html.append(f'<h3 class="nav-category">{html_module.escape(category)}</h3>')
         nav_html.append('<ul>')
-        for title, href in sorted(pages_by_category[category], key=lambda x: x[0].lower()):
-            active_class = ' class="active"' if href == active_html else ''
-            nav_html.append(f'<li><a href="{href}"{active_class}>{html_module.escape(title)}</a></li>')
+        for page in _sorted_nav_pages(categories[category]):
+            active_class = ' class="active"' if page['href'] == active_html else ''
+            nav_html.append(f'<li><a href="{prefix}{page["href"]}"{active_class}>{html_module.escape(page["title"])}</a></li>')
+
+    # Nested directory groups
+    for dirname in _sorted_nav_groups(tree['children'], '', docs_dir):
+        nav_html.append(_render_nav_group(dirname, dirname, tree['children'][dirname], docs_dir, active_html, prefix))
 
     nav_html.append('</ul>')
     nav_html.append('</div>')
@@ -1096,8 +1197,13 @@ def _process_content_images(soup, input_path, output_filename):
         if not src_path:
             continue
 
-        # Determine output destination preserving source directory layout
+        # Determine output destination preserving source directory layout.
+        # Images under docs/ map to the site root the same way pages do, so
+        # their public URLs mirror the source tree.
         src_rel = os.path.relpath(src_path, source_root)
+        docs_prefix = 'docs' + os.sep
+        if src_rel.startswith(docs_prefix):
+            src_rel = src_rel[len(docs_prefix):]
         output_image_path = os.path.normpath(os.path.join(OUTPUT_DIR, src_rel))
         if not os.path.exists(os.path.dirname(output_image_path)):
             os.makedirs(os.path.dirname(output_image_path), exist_ok=True)
@@ -1372,12 +1478,23 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     if len(page_description) > 160:
         page_description = page_description[:157] + "..."
 
+    # Output path relative to the site root, and a per-page base URL.
+    # With a configured base_url every page shares the same absolute base;
+    # in zero-config builds (BASE_URL == '.') nested pages need ../ hops so
+    # assets and site-level artifacts resolve from any depth.
+    rel_out = os.path.relpath(output_filename, OUTPUT_DIR).replace(os.sep, '/')
+    page_depth = rel_out.count('/')
+    if BASE_URL == '.':
+        page_root = '.' if page_depth == 0 else '/'.join(['..'] * page_depth)
+    else:
+        page_root = BASE_URL
+
     # Get navigation links
     nav_links = build_navigation(input_path)
 
-    # Build prev/next links
-    prev_link = f'<a href="{prev_page[1]}" class="prev">← {prev_page[0]}</a>' if prev_page else ''
-    next_link = f'<a href="{next_page[1]}" class="next">{next_page[0]} →</a>' if next_page else ''
+    # Build prev/next links (relative to this page's directory)
+    prev_link = f'<a href="{_rel_href(rel_out, prev_page[1])}" class="prev">← {prev_page[0]}</a>' if prev_page else ''
+    next_link = f'<a href="{_rel_href(rel_out, next_page[1])}" class="next">{next_page[0]} →</a>' if next_page else ''
 
     # Add edit on GitHub link if requested
     if add_edit_link and CONFIG.get("github", {}).get("repo"):
@@ -1395,8 +1512,12 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             page_url = canonical_url = canonical_override
         else:
             page_url = canonical_url = make_url(canonical_override)
+    elif BASE_URL == '.':
+        # Zero-config builds have no absolute base; emit a self-resolving
+        # relative canonical so the URL is correct at any page depth.
+        page_url = canonical_url = f"{page_root}/{rel_out}"
     else:
-        page_url = make_url(os.path.basename(output_filename))
+        page_url = make_url(rel_out)
         canonical_url = page_url
 
     # Build page using global template
@@ -1406,6 +1527,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     if not favicon_config and os.path.exists(os.path.join(OUTPUT_DIR, 'favicon.png')):
         favicon_config = 'favicon.png'
     favicon_url = resolve_public_url(favicon_config) if favicon_config else ''
+    if favicon_url and BASE_URL == '.' and not favicon_url.startswith(('http://', 'https://', '/')):
+        favicon_url = f"{page_root}/{favicon_url}"
     if favicon_url:
         favicon_link = f'<link rel="icon" type="image/png" href="{html_module.escape(favicon_url)}">'
         nav_logo = f'<img src="{html_module.escape(favicon_url)}" alt="{html_module.escape(str(CONFIG.get("project_name", title)))}" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">'
@@ -1415,22 +1538,18 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
 
     # Construct URL for the concatenated docs file
     concat_docs_filename = CONFIG.get("concat_docs_filename", "llms-full.txt")
-    # For local development (BASE_URL is '.'), use a relative path
-    if BASE_URL == '.':
-        concat_docs_url = concat_docs_filename
-    else:
-        concat_docs_url = f"{BASE_URL}/{concat_docs_filename}"
+    concat_docs_url = f"{page_root}/{concat_docs_filename}"
 
     # URL for the RSS feed
     rss_filename = CONFIG.get("rss_filename", "feed.xml")
-    feed_url = rss_filename if BASE_URL == '.' else f"{BASE_URL}/{rss_filename}"
+    feed_url = f"{page_root}/{rss_filename}"
 
     # PWA asset URLs
     theme_color, _ = get_theme_colors()
-    manifest_url = _public_url('manifest.json')
-    sw_url = _public_url('sw.js')
-    icon_192_url = _public_url('icon-192.png') if os.path.exists(os.path.join(OUTPUT_DIR, 'icon-192.png')) else ''
-    icon_512_url = _public_url('icon-512.png') if os.path.exists(os.path.join(OUTPUT_DIR, 'icon-512.png')) else ''
+    manifest_url = f"{page_root}/manifest.json"
+    sw_url = f"{page_root}/sw.js"
+    icon_192_url = f"{page_root}/icon-192.png" if os.path.exists(os.path.join(OUTPUT_DIR, 'icon-192.png')) else ''
+    icon_512_url = f"{page_root}/icon-512.png" if os.path.exists(os.path.join(OUTPUT_DIR, 'icon-512.png')) else ''
     icon_192_link = f'<link rel="apple-touch-icon" sizes="192x192" href="{icon_192_url}">' if icon_192_url else ''
     icon_512_link = f'<link rel="apple-touch-icon" sizes="512x512" href="{icon_512_url}">' if icon_512_url else ''
 
@@ -1457,7 +1576,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     custom_theme_variables_style = generate_theme_css(THEME_CONFIG)
 
     # Determine proper OG type and locale (allow frontmatter overrides)
-    og_type = front_matter.get('og_type') or front_matter.get('og:type') or ("website" if os.path.basename(output_filename) == "index.html" else "article")
+    og_type = front_matter.get('og_type') or front_matter.get('og:type') or ("website" if rel_out == "index.html" else "article")
 
     # Page-level or site-level language (support `lang` alias)
     language = str(front_matter.get('lang') or front_matter.get('language') or CONFIG.get("language", "en"))
@@ -1596,7 +1715,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         json_ld_script = f'<script type="application/ld+json">\n{json.dumps(json_ld, indent=2)}\n</script>'
 
     # Properly construct the markdown alternate URL to avoid .md extension applied to the root domain
-    markdown_alternate_url = f"{BASE_URL}/{os.path.basename(output_filename)}.md"
+    markdown_alternate_url = f"{page_root}/{rel_out}.md"
 
     page = TEMPLATE.substitute(
         title=title,
@@ -1628,7 +1747,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         navigation=nav_links,
         prev_link=prev_link,
         next_link=next_link,
-        base_url=BASE_URL,
+        base_url=page_root,
         favicon_link=favicon_link,
         nav_logo=nav_logo,
         concat_docs_url=concat_docs_url,
@@ -1673,12 +1792,10 @@ def generate_concatenated_markdown():
     if os.path.exists("README.md"):
         files_to_process.append("README.md")
 
-    # Add files from docs/ directory, excluding 404.md
-    docs_dir = "docs"
-    if os.path.isdir(docs_dir):
-        for name in sorted(os.listdir(docs_dir)):
-            if name.endswith(".md") and name != "404.md":
-                files_to_process.append(os.path.join(docs_dir, name))
+    # Add files from docs/ recursively, excluding 404.md
+    for md_path in _discover_doc_files("docs"):
+        if os.path.basename(md_path) != "404.md":
+            files_to_process.append(md_path)
 
     for filepath in files_to_process:
         try:
@@ -1717,6 +1834,8 @@ def cleanup_output_dir(generated_files):
                     os.remove(full_path)
 
 def main():
+    global _NAV_CACHE
+    _NAV_CACHE = None
     parser = argparse.ArgumentParser(
         prog="wingtip",
         description=show_help.__doc__,
@@ -1856,30 +1975,34 @@ def main():
             })
         nav_pages.append((readme_title, "index.html", "README.md", readme_front))
     
-    # Then collect all .md files from docs directory
-    if os.path.isdir(docs_dir):
-        for name in os.listdir(docs_dir):
-            if name.endswith(".md"):
-                md_path = os.path.join(docs_dir, name)
-                with open(md_path, "r", encoding="utf8") as f:
-                    md_content_raw = f.read()
-                front = parse_frontmatter(md_content_raw)
-                title = extract_title(md_content_raw)
+    # Then collect all .md files from the docs directory recursively,
+    # preserving nested source paths in generated URLs.
+    seen_outputs = {"index.html": "README.md"} if nav_pages else {}
+    for md_path in _discover_doc_files(docs_dir):
+        name = os.path.basename(md_path)
+        with open(md_path, "r", encoding="utf8") as f:
+            md_content_raw = f.read()
+        front = parse_frontmatter(md_content_raw)
+        title = extract_title(md_content_raw)
+        html_filename = _doc_html_filename(md_path, docs_dir)
 
-                if name != "404.md" and not _is_noindex(front):
-                    md_content_no_frontmatter = remove_frontmatter(md_content_raw)
-                    html_filename = f"{os.path.splitext(name)[0]}.html"
-                    category_val = str(front.get('category', '') or '').strip() if isinstance(front, dict) else ''
-                    version_val = str(front.get('version', '') or '').strip() if isinstance(front, dict) else ''
-                    search_data_for_index.append({
-                        "title": title,
-                        "content_md": md_content_no_frontmatter,
-                        "url": html_filename,
-                        "category": category_val,
-                        "version": version_val
-                    })
-                base = os.path.splitext(name)[0]
-                nav_pages.append((title, f"{base}.html", md_path, front))
+        if html_filename in seen_outputs:
+            print(f"Warning: {md_path} and {seen_outputs[html_filename]} both map to {html_filename}; skipping {md_path}")
+            continue
+        seen_outputs[html_filename] = md_path
+
+        if name != "404.md" and not _is_noindex(front):
+            md_content_no_frontmatter = remove_frontmatter(md_content_raw)
+            category_val = str(front.get('category', '') or '').strip() if isinstance(front, dict) else ''
+            version_val = str(front.get('version', '') or '').strip() if isinstance(front, dict) else ''
+            search_data_for_index.append({
+                "title": title,
+                "content_md": md_content_no_frontmatter,
+                "url": html_filename,
+                "category": category_val,
+                "version": version_val
+            })
+        nav_pages.append((title, html_filename, md_path, front))
     
     # Convert all files with prev/next navigation
     for i, (title, html_file, md_path, front) in enumerate(nav_pages):

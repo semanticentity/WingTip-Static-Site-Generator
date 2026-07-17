@@ -1,5 +1,17 @@
 # WingTip Changelog
 
+## [Unreleased]
+
+### Nested content and navigation
+
+- `docs/` is now discovered recursively; nested source paths are preserved in generated URLs (`docs/guides/intro.md` → `guides/intro.html`) so existing site structures survive migration.
+- Sidebar navigation renders nested directories as collapsible groups, auto-expanded along the active page's path. `_category.json` (`name`, `order`) names and orders groups; `order`/`nav_order` frontmatter orders pages.
+- A `README.md` inside a docs subdirectory maps to that directory's `index.html`.
+- Content images under `docs/` map to site-root URLs mirroring the source tree.
+- Zero-config builds now emit depth-correct relative URLs for assets, canonicals, search, feeds, and PWA files on nested pages.
+- Duplicate output paths are detected, warned about, and skipped.
+- Search, sitemap, RSS, llms.txt, concatenated docs, and service-worker precache all include nested pages.
+
 ## [v0.4.2] - 2026-07-17
 
 - Fixed the README social-card image on PyPI by using an absolute URL.

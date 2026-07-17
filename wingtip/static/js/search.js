@@ -96,7 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
         results.forEach(item => {
           const li = document.createElement('li');
           const a = document.createElement('a');
-          a.href = item.url;
+          // Index URLs are site-root relative; prefix the page's base so links
+          // resolve from nested pages too.
+          const siteBase = (window.SITE_BASE_URL && window.SITE_BASE_URL !== '.') ? window.SITE_BASE_URL + '/' : '';
+          a.href = siteBase + item.url;
 
           const titleElement = document.createElement('div');
           titleElement.className = 'search-result-title';
