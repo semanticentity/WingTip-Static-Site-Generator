@@ -17,6 +17,11 @@
 - Fixed WingTip's link rewriter stripping the `docs/` prefix from links whose URL space legitimately contains `docs/…`.
 - Validated against real public hosted-docs repositories of 46, 249, 315, and 5,387 pages: URLs preserved on every page, and every remaining audit finding is an itemized pre-existing source defect (stale links, OpenAPI-generated pages, platform runtime paths).
 
+### Package and page-weight diet
+
+- Material Icons converted from TTF to WOFF2 (348KB → 125KB) — every generated site's deploy and service-worker precache shrinks accordingly; browsers only fetch the font when an icon glyph is actually used.
+- Removed an unreferenced bundled font (297KB). Package: 810KB → 608KB compressed.
+
 ### Audit gate
 
 - The post-build auditor now parses pages instead of regex-scanning raw text: only `href`/`src` attributes on rendered elements are checked, so code samples and the raw-markdown embed no longer produce false positives; custom URL schemes (`cursor:`, `vscode:`, …) are treated as external.
