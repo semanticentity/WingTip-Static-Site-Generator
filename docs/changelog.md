@@ -1,5 +1,11 @@
 # WingTip Changelog
 
+## [v0.4.2] - 2026-07-17
+
+- Fixed the README social-card image on PyPI by using an absolute URL.
+- Reworded the branding guarantee: generated sites carry no "powered by" badge, injected links, or generator watermarks.
+- Optimized the social card image from 546KB to 244KB.
+
 ## [v0.4.1] - 2026-07-17
 
 ### Packaging and first-run experience
