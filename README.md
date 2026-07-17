@@ -4,7 +4,7 @@
 
 ![WingTip social card](social-card.png)
 
-[Live demo](https://semanticentity.github.io/WingTip-Static-Site-Generator) · [Source](https://github.com/semanticentity/WingTip-Static-Site-Generator) · [Roadmap](docs/roadmap.md)
+[Live demo](https://semanticentity.github.io/WingTip-Static-Site-Generator) · [Migration guide](docs/migration.md) · [Source](https://github.com/semanticentity/WingTip-Static-Site-Generator) · [Roadmap](docs/roadmap.md)
 
 WingTip turns a repository `README.md` and `docs/` directory into fast, portable static documentation. It generates crawlable HTML, search and discovery metadata, structured data, machine-readable Markdown artifacts, and an offline-capable site without requiring a hosted documentation platform.
 
@@ -20,6 +20,10 @@ Start with zero configuration, customize when needed, and deploy the generated f
 - **No mandatory CDN runtime:** Core styles, scripts, icons, KaTeX, and fonts are vendored into the Python package and copied into the build. External analytics remain opt-in.
 - **No imposed branding:** Projects without a favicon receive no WingTip favicon, logo, or generated PWA icons.
 - **Zero infrastructure:** Search, navigation, PWA support, and offline fallback work from static hosting.
+
+## Moving from hosted documentation?
+
+Use the [migration guide](docs/migration.md) to assess what WingTip supports today, preserve URLs and metadata, validate generated output, and plan a safe cutover. Public repositories and sanitized reproductions can request a [structured migration review](https://github.com/semanticentity/WingTip-Static-Site-Generator/issues/new?template=migration.yml).
 
 ## Features
 

@@ -45,8 +45,8 @@ Status reflects the repository as of July 16, 2026. Competitor capabilities chan
 
 Ship the acquisition surface before broad feature work:
 
-- Publish open-source hosted-platform alternative and migration guides
-- Offer a migration concierge through a dedicated GitHub issue template
+- ~~Publish an open-source hosted-platform migration guide~~ (Implemented July 17, 2026)
+- ~~Offer migration concierge intake through a dedicated GitHub issue template~~ (Implemented July 17, 2026)
 - Create a sanitized real-world hosted-platform fixture for regression testing
 - Record a repository-to-deployed-site migration demo
 - Document output ownership, supported hosts, and unsupported constructs plainly
