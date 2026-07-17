@@ -142,7 +142,7 @@ DEFAULT_CONFIG = {
     "base_url": ".",
     # Canonical key is project_name. "project" is kept as a legacy alias and
     # normalised below; everything downstream reads project_name.
-    "project_name": "WingTip",
+    "project_name": "Documentation",
     "tagline": "",
     "description": "",
     "author": "",
@@ -620,7 +620,8 @@ def generate_pwa_files(pages, output_dir):
     icon_192 = "icon-192.png"
     icon_512 = "icon-512.png"
     source_icon = None
-    for candidate in ('favicon.png', 'wingtip-logo.png', os.path.join(output_dir, 'favicon.png')):
+    # Only use a favicon explicitly supplied by the project; no packaged fallback.
+    for candidate in ('favicon.png', os.path.join(output_dir, 'favicon.png')):
         if os.path.exists(candidate):
             source_icon = candidate
             break
@@ -865,20 +866,14 @@ def copy_static_files():
     else:
         print("Warning: no static assets found; pages will render unstyled.")
 
-    # Ensure a favicon/logo is available in the site root for the PWA manifest,
-    # favicon meta tag, and search index. Project root wins over packaged default.
-    for logo_name in ('favicon.png', 'wingtip-logo.png'):
-        source = None
-        if os.path.isfile(logo_name):
-            source = logo_name
-        elif pkg_static and os.path.isfile(os.path.join(pkg_static, logo_name)):
-            source = os.path.join(pkg_static, logo_name)
-        if source and not os.path.exists(os.path.join(OUTPUT_DIR, logo_name)):
-            try:
-                shutil.copy2(source, os.path.join(OUTPUT_DIR, logo_name))
-                print(f"Copied {logo_name} to output root")
-            except Exception as e:
-                print(f"Warning: Could not copy {logo_name}: {e}")
+    # If the project provides a favicon in its root, copy it to the output root
+    # so the favicon meta tag and PWA manifest can resolve it locally.
+    if os.path.isfile('favicon.png'):
+        try:
+            shutil.copy2('favicon.png', os.path.join(OUTPUT_DIR, 'favicon.png'))
+            print("Copied favicon.png to output root")
+        except Exception as e:
+            print(f"Warning: Could not copy favicon.png: {e}")
 
 
 def parse_frontmatter(md_text):
@@ -1423,8 +1418,18 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         canonical_url = page_url
 
     # Build page using global template
-    # Handle favicon URL (support remote, absolute, and relative config values)
-    favicon_url = resolve_public_url(CONFIG.get('favicon', 'favicon.png'), default='favicon.png')
+    # Handle favicon URL (support remote, absolute, and relative config values).
+    # If the project provides no favicon, emit nothing rather than ship a default logo.
+    favicon_config = CONFIG.get('favicon') or ''
+    if not favicon_config and os.path.exists(os.path.join(OUTPUT_DIR, 'favicon.png')):
+        favicon_config = 'favicon.png'
+    favicon_url = resolve_public_url(favicon_config) if favicon_config else ''
+    if favicon_url:
+        favicon_link = f'<link rel="icon" type="image/png" href="{html_module.escape(favicon_url)}">'
+        nav_logo = f'<img src="{html_module.escape(favicon_url)}" alt="{html_module.escape(str(CONFIG.get("project_name", title)))}" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">'
+    else:
+        favicon_link = ''
+        nav_logo = ''
 
     # Construct URL for the concatenated docs file
     concat_docs_filename = CONFIG.get("concat_docs_filename", "llms-full.txt")
@@ -1442,8 +1447,10 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     theme_color, _ = get_theme_colors()
     manifest_url = _public_url('manifest.json')
     sw_url = _public_url('sw.js')
-    icon_192_url = _public_url('icon-192.png')
-    icon_512_url = _public_url('icon-512.png')
+    icon_192_url = _public_url('icon-192.png') if os.path.exists(os.path.join(OUTPUT_DIR, 'icon-192.png')) else ''
+    icon_512_url = _public_url('icon-512.png') if os.path.exists(os.path.join(OUTPUT_DIR, 'icon-512.png')) else ''
+    icon_192_link = f'<link rel="apple-touch-icon" sizes="192x192" href="{icon_192_url}">' if icon_192_url else ''
+    icon_512_link = f'<link rel="apple-touch-icon" sizes="512x512" href="{icon_512_url}">' if icon_512_url else ''
 
     # Custom <head> snippet (analytics, scripts, verification tags, etc.)
     head_snippet = _build_head_snippet(front_matter)
@@ -1640,14 +1647,15 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         prev_link=prev_link,
         next_link=next_link,
         base_url=BASE_URL,
-        favicon_url=favicon_url,
+        favicon_link=favicon_link,
+        nav_logo=nav_logo,
         concat_docs_url=concat_docs_url,
         feed_url=feed_url,
         manifest_url=manifest_url,
         sw_url=sw_url,
         theme_color=theme_color,
-        icon_192_url=icon_192_url,
-        icon_512_url=icon_512_url,
+        icon_192_link=icon_192_link,
+        icon_512_link=icon_512_link,
         head_snippet=head_snippet,
         csp_meta=csp_meta,
         hreflang_alternates=hreflang_alternates,
@@ -1733,15 +1741,42 @@ def main():
     parser.add_argument("--serve", action="store_true", help="Start dev server after build")
     parser.add_argument("--source", help="Source content directory (default: current directory)", default=".")
     args = parser.parse_args()
-    
-    # Update output dir if specified
+
+    # Update output dir if specified. Resolve it before changing directories so
+    # relative output paths are interpreted from the original working directory.
     global OUTPUT_DIR
     if args.output:
-        OUTPUT_DIR = args.output
+        OUTPUT_DIR = os.path.abspath(args.output)
+    else:
+        OUTPUT_DIR = os.path.abspath(OUTPUT_DIR)
 
-    # Without a config.json, DEFAULT_CONFIG's project_name would brand every
-    # unconfigured user's site "WingTip". Derive it from the README H1, then
-    # the directory name, before anything renders.
+    if args.source != ".":
+        os.chdir(args.source)
+
+    # Reload config/theme from the source directory so --source actually uses
+    # the target project's configuration, not the tool's checkout defaults.
+    global CONFIG, BASE_URL, THEME_CONFIG
+    CONFIG = DEFAULT_CONFIG.copy()
+    if CFG_PATH.exists():
+        try:
+            CONFIG.update(json.loads(CFG_PATH.read_text()))
+        except Exception as e:
+            print(f"Warning: Could not parse config.json: {e}")
+    if CONFIG.get("project") and not CONFIG.get("project_name"):
+        CONFIG["project_name"] = CONFIG["project"]
+    CONFIG["project_name"] = CONFIG.get("project_name") or "Documentation"
+    CONFIG["project"] = CONFIG["project_name"]
+    BASE_URL = (CONFIG.get("base_url") or ".").rstrip("/") or "."
+
+    THEME_CONFIG = {}
+    if THEME_CFG_PATH.exists():
+        try:
+            THEME_CONFIG = json.loads(THEME_CFG_PATH.read_text())
+        except json.JSONDecodeError as e:
+            print(f"Warning: Could not parse theme.json: {e}. Using default theme.")
+
+    # Without a config.json, derive a project name from the README H1 or the
+    # source directory name so unconfigured projects don't inherit a tool brand.
     if not CFG_PATH.exists():
         derived = None
         if os.path.exists("README.md"):
@@ -1753,9 +1788,6 @@ def main():
         CONFIG["project"] = derived
         if not CONFIG.get("description"):
             CONFIG["description"] = f"Documentation for {derived}."
-
-    if args.source != ".":
-        os.chdir(args.source)
 
     # Load user plugins before anything is generated
     global _PLUGINS
