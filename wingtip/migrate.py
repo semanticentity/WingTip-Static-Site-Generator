@@ -161,6 +161,17 @@ def _convert_mdx(text):
         line = raw
         stripped = line.strip()
 
+        # Standalone raw <img> lines become Markdown images: raw HTML blocks
+        # interact badly with list/block parsing (they can be swallowed into
+        # code blocks or escaped), while Markdown images parse reliably in
+        # any context.
+        m = re.match(r"^<img\s([^>]*?)/?>$", stripped, re.IGNORECASE)
+        if m:
+            attrs = _tag_attrs(m.group(1))
+            if attrs.get("src"):
+                lines.append(f"![{attrs.get('alt', '')}]({attrs['src']})")
+                continue
+
         # Whole-line component tags
         m = re.match(r"^</?([A-Z][A-Za-z0-9]*)([^>]*?)/?>$", stripped)
         if m:
@@ -315,12 +326,14 @@ _ATTR_EXPR = re.compile(r"(?:href|src)=\{([^}]+)\}")
 _SKIP_SCHEMES = ("http://", "https://", "mailto:", "tel:", "data:", "#")
 
 
-def _resolve_internal(href, page_dir, pages, assets):
+def _resolve_internal(href, page_dir, pages, assets, pages_lower=None, assets_lower=None):
     """Resolve an internal href to ('page'|'asset', key) or (None, None).
 
     Tries the path relative to the current page first, then as a site-root
     path — hosted platforms use both, often without a leading slash or file
-    extension because their router resolves them.
+    extension because their router resolves them. A case-insensitive
+    fallback covers platforms that route case-insensitively; the canonical
+    on-disk casing is returned so links survive case-sensitive hosts.
     """
     path = href.lstrip("/") if href.startswith("/") else href
     stripped = path[:-4] if path.endswith(".mdx") else path[:-3] if path.endswith(".md") else path
@@ -333,6 +346,8 @@ def _resolve_internal(href, page_dir, pages, assets):
             key = "index"
         if key in pages:
             return "page", key
+        if pages_lower and key.lower() in pages_lower:
+            return "page", pages_lower[key.lower()]
     # Asset candidates keep their extension.
     asset_candidates = []
     if not href.startswith("/") and page_dir:
@@ -341,10 +356,12 @@ def _resolve_internal(href, page_dir, pages, assets):
     for key in asset_candidates:
         if key in assets:
             return "asset", key
+        if assets_lower and key.lower() in assets_lower:
+            return "asset", assets_lower[key.lower()]
     return None, None
 
 
-def _rewrite_content_links(text, page_key, pages, assets, report):
+def _rewrite_content_links(text, page_key, pages, assets, report, pages_lower=None, assets_lower=None):
     """Rewrite internal links — Markdown links and raw href/src attributes —
     to portable relative paths in the migrated tree.
 
@@ -366,7 +383,7 @@ def _rewrite_content_links(text, page_key, pages, assets, report):
             report["expression_links"].setdefault(page_key, []).append(href)
             return "#"
         path, hash_sep, fragment = href.partition("#")
-        kind, key = _resolve_internal(path, page_dir, pages, assets)
+        kind, key = _resolve_internal(path, page_dir, pages, assets, pages_lower, assets_lower)
         if kind == "page":
             if as_markdown:
                 new = ("index.md" if key == "index" else f"docs/{key}.md") if is_home \
@@ -482,6 +499,8 @@ def migrate(source_dir, output_dir):
                 asset_keys.add(rel.replace(os.sep, "/"))
 
     all_page_keys = {key for _, key, _ in page_files}
+    pages_lower = {k.lower(): k for k in all_page_keys}
+    assets_lower = {k.lower(): k for k in asset_keys}
 
     # Pass 2: convert and write pages.
     copied_pages = {}  # page key -> output URL
@@ -500,7 +519,7 @@ def migrate(source_dir, output_dir):
             text = _patch_frontmatter_order(text, nav_page_order[page_key])
         else:
             report["orphan_pages"].append(page_key)
-        text = _rewrite_content_links(text, page_key, all_page_keys, asset_keys, report)
+        text = _rewrite_content_links(text, page_key, all_page_keys, asset_keys, report, pages_lower, assets_lower)
         dest = os.path.join(docs_out, page_key.replace("/", os.sep) + ".md")
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         pathlib.Path(dest).write_text(text, encoding="utf8")
