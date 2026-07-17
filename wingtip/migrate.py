@@ -379,6 +379,9 @@ def _rewrite_content_links(text, page_key, pages, assets, report, pages_lower=No
         """Return replacement href, or None to leave unchanged."""
         if not href or href.startswith(_SKIP_SCHEMES):
             return None
+        # Any URL scheme (cursor:, vscode:, slack:, ...) is external.
+        if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", href):
+            return None
         if "{" in href:
             report["expression_links"].setdefault(page_key, []).append(href)
             return "#"

@@ -80,9 +80,13 @@ Shipped (read-only — the source project is never modified):
 - ✅ Convert navigation groups to directory `_category.json` files and per-page `order` frontmatter
 - ✅ Preserve page paths in generated URLs; report every preserved URL
 - ✅ Rewrite platform-style absolute internal links to portable relative links
-- ✅ Inventory MDX components per page; strip module `import`/`export` lines, preserve component markup for manual conversion
+- ✅ Inventory MDX components per page; strip module `import`/`export` lines and MDX comments
+- ✅ Approximate common MDX components (callouts → blockquotes, titled sections → labels, `Card` → link, `src`-bearing components → images) with JSX dedenting
+- ✅ Rewrite links in raw `href`/`src` attributes with page-relative → site-root → case-insensitive resolution
+- ✅ Stub dynamic link expressions and report suspected broken links in the source
 - ✅ Report redirects for host-level configuration
 - ✅ Never silently discard unsupported configuration or content — everything unhandled is listed in the report
+- ✅ Validated against real public hosted-docs repositories (46 → 5,387 pages)
 
 Still pending:
 
@@ -90,7 +94,6 @@ Still pending:
 - Convert tabs, products, versions, and languages beyond flat group mapping
 - Emit static redirect pages plus host-specific `_redirects` files
 - Preserve OpenAPI references for Phase 2 endpoint rendering
-- Approximate common MDX components (callouts → admonitions, etc.)
 
 #### Migration report
 

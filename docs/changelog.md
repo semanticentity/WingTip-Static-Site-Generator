@@ -10,6 +10,12 @@
 - Platform-style absolute internal links (`/guides/intro`) rewrite to portable relative Markdown links.
 - Site name, description, brand colors, and favicon carry into `config.json` and `theme.json`.
 - Every migration emits `migration-report.md`: an executive summary (pages converted, URLs preserved, groups mapped, manual follow-ups) followed by converted items, manual-work details, and next steps.
+- Common MDX components are approximated as Markdown: callouts (`Note`/`Warning`/`Tip`/`Info`/`Check`) become blockquotes, `Step`/`Tab`/`Accordion` become bold labels, `Card` becomes a link, layout wrappers are dropped, and any leaf component with a `src` attribute becomes an image. JSX nesting indentation is removed outside code fences; remaining unknown components are inventoried per page.
+- Links in raw `href`/`src` attributes are rewritten alongside Markdown links; resolution tries page-relative then site-root paths, with a case-insensitive fallback that emits the canonical on-disk casing.
+- Dynamic link expressions (`href={variable}`) are stubbed to `#` and reported; unresolvable internal links are reported as suspected broken links in the source.
+- MDX comments (`{/* ... */}`) are stripped; multi-line JSX/HTML tags are joined before conversion.
+- Fixed WingTip's link rewriter stripping the `docs/` prefix from links whose URL space legitimately contains `docs/…`.
+- Validated against real public hosted-docs repositories of 46, 249, 315, and 5,387 pages: URLs preserved on every page, and every remaining audit finding is an itemized pre-existing source defect (stale links, OpenAPI-generated pages, platform runtime paths).
 
 ## [v0.5.0] - 2026-07-17
 

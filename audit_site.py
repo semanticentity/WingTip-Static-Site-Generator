@@ -159,16 +159,31 @@ def main():
             if not (site / name).exists():
                 errors.append(f"favicon.png exists but {name} is missing")
 
-    # Scan HTML
+    # Scan HTML. Parse rather than regex: only href/src attributes on real
+    # elements are fetchable references — attribute-shaped text inside code
+    # samples or the raw-markdown embed is not.
+    from bs4 import BeautifulSoup
+
+    try:
+        import lxml  # noqa: F401
+        parser = "lxml"
+    except ImportError:
+        parser = "html.parser"
+
     for html in site.rglob("*.html"):
         text = html.read_text(encoding="utf8")
+        soup = BeautifulSoup(text, parser)
 
-        # Find all href / src / url() references
+        # Remove non-rendered regions up front (linear), so the attribute
+        # scan below never sees code samples or embedded raw markdown.
+        for region in soup.find_all(["pre", "code", "template", "textarea"]):
+            region.decompose()
+
         urls = set()
-        for m in re.finditer(r'(?:href|src)=["\']([^"\']+)["\']', text):
-            urls.add(m.group(1))
-        for m in re.finditer(r'url\\(([^)]+)\\)', text):
-            urls.add(m.group(1).strip('"\''))
+        for el in soup.find_all(href=True):
+            urls.add(el["href"])
+        for el in soup.find_all(src=True):
+            urls.add(el["src"])
 
         for url in urls:
             parsed = urlparse(url)
@@ -181,8 +196,13 @@ def main():
                     errors.append(f"{html.relative_to(site)} references CDN {url}")
                 continue
 
-            # Skip non-document anchors, data URIs, mailto, etc.
-            if not url or url.startswith(("#", "data:", "mailto:", "tel:", "javascript:")):
+            # Any other scheme (mailto:, tel:, cursor:, vscode:, data:,
+            # javascript:, ...) is not a local file reference.
+            if parsed.scheme:
+                continue
+
+            # Skip fragment-only anchors.
+            if not url or url.startswith("#"):
                 continue
 
             # Resolve local reference. Treat leading / as site-root relative,
