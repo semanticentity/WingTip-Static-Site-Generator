@@ -2,7 +2,7 @@
 
 **Open-source, SEO-first documentation sites from Markdown.**
 
-![WingTip social card](social-card.png)
+![WingTip social card](https://raw.githubusercontent.com/semanticentity/WingTip-Static-Site-Generator/main/social-card.png)
 
 [Live demo](https://semanticentity.github.io/WingTip-Static-Site-Generator) · [Migration guide](docs/migration.md) · [Source](https://github.com/semanticentity/WingTip-Static-Site-Generator) · [Roadmap](docs/roadmap.md)
 
@@ -18,7 +18,7 @@ Start with zero configuration, customize when needed, and deploy the generated f
 - **Built for discovery:** Generate canonical URLs, robots directives, sitemap metadata, Open Graph and Twitter cards, `TechArticle` and breadcrumb JSON-LD, RSS, and hreflang alternates.
 - **Built for AI retrieval:** Publish `llms.txt`, full concatenated documentation, and a Markdown alternate beside every generated page.
 - **No mandatory CDN runtime:** Core styles, scripts, icons, KaTeX, and fonts are vendored into the Python package and copied into the build. External analytics remain opt-in.
-- **No imposed branding:** Projects without a favicon receive no WingTip favicon, logo, or generated PWA icons.
+- **Your branding only:** No "powered by" badge, injected links, or generator watermarks — the generated site carries your identity, not WingTip's.
 - **Zero infrastructure:** Search, navigation, PWA support, and offline fallback work from static hosting.
 
 ## Moving from hosted documentation?
