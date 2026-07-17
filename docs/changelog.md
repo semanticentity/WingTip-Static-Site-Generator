@@ -1,5 +1,9 @@
 # WingTip Changelog
 
+## [v0.6.1] - 2026-07-17
+
+- Fixed search-result links double-prefixing the site base on configured-base sites (clicking a result produced `https://site/https://site/page.html` → 404). Absolute index URLs are now used as-is; relative URLs still get the page-base prefix that nested zero-config pages need.
+
 ## [v0.6.0] - 2026-07-17
 
 ### Migration importer

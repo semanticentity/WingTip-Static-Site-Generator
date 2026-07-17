@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wingtip"
-version = "0.6.0"
+version = "0.6.1"
 description = "A static site generator for documentation that is built to be indexed and cited."
 dynamic = ["readme"]
 license = { text = "MIT" }
