@@ -96,10 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
         results.forEach(item => {
           const li = document.createElement('li');
           const a = document.createElement('a');
-          // Index URLs are site-root relative; prefix the page's base so links
-          // resolve from nested pages too.
+          // Configured-base sites store absolute URLs in the index; use
+          // them as-is. Zero-config sites store relative URLs — prefix the
+          // page's base so links resolve from nested pages too.
+          const isAbsoluteUrl = /^(?:https?:)?\/\//.test(item.url) || item.url.startsWith('/');
           const siteBase = (window.SITE_BASE_URL && window.SITE_BASE_URL !== '.') ? window.SITE_BASE_URL + '/' : '';
-          a.href = siteBase + item.url;
+          a.href = isAbsoluteUrl ? item.url : siteBase + item.url;
 
           const titleElement = document.createElement('div');
           titleElement.className = 'search-result-title';
