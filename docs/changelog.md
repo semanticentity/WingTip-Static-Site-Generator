@@ -17,6 +17,12 @@
 - Fixed WingTip's link rewriter stripping the `docs/` prefix from links whose URL space legitimately contains `docs/…`.
 - Validated against real public hosted-docs repositories of 46, 249, 315, and 5,387 pages: URLs preserved on every page, and every remaining audit finding is an itemized pre-existing source defect (stale links, OpenAPI-generated pages, platform runtime paths).
 
+### Agent-native artifacts
+
+- Every build now emits `skill.md` alongside `llms.txt`: retrieval instructions for AI agents (whole-corpus file, per-page Markdown alternates, citation guidance). Required by the audit gate.
+- `wingtip migrate` writes `AGENTS.md` into the new project: docs-maintenance instructions any coding agent can follow — build, verify, add pages, preserve URLs — so the AI your team already uses maintains the docs, no hosted platform required.
+- Migration guide gains a "Serving your migrated site" section covering both topologies (dedicated docs domain and main-domain subpath) with copy-paste nginx, Caddy, Vercel, and Netlify configuration; subpath URL correctness (og:url, canonicals, RSS, sitemap, robots, PWA scope) verified against the demo deployment.
+
 ### Package and page-weight diet
 
 - Material Icons converted from TTF to WOFF2 (348KB → 125KB) — every generated site's deploy and service-worker precache shrinks accordingly; browsers only fetch the font when an icon glyph is actually used.
