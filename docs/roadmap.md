@@ -69,34 +69,38 @@ Ship the acquisition surface before broad feature work:
 
 #### Hosted-platform importer
 
-Add a command equivalent to:
-
 ```bash
-wingtip migrate hosted-docs --source ./existing-docs --output ./wingtip-docs
+wingtip migrate ./existing-docs --output ./wingtip-docs
 ```
 
-The importer should:
+Shipped (read-only — the source project is never modified):
 
-- Read supported current and legacy platform configuration formats
+- ✅ Read current and legacy platform configuration formats (`docs.json`, `mint.json`)
+- ✅ Import project name, description, brand colors, and favicon
+- ✅ Convert navigation groups to directory `_category.json` files and per-page `order` frontmatter
+- ✅ Preserve page paths in generated URLs; report every preserved URL
+- ✅ Rewrite platform-style absolute internal links to portable relative links
+- ✅ Inventory MDX components per page; strip module `import`/`export` lines, preserve component markup for manual conversion
+- ✅ Report redirects for host-level configuration
+- ✅ Never silently discard unsupported configuration or content — everything unhandled is listed in the report
+
+Still pending:
+
 - Resolve local JSON `$ref` configuration
-- Import project name, description, colors, logo/favicon, repository links, footer links, and social links where supported
-- Convert navigation groups, nested pages, tabs, products, versions, and languages
-- Preserve page paths and build a source-to-destination URL map
-- Import redirects and emit static redirect pages plus host-specific `_redirects` where possible
-- Preserve OpenAPI references for Phase 2 even before endpoint rendering exists
-- Inventory every MDX component and classify it as converted, preserved, approximated, or unsupported
-- Never silently discard unsupported configuration or content
+- Convert tabs, products, versions, and languages beyond flat group mapping
+- Emit static redirect pages plus host-specific `_redirects` files
+- Preserve OpenAPI references for Phase 2 endpoint rendering
+- Approximate common MDX components (callouts → admonitions, etc.)
 
 #### Migration report
 
-Every migration emits human-readable and JSON reports containing:
+- ✅ Every migration emits `migration-report.md` in the new project: an executive summary (format detected, pages converted, URLs preserved, groups mapped, manual follow-up count) followed by ✓ converted items and ⚠ manual work (components per page, unmapped groups, orphan pages, redirects, configuration not carried) and next steps
 
-- Pages discovered, converted, skipped, and failed
-- Navigation and redirect coverage
-- Broken links and missing assets
-- Unsupported MDX components with file/line locations
-- Metadata, canonical, language, and noindex changes
-- Manual actions required before deployment
+Still pending:
+
+- Machine-readable JSON report alongside the Markdown
+- Broken links and missing assets detection at migrate time (the post-build audit covers this after `wingtip` runs)
+- File/line locations for component occurrences
 
 **Exit criteria:** Representative hosted-platform repositories build without lost pages, URLs, metadata, or unreported incompatibilities.
 

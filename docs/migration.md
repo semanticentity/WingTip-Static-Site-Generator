@@ -13,14 +13,38 @@ date: 2026-07-17
 
 Move an existing documentation repository to static output you can inspect, audit, and host anywhere.
 
-WingTip currently provides a straightforward path for Markdown repositories. Automated configuration import, recursive content trees, broad MDX compatibility, and OpenAPI reference generation are active roadmap work. This guide distinguishes what works today from what still requires manual conversion.
+## Automated migration
+
+If the source project uses a `docs.json` or `mint.json` configuration, run the importer:
+
+```bash
+pip install wingtip
+wingtip migrate ./existing-docs --output ./wingtip-docs
+```
+
+The importer is **strictly read-only** — the source project is never modified. It writes a new WingTip project containing:
+
+- Every `.md` and `.mdx` page, with nested paths preserved in URLs
+- Navigation order (`order` frontmatter) and directory groups (`_category.json`) derived from the source navigation
+- Internal links rewritten from platform-style absolute paths to portable relative links
+- Site name, description, brand colors, and favicon carried into `config.json` and `theme.json`
+- `migration-report.md` — a scored summary of what converted cleanly and what needs manual attention (custom components, redirects, unmapped navigation, configuration not carried)
+
+Then preview and iterate:
+
+```bash
+cd ./wingtip-docs && wingtip --serve
+```
+
+Broad MDX component compatibility and OpenAPI reference generation remain roadmap work; the report lists every affected page. The rest of this guide covers manual migration for repositories without a recognized configuration format.
 
 ## What works today
 
 WingTip currently supports:
 
 - A repository `README.md` as the documentation home page
-- Top-level Markdown files in `docs/`
+- Markdown files in `docs/`, discovered recursively with nested paths preserved in URLs
+- Collapsible sidebar groups from directory structure (`_category.json` for names and ordering)
 - YAML frontmatter for titles, descriptions, indexing, social metadata, dates, language, category, and version
 - Relative Markdown links, including fragments and query strings
 - Local images with responsive variants and lazy loading
@@ -32,14 +56,13 @@ WingTip currently supports:
 
 Plan for manual review when the source repository uses:
 
-- Nested documentation directories
-- MDX or framework-specific components
-- Configuration-defined navigation groups, tabs, products, or language switchers
+- MDX or framework-specific components (the importer flags each affected page)
+- Navigation tabs, products, or language switchers (groups map automatically where they align with directories)
 - OpenAPI-generated endpoint pages or an interactive API playground
 - Platform-managed redirects, authentication, previews, analytics, or access controls
 - Server-side features that cannot run from static files
 
-WingTip should never silently discard unsupported content. Until the automated migration report ships, use the checklist below and request a migration review when compatibility is uncertain.
+WingTip never silently discards unsupported content — the importer leaves unsupported markup in place and lists it in `migration-report.md`. Use the checklist below and request a migration review when compatibility is uncertain.
 
 ## Migration process
 
@@ -73,7 +96,7 @@ your-project/
 └── favicon.png
 ```
 
-Move nested pages into `docs/` temporarily and update their relative links. Record every old and new URL before changing filenames.
+Nested directories under `docs/` are supported directly — nested paths are preserved in generated URLs, so existing structures can move as-is. Record every old and new URL before changing any filenames.
 
 ### 4. Add production metadata
 
