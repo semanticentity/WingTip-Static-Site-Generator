@@ -1,127 +1,197 @@
 # WingTip Roadmap
 
-## Feature Comparison
+## Objective
 
-| Feature                       | WingTip v1                                       | MkDocs | Docusaurus | VitePress | Mintlify |
-| ----------------------------- | ------------------------------------------------ | ------ | ---------- | --------- | -------- |
-| **Markdown Support**          | Advanced (GFM + extras)                          | Good   | Advanced   | Advanced  | Advanced |
-| **Code Highlighting**         | Pygments (themed)                                | Good   | Advanced   | Advanced  | Advanced |
-| **Dark Mode**                 | Auto + toggle + CSS vars                         | Basic  | Advanced   | Advanced  | Advanced |
-| **Live Reload**               | Full (w/ scroll restore)                         | Good   | Advanced   | Advanced  | Advanced |
-| **Auto Sidebar**              | Yes                                              | Yes    | Advanced   | Advanced  | Advanced |
-| **Search**                    | Client-side (JSON)                               | Basic  | Advanced   | Good      | Advanced |
-| **TOC Navigation**            | Yes + keyboard shortcuts                         | Good   | Advanced   | Good      | Good     |
-| **Prev/Next Links**           | Yes                                              | Basic  | Good       | Good      | Good     |
-| **Social Cards**              | Built-in (Pillow)                                | None   | Basic      | None      | Built-in |
-| **SEO (frontmatter overrides)** | Advanced (per-page title, canonical, noindex, OG/Twitter, keywords) | Basic  | Advanced   | Good      | Advanced |
-| **Theme System**              | CSS vars + JSON config                           | Basic  | Advanced   | Good      | Advanced |
-| **External Links**            | Configurable + new tab                           | Basic  | Basic      | Basic     | Basic    |
-| **Math Support**              | KaTeX                                            | Plugin | MDX        | Plugin    | Good     |
-| **Admonitions**               | Yes (Material style)                             | Plugin | MDX        | Plugin    | Yes      |
-| **Analytics**                 | Not yet                                          | Basic  | Advanced   | Good      | Built-in |
-| **Versioning**                | Not yet                                          | No     | Yes        | No        | Yes      |
+Make WingTip the easiest credible exit from a hosted documentation platform: migrate an existing repository, preserve its information architecture and URLs, generate portable static output, and prove the result with automated search, performance, and integrity audits.
 
-## Planned Features
+WingTip will not try to reproduce every hosted collaboration feature. It will compete on ownership, migration quality, technical discovery, build transparency, portability, and zero mandatory platform cost.
 
-### Navigation
+## Current position
 
-* Nested sidebar sections (grouping by folder or heading)
-* ~~Search with local JSON index~~ (Implemented in v0.3.0)
-* Collapsible sidebar sections
-* ~~Keyboard shortcuts for navigation and toggles~~ (Implemented in v0.4.0)
+Status reflects the repository as of July 16, 2026. Competitor capabilities change; any public comparison must be generated from a reproducible fixture rather than unsupported marketing claims.
 
-### Markdown Enhancements
+| Capability | WingTip now | Competitive status | Priority |
+| --- | --- | --- | --- |
+| Portable static HTML output | Yes | Leadership target | Maintain |
+| No mandatory hosted runtime | Yes | Leadership target | Maintain |
+| No mandatory CDN frontend assets | Yes | Leadership target | Maintain |
+| No imposed generator branding | Yes | Leadership target | Maintain |
+| Canonical, robots, sitemap, RSS, OG/Twitter | Yes | Strong parity | Maintain |
+| `TechArticle` and breadcrumb JSON-LD | Yes | Strong parity | Expand validation |
+| `llms.txt`, full docs, Markdown alternates | Yes | Strong parity | Add agent skills |
+| Per-page noindex, dates, language, category, version | Yes | Strong parity | Improve UI |
+| Hreflang alternates | Yes | Search differentiator | Add cluster audit |
+| Local search | Yes | Basic parity | Ranking controls |
+| PWA and offline fallback | Yes | Differentiator | Maintain |
+| Responsive image generation | Yes | Differentiator | Add budgets |
+| Configurable analytics, head snippets, and CSP | Yes | Strong parity | Validate policies |
+| Plugin hooks and Markdown extensions | Yes | Extensibility base | Formalize API |
+| Post-build integrity/branding audit | Yes | Leadership target | Expand |
+| Recursive content trees | No | Parity blocker | P0 |
+| Grouped, nested, tabbed navigation | No | Parity blocker | P0 |
+| Redirect migration and static-host outputs | No | Migration blocker | P0 |
+| Mintlify `docs.json`/legacy `mint.json` import | No | Acquisition blocker | P0 |
+| MDX compatibility analysis | No | Migration blocker | P0 |
+| OpenAPI reference generation | No | Major parity blocker | P1 |
+| API playground | No | Major parity blocker | P1 |
+| Agent `skill.md` discovery | No | Emerging parity gap | P1 |
+| Preview deployments and visual review | No | Workflow gap | P2 |
+| Authentication and private docs | No | Enterprise gap | P3/partner |
+| Hosted collaborative editor | No | Intentionally not core | Ecosystem |
 
-* ~~Basic admonition support~~ (Implemented in v0.4.1)
-* Advanced admonition features:
-  * Support for nested content (lists, code blocks)
-  * Basic icon support via Material Icons
-  * Theme-aware styling with CSS variables
-  * Future enhancements (deferred):
-    * Support for pymdownx.admonition extension
-    * Custom icons via FontAwesome
-    * Nested admonitions
-    * Custom admonition types
-    * Collapsible admonitions
-    * Icon customization per theme
-    * Support for tables inside list items (Python-Markdown limitation)
-* Mermaid diagram rendering
-* ~~LaTeX/math support via KaTeX~~ (Implemented in v0.4.0)
-* Image captioning syntax
+Mintlify capability references used to define migration scope: [global settings](https://www.mintlify.com/docs/organize/settings), [navigation](https://www.mintlify.com/docs/organize/navigation), [migration](https://www.mintlify.com/docs/migration), and [`skill.md`](https://www.mintlify.com/docs/ai/skillmd).
 
-### Developer Experience
+## Delivery plan
 
-* True HMR (hot module reload) without full page refresh
-* Build errors shown in browser overlay
-* CLI scaffolding (`wingtip new my-docs`)
-* ~~Local theme overrides via custom CSS~~ (Basic theming via `theme.json` implemented in v0.4.0 - [Learn more](theming.md))
-* ~~Combined build and serve command~~ (Implemented in v0.4.1 via `--serve` flag)
-* ~~Smart port handling for dev server~~ (Implemented in v0.4.1 with auto-retry and port cleanup)
-* Automatic cleanup of obsolete files (deferred to future release)
+### Phase 0 — Capture the switching window
 
-### SEO & Output Polish
+Ship the acquisition surface before broad feature work:
 
-* ~~JSON-LD structured data for articles~~ (Implemented in v0.4.0)
-* ~~Per-page SEO frontmatter overrides (title, description, keywords, canonical, noindex, Open Graph, Twitter cards)~~ (Implemented in v0.5.0)
-* ~~Author/date metadata in frontmatter~~ (Implemented in v0.5.0)
-* ~~RSS feed generation~~ (Implemented in v0.5.0)
-* Animated copy-to-clipboard feedback
-* ~~Custom 404 page~~ (Implemented in v0.4.1)
+- Publish “Open-source Mintlify alternative” and “Migrate from Mintlify” guides
+- Offer a migration concierge through a dedicated GitHub issue template
+- Create a sanitized real-world Mintlify fixture for regression testing
+- Record a repository-to-deployed-site migration demo
+- Document output ownership, supported hosts, and unsupported constructs plainly
+- Do not use founder controversy in product copy; meet newly receptive users with a concrete exit path
 
-### Performance, Security, & Extensibility
+**Exit criteria:** A Mintlify user can submit a repository and receive a repeatable migration report rather than an informal promise.
 
-* ~~Image lazy loading and intrinsic size attributes for local images~~ (Implemented in v0.5.0)
-* ~~Analytics / custom `<head>` snippet hook~~ (Implemented in v0.5.0)
-* ~~Default Content Security Policy meta tag~~ (Implemented in v0.5.0)
-* ~~Responsive `srcset` image generation~~ (Implemented in v0.5.0)
+### Phase 1 — Migration wedge (P0)
 
-### Longer-Term Ideas
+#### Content and navigation model
 
-* ~~Documentation Versioning & Categories (per-page `category`/`version`, `categories.json`, `versions.json`)~~ (Implemented in v0.5.0)
-* ~~i18n / localization (per-page `lang`, `translations`, hreflang links)~~ (Implemented in v0.5.0)
-* ~~Offline mode (PWA shell)~~ (Implemented in v0.5.0)
-* ~~Plugin system (before/after hooks, Markdown extensions, theme plugins)~~ (Implemented in v0.5.0)
-    * *Theme plugins could allow for entirely new site structures, custom JavaScript, advanced CSS processing (Sass, PostCSS), and template overrides, offering a much deeper level of customization than `theme.json`.*
+- Recursively discover `.md` and `.mdx` content
+- Preserve nested source paths in generated URLs
+- Introduce an ordered navigation model with groups, nested groups, tabs, products, versions, and languages
+- Render grouped/collapsible navigation and breadcrumbs from that model
+- Detect orphaned and duplicate navigation entries
 
-## Future: Theme Plugins
+#### Mintlify importer
 
-We envision a more powerful **Plugin System** for WingTip in the future. A key part of this system would be **Theme Plugins**.
+Add a command equivalent to:
 
-Unlike the `theme.json` file, which is for simple value overrides (fonts, colors), theme plugins would offer much deeper customization capabilities, potentially including:
+```bash
+wingtip migrate mintlify --source ./mintlify-docs --output ./wingtip-docs
+```
 
-*   **Custom HTML Templates:** Providing entirely different HTML structures for pages.
-*   **Custom JavaScript:** Adding new client-side functionalities or interactions.
-*   **Advanced CSS Processing:** Integrating tools like Sass or PostCSS for more complex stylesheets.
-*   **New Asset Types:** Managing and including different types of static assets.
-*   **Complete Visual Overhauls:** Creating unique themes that go far beyond color and font changes.
+The importer should:
 
-This plugin system would provide a structured way for developers to create and share complete themes, transforming the look, feel, and even functionality of a WingTip site. 
+- Read current `docs.json` and legacy `mint.json`
+- Resolve local JSON `$ref` configuration
+- Import project name, description, colors, logo/favicon, repository links, footer links, and social links where supported
+- Convert navigation groups, nested pages, tabs, products, versions, and languages
+- Preserve page paths and build a source-to-destination URL map
+- Import redirects and emit static redirect pages plus host-specific `_redirects` where possible
+- Preserve OpenAPI references for Phase 2 even before endpoint rendering exists
+- Inventory every MDX component and classify it as converted, preserved, approximated, or unsupported
+- Never silently discard unsupported configuration or content
 
-## Accessibility
+#### Migration report
 
-* ~~Enhanced ARIA attributes for interactive elements~~ (Implemented in v0.4.0)
-* WCAG 2.1 AA compliance audit and necessary improvements
-* ~~Keyboard navigation improvements~~ (Implemented in v0.4.0 for search, more to come)
+Every migration emits human-readable and JSON reports containing:
 
-## Performance Optimization
+- Pages discovered, converted, skipped, and failed
+- Navigation and redirect coverage
+- Broken links and missing assets
+- Unsupported MDX components with file/line locations
+- Metadata, canonical, language, and noindex changes
+- Manual actions required before deployment
 
-*   Advanced asset optimization (e.g., image compression, code splitting).
-*   Lazy loading for images and other offscreen content.
-*   Performance budget and monitoring.
+**Exit criteria:** Representative Mintlify repositories build without lost pages, URLs, metadata, or unreported incompatibilities.
 
-## Security Considerations
+### Phase 2 — Documentation parity (P1)
 
-*   Implement Content Security Policy (CSP) by default.
-*   Regular dependency audits and updates for security vulnerabilities.
-*   Guidance on securing user-generated content if applicable.
+Prioritize capabilities that block real migrations:
 
-## Community & Contribution
+- OpenAPI 3.x ingestion and endpoint-page generation
+- API operation navigation, parameter/schema tables, examples, and code samples
+- Optional static-first API playground enhancement
+- AsyncAPI inventory and design
+- Search weighting/boost frontmatter and section-level result anchors
+- Visible version, product, and language switchers
+- Redirect validation and redirect-chain detection
+- Mermaid diagrams
+- Common Mintlify MDX compatibility components: cards, columns, tabs, accordions, steps, callouts, frames, and code groups
+- Reusable snippets/includes and content variables
+- Navigation banners, badges, deprecation labels, and hidden-page controls
+- Formal, versioned plugin API and template/theme extension points
 
-*   Detailed `CONTRIBUTING.md` guide.
-*   Automated PR checks for linting and tests.
-*   Consider a "Good first issue" program for new contributors.
+**Exit criteria:** A typical public SaaS documentation repository does not need to remain on Mintlify solely for navigation, common MDX presentation, or OpenAPI reference pages.
 
-## Deployment
+### Phase 3 — Search-engineering leadership (P1)
 
-*   Guides for deploying to popular platforms (e.g., GitHub Pages, Netlify, Vercel).
-*   CLI command or integration for easier deployment.
+Turn the existing auditor into a differentiated discovery system:
+
+- Validate titles, descriptions, canonicals, robots directives, OG/Twitter metadata, and JSON-LD
+- Detect canonical conflicts, duplicate metadata, orphan pages, broken fragments, redirect chains, and accidental noindex
+- Validate hreflang reciprocity, language codes, canonicals, and `x-default` clusters
+- Audit internal-link depth and surface pages with weak contextual connectivity
+- Add configurable HTML, CSS, JavaScript, image, request-count, and font performance budgets
+- Emit machine-readable audit output for CI annotations
+- Generate a crawl graph and diff it between builds
+- Add optional answer-first/content-structure linting without making ranking promises
+- Generate `skill.md`, multiple skill manifests, integrity hashes, and well-known discovery endpoints from project-owned source files
+- Add schema types appropriate to API references, software applications, organizations, and FAQs only when content qualifies
+
+**Exit criteria:** WingTip catches technical discovery regressions before deployment and produces evidence that can be inspected in CI.
+
+### Phase 4 — Reproducible competitive benchmark (P1)
+
+Build the same public fixture with WingTip, Mintlify, MkDocs Material, Docusaurus, and VitePress. Record:
+
+- Build inputs, product versions, commands, and generated artifacts
+- HTML availability without client-side JavaScript
+- Page weight, requests, external origins, and JavaScript execution
+- Lighthouse and Core Web Vitals lab results under identical conditions
+- Canonical, robots, sitemap, hreflang, social metadata, structured data, and AI-readable artifacts
+- Broken-link, accessibility, and schema validation results
+- Hosting portability and platform-dependent behavior
+
+Publish raw outputs and rerunnable automation. Do not claim leadership where the fixture does not prove it.
+
+**Exit criteria:** Competitive claims in the README and launch material are generated from public evidence.
+
+### Phase 5 — Workflow and ecosystem (P2)
+
+- `wingtip new`, `wingtip check`, and `wingtip migrate` command groups
+- Browser build-error overlay and improved incremental rebuilds
+- Preview-deployment recipes for GitHub, Netlify, Cloudflare Pages, and Vercel
+- PR annotations for audit regressions and visual changes
+- Theme packages and template overrides
+- WCAG 2.2 AA audit and regression checks
+- Contributor guide, extension examples, and stable fixtures
+- Dependency, package-integrity, and generated-CSP checks
+
+### Phase 6 — Optional hosted capabilities (P3)
+
+Keep the open-source generator complete on its own. Hosted or partner services may later provide:
+
+- Managed builds and previews
+- Password-protected or authenticated documentation
+- Team editing and approval workflows
+- Search/feedback analytics
+- Edge redirects, headers, and cache controls
+- Enterprise support and migration services
+
+These services must not make existing static generation, SEO metadata, auditing, or output ownership dependent on a WingTip account.
+
+## Success metrics
+
+- Migration completion rate and median manual fixes per repository
+- Percentage of source pages, URLs, redirects, and metadata preserved
+- Unsupported MDX constructs per migrated repository
+- Zero unreported data loss
+- Audit findings caught before production
+- Generated page weight and external-origin count
+- Build time across small, medium, and large fixtures
+- Number of independent deployments that do not use WingTip-managed infrastructure
+- Search impressions, indexed pages, and AI referrals measured by adopters who opt to share results
+
+## Explicit non-goals
+
+- Guaranteed rankings, rich results, or AI citations
+- A proprietary content repository
+- Mandatory cloud hosting
+- Recreating every collaborative editor feature before migration quality is excellent
+- Generating large volumes of low-quality programmatic content
+- Using competitor controversies as product marketing
