@@ -51,4 +51,11 @@ jobs:
         # Audit the build for missing local files and CDN regressions
         python $GITHUB_WORKSPACE/audit_site.py --output docs/site
 
+        # Negative test: the audit must fail on a deliberately broken build
+        echo '<link rel="stylesheet" href="missing-negative-test.css">' >> docs/site/index.html
+        if python $GITHUB_WORKSPACE/audit_site.py --output docs/site; then
+          echo "Audit did not fail on a deliberately broken build"
+          exit 1
+        fi
+
         echo "Fixture tests passed."

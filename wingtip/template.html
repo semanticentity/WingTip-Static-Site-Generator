@@ -13,7 +13,8 @@
   <link rel="manifest" href="$manifest_url">
   <meta name="theme-color" content="$theme_color">
   $csp_meta
-  <link rel="apple-touch-icon" sizes="192x192" href="$icon_192_url">
+  ${icon_192_link}
+  ${icon_512_link}
   <link rel="canonical" href="$canonical_url">
   $hreflang_alternates
   <link rel="alternate" type="text/markdown" href="$markdown_url">
@@ -52,7 +53,7 @@
   <link rel="stylesheet" href="${base_url}/static/vendor/katex.min.css">
 
   <!-- Custom favicon -->
-  <link rel="icon" type="image/png" href="${favicon_url}">
+  ${favicon_link}
 
   <!-- Optional: Iconify for sun/moon toggle -->
   <script src="${base_url}/static/vendor/iconify.min.js"></script>
@@ -986,7 +987,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     <div class="nav-links">
       <div class="brand">
         <a href="${base_url}/index.html" style="text-decoration: none;">
-          <img src="$favicon_url" alt="$project" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">
+          ${nav_logo}
           <span style="color: white !important; font-size: 1.5em; font-weight: 500;">$project</span>
         </a>
       </div>
@@ -1073,13 +1074,15 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
       document.body.style.overflow = '';
     }
     
-    // Toggle slideout on logo click
-    navLogo.addEventListener('click', (e) => {
-      e.preventDefault();
-      slideoutNav.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    });
-    navLogo.style.cursor = 'pointer';
+    // Toggle slideout on logo click (only when a nav logo is present)
+    if (navLogo) {
+      navLogo.addEventListener('click', (e) => {
+        e.preventDefault();
+        slideoutNav.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      });
+      navLogo.style.cursor = 'pointer';
+    }
 
     // Close slideout on button click
     closeBtn.addEventListener('click', () => {
@@ -1099,7 +1102,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     document.addEventListener('click', (e) => {
       if (slideoutNav.classList.contains('active') && 
           !slideoutNav.contains(e.target) && 
-          !navLogo.contains(e.target)) {
+          (!navLogo || !navLogo.contains(e.target))) {
         slideoutNav.classList.remove('active');
         document.body.style.overflow = '';
       }
@@ -1120,7 +1123,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     document.addEventListener('click', (e) => {
       if (toc.classList.contains('open') && 
           !toc.contains(e.target) && 
-          !navLogo.contains(e.target)) {
+          (!navLogo || !navLogo.contains(e.target))) {
         closeToc();
       }
     });
