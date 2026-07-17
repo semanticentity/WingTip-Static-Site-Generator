@@ -1,12 +1,12 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-fancy-pypi-readme"]
 build-backend = "hatchling.build"
 
 [project]
 name = "wingtip"
-version = "0.4.2"
+version = "0.5.0"
 description = "A static site generator for documentation that is built to be indexed and cited."
-readme = "README.md"
+dynamic = ["readme"]
 license = { text = "MIT" }
 authors = [{ name = "SemanticEntity" }]
 keywords = ["documentation", "static-site-generator", "seo", "llms-txt", "markdown", "aeo"]
@@ -62,3 +62,17 @@ artifacts = [
 
 [tool.hatch.build.targets.sdist]
 include = ["wingtip", "README.md", "config.sample.json", "theme.json"]
+
+# PyPI renders the README verbatim with no repo context, so relative links
+# 404 into pypi.org's own namespace. Keep links relative in the repo (GitHub
+# and the demo site resolve them at render time) and absolutize them at
+# build time for the package metadata only.
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+path = "README.md"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '\]\((?!https?://|#|mailto:)([^)]+)\)'
+replacement = '](https://github.com/semanticentity/WingTip-Static-Site-Generator/blob/main/\1)'

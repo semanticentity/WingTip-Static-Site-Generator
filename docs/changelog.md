@@ -1,6 +1,6 @@
 # WingTip Changelog
 
-## [Unreleased]
+## [v0.5.0] - 2026-07-17
 
 ### Nested content and navigation
 
@@ -11,6 +11,11 @@
 - Zero-config builds now emit depth-correct relative URLs for assets, canonicals, search, feeds, and PWA files on nested pages.
 - Duplicate output paths are detected, warned about, and skipped.
 - Search, sitemap, RSS, llms.txt, concatenated docs, and service-worker precache all include nested pages.
+
+### Packaging and CLI
+
+- Relative README links are absolutized at package-build time (`hatch-fancy-pypi-readme`) so they resolve on the PyPI project page; the repo README stays relative for GitHub and the demo site.
+- `wingtip --help` describes recursive docs discovery.
 
 ## [v0.4.2] - 2026-07-17
 
