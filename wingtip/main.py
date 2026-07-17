@@ -1015,7 +1015,6 @@ def main():
         from pathlib import Path
         
         serve_script = Path(__file__).parent / "serve.py"
-        kill_script = Path(__file__).parent / "killDocs.sh"
         
         if serve_script.exists():
             print("\nStarting development server...")
@@ -1023,21 +1022,8 @@ def main():
                 # First attempt to start the server
                 result = subprocess.run([sys.executable, "-m", "wingtip.serve"], capture_output=True, text=True)
                 if result.returncode != 0 and "Address already in use" in result.stderr:
-                    print("Port 8000 is in use. Attempting to free it...")
-                    if kill_script.exists():
-                        # Try to kill existing processes using killDocs.sh
-                        try:
-                            subprocess.run(["./killDocs.sh"], check=True, cwd=str(kill_script.parent))
-                            print("Successfully freed port 8000. Retrying server start...")
-                            time.sleep(1)  # Give the system a moment
-                            # Try starting the server again
-                            subprocess.run([sys.executable, "-m", "wingtip.serve"], check=True)
-                        except subprocess.CalledProcessError as e:
-                            print(f"Failed to free port: {e}")
-                            sys.exit(1)
-                    else:
-                        print("./killDocs.sh not found. Please free port 8000 manually.")
-                        sys.exit(1)
+                    print("Port 8000 is in use. Please free port 8000 manually.")
+                    sys.exit(1)
                 elif result.returncode != 0:
                     print(f"\nServer failed to start: {result.stderr}")
                     sys.exit(1)
