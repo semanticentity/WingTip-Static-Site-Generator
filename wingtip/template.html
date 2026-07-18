@@ -1288,6 +1288,17 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
           console.error('Service worker registration failed:', err);
         });
       });
+      // After a deploy, the updated worker activates and claims this page,
+      // but already-loaded scripts stay in memory. Reload once so the page
+      // picks up the new cache. First-install claim does not reload.
+      var swHadController = !!navigator.serviceWorker.controller;
+      var swReloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (!swHadController) { swHadController = true; return; }
+        if (swReloaded) return;
+        swReloaded = true;
+        window.location.reload();
+      });
     }
   </script>
 </body>
