@@ -129,6 +129,7 @@ Prioritize capabilities that block real migrations:
 Turn the existing auditor into a differentiated discovery system:
 
 - Validate titles, descriptions, canonicals, robots directives, OG/Twitter metadata, and JSON-LD
+- Decide zero-config social metadata: without `base_url`, og:url/og:image are emitted as relative URLs, which the OpenGraph spec does not allow (scrapers ignore them) — either omit them on zero-config builds or document that social previews require `base_url` (canonicals deliberately stay relative-self-resolving)
 - Detect canonical conflicts, duplicate metadata, orphan pages, broken fragments, redirect chains, and accidental noindex
 - Validate hreflang reciprocity, language codes, canonicals, and `x-default` clusters
 - Audit internal-link depth and surface pages with weak contextual connectivity
