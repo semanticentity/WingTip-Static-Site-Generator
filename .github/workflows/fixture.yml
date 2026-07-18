@@ -27,10 +27,31 @@ jobs:
 
     - name: Create fixture project
       run: |
-        mkdir -p /tmp/fixture_project/docs
+        mkdir -p /tmp/fixture_project/docs/guides
         cd /tmp/fixture_project
         echo "# Acme API" > README.md
-        echo "# Install" > docs/install.md
+        # Exercise GFM constructs the generator transforms: task lists,
+        # alerts, strikethrough, autolinks, tables, and code fences.
+        printf '%s\n' \
+          "# Install" \
+          "" \
+          "Get it from https://example.com/releases and read ~~the old guide~~ the new one." \
+          "" \
+          "> [!NOTE]" \
+          "> Works offline." \
+          "" \
+          "- [x] download" \
+          "- [ ] configure" \
+          "" \
+          "| OS | Supported |" \
+          "| --- | --- |" \
+          "| Linux | yes |" \
+          "" \
+          '```python' \
+          "# a comment" \
+          "print('hello')" \
+          '```' > docs/install.md
+        echo "# Nested Guide" > docs/guides/setup.md
 
         # Install the wheel
         pip install $GITHUB_WORKSPACE/dist/*.whl
@@ -51,11 +72,35 @@ jobs:
         # Audit the build for missing local files and CDN regressions
         python $GITHUB_WORKSPACE/audit_site.py --output docs/site
 
-        # Negative test: the audit must fail on a deliberately broken build
+        echo "Fixture tests passed."
+
+    - name: Set up Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: 20
+
+    - name: Accessibility gate (axe-core)
+      run: |
+        cd /tmp/fixture_project
+        npm install --no-save playwright axe-core
+        npx playwright install --with-deps chromium
+        node $GITHUB_WORKSPACE/audit_a11y.js --output docs/site
+
+        # Negative test: the gate must fail on a deliberately inaccessible page
+        cp docs/site/index.html docs/site/_a11y_negative.html
+        printf '<input type="text">' >> docs/site/_a11y_negative.html
+        if node $GITHUB_WORKSPACE/audit_a11y.js --output docs/site; then
+          echo "A11y audit did not fail on a deliberately broken page"
+          exit 1
+        fi
+        rm docs/site/_a11y_negative.html
+
+    - name: Audit negative test
+      run: |
+        cd /tmp/fixture_project
+        # The audit must fail on a deliberately broken build
         echo '<link rel="stylesheet" href="missing-negative-test.css">' >> docs/site/index.html
         if python $GITHUB_WORKSPACE/audit_site.py --output docs/site; then
           echo "Audit did not fail on a deliberately broken build"
           exit 1
         fi
-
-        echo "Fixture tests passed."

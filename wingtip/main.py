@@ -1346,9 +1346,11 @@ def add_codeblock_copy_buttons(html: str) -> str:
         code.parent.wrap(wrapper)
         wrapper.insert(0, button)
         
-        # Add ID to code block
+        # Add ID to code block; focusable so overflowing samples can be
+        # scrolled with the keyboard (axe: scrollable-region-focusable)
         code['id'] = f'code-{i}'
-    
+        code['tabindex'] = '0'
+
     return str(soup)
 
 def _get_image_size(path):
