@@ -1,5 +1,41 @@
 # WingTip Changelog
 
+## [v0.6.3] - 2026-07-17
+
+### GitHub-flavored Markdown
+
+- Task lists (`- [ ]` / `- [x]`) render as checkboxes instead of literal brackets; each checkbox is label-wrapped so it carries its item text as an accessible name.
+- GitHub alerts (`> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`) render as styled admonitions; adjacent alert blocks that python-markdown merges into one blockquote are split back apart.
+- Bare `http(s)://` and `www.` URLs in prose autolink, with trailing punctuation kept outside the link.
+- Search-index text extraction now uses the same Markdown pipeline as page rendering: fence markers, fence language tags, table pipe rows, and task markers no longer leak into search snippets.
+
+### Navigation
+
+- The site nav no longer depends on clicking the logo: an always-present hamburger button toggles it (sites without a favicon previously had no header navigation at all), the logo now toggles instead of only opening, and `aria-expanded` is tracked.
+- Categorized sites: the slideout now clones the entire navigation (one list per category plus headings) instead of only the first list, with styled category headings and nested groups.
+- The mobile table-of-contents button worked for the first time: it was positioned underneath the fixed header and its click handler was never attached. Now placed below the header and wired up.
+- Client-side TOC generation no longer overwrites the build's heading ids, which had recreated duplicate anchors (`#setup` twice) and mangled unicode slugs; the TOC also indexes only content headings, not navigation headings.
+
+### Theming
+
+- Light mode was unreadable in the header: the navbar title and every slideout link were hardcoded white on a background that flips to white. Nav colors are now paired variables.
+- Manually toggling the theme now recolors the navbar too — previously it only tracked the OS preference, producing a white navbar on a dark page.
+
+### Accessibility
+
+- Zero axe-core violations across every generated page in both color schemes, enforced in CI by a new `audit_a11y.js` gate (with a negative test, like the existing audit).
+- Skip-to-content link; the closed slideout's links no longer occupy the tab order (keyboard users previously tabbed through the entire site nav to reach search); focus moves into the nav on open and back to the toggle on close.
+- Landmarks and labels: header/banner, labeled navs, `role=search`, named theme toggle; decorative logo alt.
+- WCAG AA contrast: admonition titles, code tokens, footer text, and the light-theme link color; content links are underlined rather than color-only.
+- Code blocks are keyboard-scrollable (`tabindex="0"`); `prefers-reduced-motion` collapses all animation.
+
+### PWA and artifacts
+
+- The offline fallback page is now actually precached — the service worker referenced `offline.html` but built its cache list before the file was written, so offline navigation to an uncached URL had always shown the browser error page.
+- `noindex` frontmatter is honored by `llms.txt`, `llms-full.txt`, and `skill.md`, matching the search index and sitemap.
+- Projects without a root `404.md` get a default styled 404 page; the raw-Markdown alternate (`.html.md`) is written for every page, fixing the dead alternate link on 404 pages.
+- Sites without a `repo_url` no longer render an empty GitHub link in the footer.
+
 ## [v0.6.2] - 2026-07-17
 
 - GFM strikethrough support: `~~text~~` renders as `<del>` instead of literal tildes.
