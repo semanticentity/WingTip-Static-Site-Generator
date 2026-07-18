@@ -1,5 +1,17 @@
 # WingTip Changelog
 
+## [v0.6.5] - 2026-07-18
+
+### Redirects
+
+- `config.json` accepts `"redirects": [{"from": "/old-path", "to": "/new-path"}]`. Every build emits a static redirect page per rule (instant redirect with a visible fallback link — works on GitHub Pages and any static host) plus a `_redirects` file in Netlify/Cloudflare Pages format. Platform wildcard patterns (`:slug*`) are translated to splats and covered host-level. Redirect stubs are `noindex` and stay out of the sitemap and search index; collisions with real pages and missing targets warn at build time.
+- `wingtip migrate` carries the source platform's redirects into the new project's `config.json` — previously they were only listed in the migration report as manual work. Non-wildcard rules now count as converted.
+
+### Fixed
+
+- Search on configured-`base_url` sites fetched its index from the absolute base URL, so previews, mirrors, and local serves of the built site broke search with a cross-origin error. The index is now fetched relative to the page, working on the canonical domain and any same-origin copy alike.
+- The search error message met neither light- nor dark-theme contrast requirements; it is now themed and AA-compliant.
+
 ## [v0.6.4] - 2026-07-18
 
 ### Navigation
