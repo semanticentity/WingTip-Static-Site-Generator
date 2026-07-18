@@ -158,6 +158,9 @@
       #slideout-nav {
         top: 90px;
       }
+      #toc-hamburger {
+        top: 100px; /* the header wraps to two rows at this width */
+      }
     }
     #slideout-nav.active {
       transform: translateX(240px);
@@ -431,8 +434,9 @@
     /* Hamburger styles */
     #toc-hamburger {
       position: fixed;
-      top: 1em;
-      left: 1em;
+      top: 72px; /* below the fixed header, which would swallow its taps */
+      right: 1em;
+      left: auto;
       z-index: 1100;
       width: 36px;
       height: 36px;
@@ -449,7 +453,7 @@
       width: 28px;
       height: 4px;
       margin: 3px 0;
-      background: #222;
+      background: var(--text-color, #222);
       border-radius: 2px;
       transition: 0.3s;
     }
@@ -759,6 +763,15 @@
     :root {
       --nav-background: #161f27;
       --nav-text: #ffffff;
+    }
+    /* Manual theme toggle must win over the OS preference */
+    html.dark {
+      --nav-background: #161f27;
+      --nav-text: #ffffff;
+    }
+    html.light {
+      --nav-background: #ffffff;
+      --nav-text: #000000;
     }
     /* KaTeX Dark Mode */
     .katex {
@@ -1163,6 +1176,11 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
       document.body.style.overflow = '';
       hamburger.setAttribute('aria-expanded', 'false');
     }
+
+    hamburger.addEventListener('click', (e) => {
+      e.stopPropagation(); // the document-level closer must not see this click
+      toggleToc();
+    });
     
     const navToggle = document.getElementById('nav-toggle');
 
@@ -1230,8 +1248,9 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     
     // Close on outside click
     document.addEventListener('click', (e) => {
-      if (toc.classList.contains('open') && 
-          !toc.contains(e.target) && 
+      if (toc.classList.contains('open') &&
+          !toc.contains(e.target) &&
+          !hamburger.contains(e.target) &&
           (!navLogo || !navLogo.contains(e.target))) {
         closeToc();
       }
@@ -1242,7 +1261,9 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     // Build TOC links
     const headers = Array.from(document.querySelectorAll('h2,h3')).filter(h => h.innerText !== 'Documentation');
     headers.forEach(function(h){
-      const id = h.innerText.toLowerCase().replace(/[^a-z0-9_]+/g, '-');
+      // The build already assigns deduplicated, transliterated ids via the
+      // markdown toc extension — keep them; only slug as a fallback.
+      const id = h.id || h.innerText.toLowerCase().replace(/[^a-z0-9_]+/g, '-');
       h.id = id;
       const link = document.createElement('a');
       link.href = '#' + id;
