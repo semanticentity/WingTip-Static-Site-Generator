@@ -142,8 +142,15 @@ class _TaskListExtension(markdown.Extension):
                         if m.group(1) in ("x", "X"):
                             box.set("checked", "checked")
                         box.tail = " " + (target.text or "")[m.end():]
+                        # Wrap in a label so the checkbox takes the item text
+                        # as its accessible name.
+                        label = etree_mod.Element("label")
+                        label.append(box)
+                        for child in list(target):
+                            target.remove(child)
+                            label.append(child)
                         target.text = None
-                        target.insert(0, box)
+                        target.append(label)
                         li.set("class", (li.get("class", "") + " task-list-item").strip())
                         if "contains-task-list" not in parent.get("class", ""):
                             parent.set("class", (parent.get("class", "") + " task-list contains-task-list").strip())
@@ -1285,7 +1292,7 @@ def build_navigation(current_file: str) -> str:
 
     tree, categories = _collect_nav_data(docs_dir)
 
-    nav_html = ['<div class="navigation">']
+    nav_html = ['<nav class="navigation" aria-label="Documentation">']
     nav_html.append('<h2>Documentation</h2>')
     nav_html.append('<ul>')
 
@@ -1313,7 +1320,7 @@ def build_navigation(current_file: str) -> str:
         nav_html.append(_render_nav_group(dirname, dirname, tree['children'][dirname], docs_dir, active_html, prefix))
 
     nav_html.append('</ul>')
-    nav_html.append('</div>')
+    nav_html.append('</nav>')
     return '\n'.join(nav_html)
 
 def add_codeblock_copy_buttons(html: str) -> str:
@@ -1736,7 +1743,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         favicon_url = f"{page_root}/{favicon_url}"
     if favicon_url:
         favicon_link = f'<link rel="icon" type="image/png" href="{html_module.escape(favicon_url)}">'
-        nav_logo = f'<img src="{html_module.escape(favicon_url)}" alt="{html_module.escape(str(CONFIG.get("project_name", title)))}" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">'
+        nav_logo = f'<img src="{html_module.escape(favicon_url)}" alt="" style="height: 2.5em; vertical-align: middle; margin-right: 0.5em; cursor: pointer;">'
     else:
         favicon_link = ''
         nav_logo = ''
@@ -1948,7 +1955,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         twitter_handle=CONFIG.get("twitter_handle", ""),
         version=CONFIG["version"],
         year=datetime.now().year,
-        repo_url=CONFIG["repo_url"],
+        repo_link=(f' - <a href="{html_module.escape(CONFIG["repo_url"])}">GitHub</a>'
+                   if CONFIG.get("repo_url") else ''),
         navigation=nav_links,
         prev_link=prev_link,
         next_link=next_link,

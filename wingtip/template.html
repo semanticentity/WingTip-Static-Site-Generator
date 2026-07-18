@@ -106,6 +106,30 @@
       color: #ffbe85;
     }
     
+    /* Content links carry a non-color cue (WCAG 1.4.1) */
+    main p a, main li a, main td a, main dd a {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    main .navigation a {
+      text-decoration: none;
+    }
+
+    /* Skip link: visually hidden until keyboard-focused */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      z-index: 2000;
+      background: var(--nav-background);
+      color: var(--nav-text, #fff);
+      padding: 0.6em 1em;
+      text-decoration: underline;
+    }
+    .skip-link:focus {
+      left: 0;
+    }
+
     /* Slideout Nav */
     #slideout-nav {
       position: fixed;
@@ -115,9 +139,10 @@
       height: calc(100vh - 60px);
       background: var(--nav-background);
       padding: 1em;
-      transition: transform 0.3s ease;
+      transition: transform 0.3s ease, visibility 0s 0.3s;
       z-index: 1000;
       overflow-y: auto;
+      visibility: hidden; /* keeps closed-nav links out of the tab order */
     }
     @media (max-width: 407px) {
       #slideout-nav {
@@ -126,6 +151,8 @@
     }
     #slideout-nav.active {
       transform: translateX(240px);
+      visibility: visible;
+      transition: transform 0.3s ease, visibility 0s 0s;
     }
     #slideout-nav h2 {
       margin: 0 0 1em;
@@ -507,11 +534,11 @@
     .codehilite .nv { color: #66d9ef !important; } /* Name.Variable */
     .codehilite .s { color: #e6db74 !important; } /* String */
     .codehilite .k { color: #f92672 !important; } /* Keyword */
-    .codehilite .c1 { color: #75715e !important; } /* Comment */
+    .codehilite .c1 { color: #a29a83 !important; } /* Comment (AA on #161f27) */
     .light .codehilite .nv { color: #0086b3 !important; }
     .light .codehilite .s { color: #d14 !important; }
     .light .codehilite .k { color: #a71d5d !important; }
-    .light .codehilite .c1 { color: #998 !important; }
+    .light .codehilite .c1 { color: #57606a !important; }
     .toggle-checkbox {
       position: absolute;
       opacity: 0;
@@ -591,7 +618,7 @@
     }
 
     .prev-next-nav span {
-        color: #718096;
+        color: #a0aec0;
         font-size: 0.8rem;
     }
 
@@ -631,7 +658,8 @@
 
     .prev-next-nav span a {
         color: #ffbe85;
-        text-decoration: none;
+        text-decoration: underline;
+        text-underline-offset: 2px;
     }
 
     .prev-next-nav a:hover,
@@ -1027,7 +1055,8 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   $head_snippet
 </head>
 <body>
-  <div id="nav-container" class="nav-container">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header id="nav-container" class="nav-container">
     <div class="nav-links">
       <button id="nav-toggle" aria-label="Toggle navigation" aria-controls="slideout-nav" aria-expanded="false">
         <span></span>
@@ -1047,18 +1076,18 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     </div>
 
     <!-- Slideout Navigation -->
-    <nav id="slideout-nav">
+    <nav id="slideout-nav" aria-label="Site navigation">
       <button style="display:none;" class="close-btn" aria-label="Close navigation">×</button>
       <div id="slideout-links"></div>
     </nav>
 
     <!-- Search Bar (New) -->
-    <div class="search-wrapper" style="margin-right: 1em; position: relative; /* For positioning clear button */">
+    <div class="search-wrapper" role="search" style="margin-right: 1em; position: relative; /* For positioning clear button */">
       <input type="search" id="search-input" placeholder="Search docs..." aria-label="Search documentation">
     </div>
 
     <label id="theme-toggle" style="margin-left:auto;">
-      <input class="toggle-checkbox" type="checkbox">
+      <input class="toggle-checkbox" type="checkbox" aria-label="Toggle dark mode">
       <div class="toggle-slot">
         <div class="sun-icon-wrapper">
           <div class="iconify sun-icon" data-icon="feather-sun" data-inline="false"></div>
@@ -1068,31 +1097,31 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
           <div class="iconify moon-icon" data-icon="feather-moon" data-inline="false"></div>
         </div>
       </div>
-    </label> 
-  </div>
+    </label>
+  </header>
 
   <!-- Search Results Container (New) -->
   <div id="search-results-container" style="position: fixed; top: 60px; /* Adjust based on actual nav height */ left: 1em; right: 1em; z-index: 1500; display: none; max-height: 400px; overflow-y: auto;"></div>
 
-  <button id='toc-hamburger' aria-label='Open Table of Contents'>
+  <button id='toc-hamburger' aria-label='Open Table of Contents' aria-controls='toc' aria-expanded='false'>
     <span></span>
     <span></span>
     <span></span>
   </button>
   <div id="content-wrapper">
-    <main>
+    <main id="main-content" tabindex="-1">
       <div class="source-buttons">
             <button id="view-source-btn" type="button" title="View raw Markdown source">View Markdown</button>
             <button id="copy-source-btn" type="button" title="Copy raw Markdown source to clipboard">Copy Markdown</button>
       </div>
       $date_meta
       $content
-      <nav id='toc'></nav>
+      <nav id='toc' aria-label='Table of contents'></nav>
       $navigation
     </main>
-    <nav class="prev-next-nav">
+    <nav class="prev-next-nav" aria-label="Previous and next page">
       $prev_link
-      <span>$project v$version &copy; $year - <a href="$repo_url">GitHub</a> - <a href="$concat_docs_url">View All Docs (Raw)</a></span>
+      <span>$project v$version &copy; $year$repo_link - <a href="$concat_docs_url">View All Docs (Raw)</a></span>
       $next_link
     </nav>
   </div>
@@ -1116,11 +1145,13 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     function openToc() {
       toc.classList.add('open');
       document.body.style.overflow = 'hidden';
+      hamburger.setAttribute('aria-expanded', 'true');
     }
-    
+
     function closeToc() {
       toc.classList.remove('open');
       document.body.style.overflow = '';
+      hamburger.setAttribute('aria-expanded', 'false');
     }
     
     const navToggle = document.getElementById('nav-toggle');
@@ -1129,6 +1160,14 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
       slideoutNav.classList.toggle('active', open);
       document.body.style.overflow = open ? 'hidden' : '';
       navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      // Don't strand keyboard focus inside the hidden panel.
+      if (!open && slideoutNav.contains(document.activeElement)) {
+        navToggle.focus();
+      }
+      if (open) {
+        const first = slideoutLinks.querySelector('a');
+        if (first) first.focus();
+      }
     }
     function toggleSlideout() {
       setSlideout(!slideoutNav.classList.contains('active'));
