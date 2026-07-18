@@ -23,7 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsContainer.style.display = 'none';
   }
 
-  const searchIndexPath = (window.SITE_BASE_URL && window.SITE_BASE_URL !== '.' ? window.SITE_BASE_URL : '') + '/search_index.json';
+  // Fetch the index relative to the page: works on the canonical domain
+  // and on any mirror/preview/local serve of the same build, where the
+  // absolute configured base would be a cross-origin request.
+  const searchIndexPath = (window.PAGE_RELATIVE_ROOT
+    ? window.PAGE_RELATIVE_ROOT
+    : (window.SITE_BASE_URL && window.SITE_BASE_URL !== '.' ? window.SITE_BASE_URL : '')) + '/search_index.json';
   fetch(searchIndexPath)
     .then(response => {
       if (!response.ok) {
@@ -43,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch(error => {
       console.error('Error fetching or parsing search_index.json:', error);
       if (resultsContainer) {
-        resultsContainer.innerHTML = '<p style="color: red;">Error loading search data. Please try again later.</p>';
+        resultsContainer.innerHTML = '<p class="search-error">Error loading search data. Please try again later.</p>';
         resultsContainer.style.display = 'block';
       }
     });

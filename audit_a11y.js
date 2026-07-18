@@ -76,6 +76,13 @@ function serve(root) {
     const context = await browser.newContext({ colorScheme: scheme });
     const page = await context.newPage();
     for (const rel of pages) {
+      // Redirect stubs navigate away instantly; axe would scan the
+      // destination (possibly an external site) instead of the stub.
+      const raw = fs.readFileSync(path.join(siteDir, rel), 'utf8');
+      if (/<meta http-equiv="refresh"/i.test(raw)) {
+        if (scheme === 'light') console.log(`skip (redirect page): ${rel}`);
+        continue;
+      }
       await page.goto(`http://127.0.0.1:${port}/${rel.split(path.sep).join('/')}`, { waitUntil: 'load' });
       // Let the page's theme class land and CSS color transitions finish,
       // otherwise contrast is measured against mid-transition colors.

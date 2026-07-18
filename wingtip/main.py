@@ -1288,6 +1288,106 @@ def _sorted_nav_groups(children, parent_rel, docs_dir):
         return (order is None, order or 0, dirname.lower())
     return sorted(children, key=key)
 
+def generate_redirect_pages(output_dir):
+    """Emit redirects declared in config.json:
+
+        "redirects": [{"from": "/old-path", "to": "/new-path"}]
+
+    Two artifacts: a static redirect page per non-wildcard rule (instant
+    meta refresh + JS fallback + visible link) so redirects work on hosts
+    with no redirect support (GitHub Pages), and a `_redirects` file in
+    Netlify/Cloudflare Pages format covering every rule, with platform
+    wildcard patterns (:slug*) translated to splats. Returns the emitted
+    file paths so they survive output cleanup.
+    """
+    redirects = CONFIG.get('redirects') or []
+    if not isinstance(redirects, list) or not redirects:
+        return []
+
+    emitted = []
+    host_lines = []
+    page_count = 0
+    for rd in redirects:
+        if not isinstance(rd, dict):
+            continue
+        src = str(rd.get('from') or rd.get('source') or '').strip()
+        dst = str(rd.get('to') or rd.get('destination') or '').strip()
+        if not src or not dst:
+            continue
+
+        host_src = re.sub(r':[A-Za-z0-9_]+\*', '*', src)
+        host_dst = re.sub(r':[A-Za-z0-9_]+\*', ':splat', dst)
+        if not host_dst.startswith(('http://', 'https://', '/')):
+            host_dst = '/' + host_dst
+        host_lines.append(f"{host_src} {host_dst} 301")
+
+        if '*' in src or ':' in src:
+            print(f"Note: wildcard redirect {src} is host-level only (_redirects); no static page")
+            continue
+
+        rel_src = src.strip('/')
+        if not rel_src:
+            continue
+        if src.endswith('/'):
+            out_rel = rel_src + '/index.html'
+        elif rel_src.endswith('.html'):
+            out_rel = rel_src
+        else:
+            out_rel = rel_src + '.html'
+        out_path = os.path.join(output_dir, out_rel)
+        if os.path.exists(out_path):
+            print(f"Warning: redirect source {src} collides with existing page {out_rel}; static page skipped")
+            continue
+
+        if dst.startswith(('http://', 'https://')):
+            href = dst
+        else:
+            target_rel = dst.strip('/')
+            if not target_rel:
+                target_rel = 'index.html'
+            elif not target_rel.endswith('.html') and '.' not in os.path.basename(target_rel):
+                target_rel += '.html'
+            if not os.path.exists(os.path.join(output_dir, target_rel)):
+                print(f"Warning: redirect target {dst} not found in the build ({target_rel})")
+            href = os.path.relpath(target_rel, os.path.dirname(out_rel)).replace(os.sep, '/')
+
+        esc = html_module.escape(href, quote=True)
+        js = json.dumps(href)
+        title = html_module.escape(f"Redirecting to {dst}")
+        canonical = ''
+        if BASE_URL != '.' and not dst.startswith(('http://', 'https://')):
+            canonical = f'\n  <link rel="canonical" href="{html_module.escape(BASE_URL)}/{html_module.escape(dst.strip("/"))}.html">'
+        page_html = f"""<!DOCTYPE html>
+<html lang="{html_module.escape(str(CONFIG.get('language', 'en')))}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title}</title>
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="0; url={esc}">{canonical}
+  <script>location.replace({js});</script>
+</head>
+<body>
+  <main>
+    <p>This page has moved. <a href="{esc}">Continue to the new location</a>.</p>
+  </main>
+</body>
+</html>
+"""
+        if os.path.dirname(out_path):
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        pathlib.Path(out_path).write_text(page_html, encoding='utf8')
+        emitted.append(out_path)
+        page_count += 1
+
+    if host_lines:
+        host_path = os.path.join(output_dir, '_redirects')
+        pathlib.Path(host_path).write_text('\n'.join(host_lines) + '\n', encoding='utf8')
+        emitted.append(host_path)
+        print(f"Generated {page_count} static redirect page(s) and _redirects ({len(host_lines)} rules)")
+    return emitted
+
+
 def _generate_section_hubs(docs_dir, seen_outputs, nav_pages, search_data_for_index):
     """Synthesize a landing page for each directory whose _category.json
     sets "index": true and that has no source index.md of its own. The hub
@@ -1789,8 +1889,9 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # assets and site-level artifacts resolve from any depth.
     rel_out = os.path.relpath(output_filename, OUTPUT_DIR).replace(os.sep, '/')
     page_depth = rel_out.count('/')
+    page_relative_root = '.' if page_depth == 0 else '/'.join(['..'] * page_depth)
     if BASE_URL == '.':
-        page_root = '.' if page_depth == 0 else '/'.join(['..'] * page_depth)
+        page_root = page_relative_root
     else:
         page_root = BASE_URL
 
@@ -2087,6 +2188,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         head_snippet=head_snippet,
         csp_meta=csp_meta,
         hreflang_alternates=hreflang_alternates,
+        page_relative_root=page_relative_root,
         raw_markdown_content=raw_markdown_for_template,
         custom_theme_variables_style=custom_theme_variables_style,
         json_ld=json_ld_script
@@ -2435,7 +2537,11 @@ def main():
     write_llms_txt(llms_pages)
     write_skill_md(llms_pages)
     write_robots_txt()
-    
+
+    # Static redirect pages and host-level _redirects from config.json
+    for redirect_file in generate_redirect_pages(OUTPUT_DIR):
+        pages.append((redirect_file, ''))
+
     # Clean up obsolete files
     cleanup_output_dir([p[0] for p in pages])
 

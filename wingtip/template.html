@@ -106,6 +106,15 @@
       color: #ffbe85;
     }
     
+    /* Search error message: AA contrast on both themes */
+    .search-error {
+      color: #b02a2a;
+      padding: 0.5em 1em;
+    }
+    html.dark .search-error {
+      color: #ff8a8a;
+    }
+
     /* Breadcrumb trail. fit-content so the box never covers the
        right-aligned source buttons sharing the row; no opacity on the
        container — it would dim link contrast below AA. */
@@ -1474,6 +1483,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
   <script id="raw-markdown-data" type="text/markdown">$raw_markdown_content</script>
   <script>
     window.SITE_BASE_URL = '$base_url';
+    window.PAGE_RELATIVE_ROOT = '$page_relative_root';
   </script>
   <script src="${base_url}/static/js/search.js" defer></script>
 

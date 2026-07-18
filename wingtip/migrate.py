@@ -583,6 +583,16 @@ def migrate(source_dir, output_dir):
     if platform_config.get("description"):
         wingtip_config["description"] = str(platform_config["description"])
         report["config_carried"].append("description")
+    if report["redirects"]:
+        carried_redirects = []
+        for rd in report["redirects"]:
+            if isinstance(rd, dict) and rd.get("source") and rd.get("destination"):
+                carried_redirects.append({"from": str(rd["source"]), "to": str(rd["destination"])})
+        if carried_redirects:
+            wingtip_config["redirects"] = carried_redirects
+            report["config_carried"].append(
+                f"redirects → config.json ({len(carried_redirects)} rules; the build emits static redirect pages and a _redirects file)"
+            )
     if wingtip_config:
         pathlib.Path(os.path.join(output_dir, "config.json")).write_text(
             json.dumps(wingtip_config, indent=2) + "\n", encoding="utf8"
@@ -691,11 +701,15 @@ correctly in `wingtip --serve`.
 
 def _write_report(output_dir, r):
     total_pages = r["pages_md"] + r["pages_mdx"]
+    wildcard_redirects = [
+        rd for rd in r["redirects"]
+        if isinstance(rd, dict) and ("*" in str(rd.get("source", "")) or ":" in str(rd.get("source", "")))
+    ]
     manual = (
         len(r["mdx_components"])
         + len(r["expression_links"])
         + len(r["broken_links"])
-        + (1 if r["redirects"] else 0)
+        + (1 if wildcard_redirects else 0)
         + len(r["config_not_carried"])
         + len(r["groups_unmapped"])
     )
@@ -776,12 +790,13 @@ def _write_report(output_dir, r):
         if r["redirects"]:
             lines.append(f"### Redirects ({len(r['redirects'])})")
             lines.append("")
-            lines.append("WingTip generates static files; redirects are host-level configuration (e.g. `_redirects` on Netlify/Cloudflare, `vercel.json` rewrites):")
+            lines.append("Carried into `config.json`. Every `wingtip` build emits a static redirect page per rule (works on GitHub Pages) plus a `_redirects` file for Netlify/Cloudflare Pages; wildcard patterns are host-level only:")
             lines.append("")
             for rd in r["redirects"]:
                 src = rd.get("source", "?") if isinstance(rd, dict) else str(rd)
                 dst = rd.get("destination", "?") if isinstance(rd, dict) else ""
-                lines.append(f"- ⚠ `{src}` → `{dst}`")
+                marker = "⚠" if ("*" in src or ":" in src) else "✓"
+                lines.append(f"- {marker} `{src}` → `{dst}`")
             lines.append("")
         if r["config_not_carried"]:
             lines.append("### Configuration not carried over")
