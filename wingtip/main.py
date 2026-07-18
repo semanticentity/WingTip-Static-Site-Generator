@@ -835,17 +835,6 @@ def generate_pwa_files(pages, output_dir):
         icon_192 = ""
         icon_512 = ""
 
-    # Build precache list from the generated output directory
-    precache = []
-    for root, dirs, files in os.walk(output_dir):
-        dirs[:] = [d for d in dirs if not d.startswith('.')]
-        for name in files:
-            full = os.path.join(root, name)
-            rel = os.path.relpath(full, output_dir).replace(os.sep, '/')
-            if rel == 'sw.js':
-                continue
-            precache.append(rel)
-
     # Generate manifest
     icons_list = []
     if icon_192:
@@ -892,6 +881,20 @@ def generate_pwa_files(pages, output_dir):
 </body>
 </html>"""
     offline_path.write_text(offline_html, encoding='utf8')
+
+    # Build the precache list from the generated output directory. This must
+    # run after manifest.json and offline.html are written — the service
+    # worker's offline fallback serves offline.html from this cache, so a
+    # list built earlier ships a fallback that can never be found.
+    precache = []
+    for root, dirs, files in os.walk(output_dir):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        for name in files:
+            full = os.path.join(root, name)
+            rel = os.path.relpath(full, output_dir).replace(os.sep, '/')
+            if rel == 'sw.js':
+                continue
+            precache.append(rel)
 
     # Generate service worker
     cache_version = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
@@ -1999,8 +2002,19 @@ def get_page_nav(pages, current_index):
     next_page = pages[current_index + 1] if current_index < len(pages) - 1 else None
     return prev_page, next_page
 
+def _front_is_noindex(front):
+    """True when frontmatter opts the page out of discovery surfaces."""
+    if not isinstance(front, dict):
+        return False
+    if front.get('noindex'):
+        return True
+    robots = front.get('robots')
+    return isinstance(robots, str) and 'noindex' in robots.lower()
+
+
 def generate_concatenated_markdown():
-    """Generates a single Markdown file from README.md and docs/*.md (excluding 404.md)."""
+    """Generates a single Markdown file from README.md and docs/*.md
+    (excluding 404.md and noindex pages)."""
     all_markdown_content = []
     files_to_process = []
 
@@ -2017,6 +2031,8 @@ def generate_concatenated_markdown():
         try:
             with open(filepath, "r", encoding="utf8") as f:
                 content = f.read()
+            if _front_is_noindex(parse_frontmatter(content)):
+                continue
             all_markdown_content.append(f"\n---\nFile: {filepath}\n---\n\n{content}")
         except Exception as e:
             print(f"Warning: Could not read or process file {filepath}: {e}")
@@ -2303,8 +2319,9 @@ def main():
     generate_search_index(search_data_for_index, OUTPUT_DIR)
     write_sitemap_xml(sitemap_pages)
     generate_rss_feed(sitemap_pages, OUTPUT_DIR)
-    write_llms_txt(nav_pages)
-    write_skill_md(nav_pages)
+    llms_pages = [p for p in nav_pages if not _is_noindex(p[3])]
+    write_llms_txt(llms_pages)
+    write_skill_md(llms_pages)
     write_robots_txt()
     
     # Clean up obsolete files

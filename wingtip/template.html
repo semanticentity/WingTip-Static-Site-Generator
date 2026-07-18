@@ -241,6 +241,15 @@
       opacity: 0.9;
     }
 
+    #slideout-links .nav-category {
+      color: var(--nav-text, #fff);
+      opacity: 0.85;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin: 1em 0 0.4em;
+    }
+
     /* Search styles */
     .search-container {
       position: relative;
@@ -1231,10 +1240,15 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
       }
     });
 
-    // Populate slideout nav; a site with no page navigation gets no toggle.
-    const navSource = document.querySelector('.navigation ul');
-    if (navSource) {
-      slideoutLinks.appendChild(navSource.cloneNode(true));
+    // Populate slideout nav with every section of the page navigation —
+    // categorized sites have one list per category, plus heading elements.
+    // A site with no page navigation gets no toggle.
+    const navSource = document.querySelector('.navigation');
+    if (navSource && navSource.querySelector('ul')) {
+      Array.from(navSource.children).forEach((child) => {
+        if (child.tagName === 'H2') return; // skip the "Documentation" title
+        slideoutLinks.appendChild(child.cloneNode(true));
+      });
     } else {
       navToggle.style.display = 'none';
     }
@@ -1259,7 +1273,10 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
 
 
     // Build TOC links
-    const headers = Array.from(document.querySelectorAll('h2,h3')).filter(h => h.innerText !== 'Documentation');
+    // Content headings only — navigation blocks carry their own h2/h3s
+    // (section title, category headings) that don't belong in the TOC.
+    const headers = Array.from(document.querySelectorAll('main h2, main h3'))
+      .filter(h => !h.closest('.navigation') && !h.closest('#slideout-nav'));
     headers.forEach(function(h){
       // The build already assigns deduplicated, transliterated ids via the
       // markdown toc extension — keep them; only slug as a fallback.
