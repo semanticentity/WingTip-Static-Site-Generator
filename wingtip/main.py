@@ -110,6 +110,158 @@ class _StrikethroughExtension(markdown.Extension):
         md.inlinePatterns.register(SimpleTagInlineProcessor(r"()~~(.+?)~~", "del"), "del", 105)
 
 
+class _TaskListExtension(markdown.Extension):
+    """GFM task lists: - [ ] / - [x] render as disabled checkboxes.
+
+    python-markdown has no built-in support, so GitHub-authored checklists
+    would otherwise show literal brackets.
+    """
+    _MARKER = re.compile(r"^\[([ xX])\]\s+")
+
+    def extendMarkdown(self, md):
+        from markdown.treeprocessors import Treeprocessor
+        import xml.etree.ElementTree as etree_mod
+        marker = self._MARKER
+
+        class TaskListProcessor(Treeprocessor):
+            def run(self, root):
+                for parent in root.iter():
+                    if parent.tag not in ("ul", "ol"):
+                        continue
+                    for li in parent.findall("li"):
+                        # Tight lists put text on the li; loose lists wrap it in a p.
+                        target = li
+                        if (li.text is None or not li.text.strip()) and len(li) and li[0].tag == "p":
+                            target = li[0]
+                        m = marker.match(target.text or "")
+                        if not m:
+                            continue
+                        box = etree_mod.Element("input")
+                        box.set("type", "checkbox")
+                        box.set("disabled", "disabled")
+                        if m.group(1) in ("x", "X"):
+                            box.set("checked", "checked")
+                        box.tail = " " + (target.text or "")[m.end():]
+                        target.text = None
+                        target.insert(0, box)
+                        li.set("class", (li.get("class", "") + " task-list-item").strip())
+                        if "contains-task-list" not in parent.get("class", ""):
+                            parent.set("class", (parent.get("class", "") + " task-list contains-task-list").strip())
+                return root
+
+        md.treeprocessors.register(TaskListProcessor(md), "task_list", 25)
+
+
+class _GithubAlertsExtension(markdown.Extension):
+    """GFM alerts: > [!NOTE] blockquotes render as styled admonitions.
+
+    Reuses the existing admonition CSS. Consecutive alert paragraphs that
+    python-markdown merged into one blockquote are split into separate
+    alerts, matching GitHub's rendering of adjacent alert blocks.
+    """
+    _TYPES = {"NOTE": ("note", "Note"), "TIP": ("tip", "Tip"),
+              "IMPORTANT": ("info", "Important"), "WARNING": ("warning", "Warning"),
+              "CAUTION": ("danger", "Caution")}
+    _MARKER = re.compile(r"^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*")
+
+    def extendMarkdown(self, md):
+        from markdown.treeprocessors import Treeprocessor
+        import xml.etree.ElementTree as etree_mod
+        types, marker = self._TYPES, self._MARKER
+
+        class AlertProcessor(Treeprocessor):
+            def run(self, root):
+                self._walk(root)
+                return root
+
+            def _walk(self, parent):
+                for idx, child in reversed(list(enumerate(list(parent)))):
+                    self._walk(child)
+                    if child.tag != "blockquote":
+                        continue
+                    first = child.find("p")
+                    if first is None or not marker.match(first.text or ""):
+                        continue
+                    parent.remove(child)
+                    insert_at = idx
+                    current = None
+                    for el in list(child):
+                        m = marker.match(el.text or "") if el.tag == "p" else None
+                        if m is not None:
+                            css, title = types[m.group(1)]
+                            current = etree_mod.Element("div")
+                            current.set("class", f"admonition {css}")
+                            title_el = etree_mod.SubElement(current, "p")
+                            title_el.set("class", "admonition-title")
+                            title_el.text = title
+                            parent.insert(insert_at, current)
+                            insert_at += 1
+                            rest = (el.text or "")[m.end():]
+                            el.text = rest
+                            # Marker line usually ends with a break; drop a leading one.
+                            if not rest and len(el) and el[0].tag == "br":
+                                el[0].tail = (el[0].tail or "")
+                                el.text = (el[0].tail or "").lstrip("\n")
+                                el.remove(el[0])
+                            current.append(el)
+                        elif current is not None:
+                            current.append(el)
+                        else:
+                            # Non-alert content before the first marker: keep as blockquote.
+                            keep = etree_mod.Element("blockquote")
+                            keep.append(el)
+                            parent.insert(insert_at, keep)
+                            insert_at += 1
+
+        md.treeprocessors.register(AlertProcessor(md), "github_alerts", 24)
+
+
+class _AutolinkExtension(markdown.Extension):
+    """GFM autolinks: bare http(s) and www. URLs in prose become links.
+
+    Trailing punctuation stays outside the link, matching GitHub.
+    """
+    def extendMarkdown(self, md):
+        from markdown.inlinepatterns import InlineProcessor
+        import xml.etree.ElementTree as etree_mod
+
+        class Autolink(InlineProcessor):
+            def handleMatch(self, m, data):
+                url = m.group(0)
+                trailing = ""
+                while url and url[-1] in ".,;:!?)”’\"'":
+                    # Keep balanced closing parens (Wikipedia-style URLs).
+                    if url[-1] == ")" and url.count("(") >= url.count(")"):
+                        break
+                    trailing = url[-1] + trailing
+                    url = url[:-1]
+                a = etree_mod.Element("a")
+                a.set("href", url if url.startswith("http") else "http://" + url)
+                a.text = url
+                if trailing:
+                    a.tail = trailing
+                    return a, m.start(0), m.end(0) - len(trailing)
+                return a, m.start(0), m.end(0)
+
+        md.inlinePatterns.register(Autolink(r"(?<![\w\"'=/>])(?:https?://|www\.)[^\s<>\"]+"), "gfm_autolink", 95)
+
+
+def _gfm_extensions():
+    """GFM-compatibility extensions shared by page rendering and
+    search-index text extraction, so both see the same document."""
+    return [
+        "fenced_code",
+        "def_list",
+        "footnotes",
+        "admonition",
+        "tables",        # Must be after admonition for nested tables
+        _StrikethroughExtension(),
+        _TaskListExtension(),
+        _GithubAlertsExtension(),
+        _AutolinkExtension(),
+    ]
+
+
 def _package_version(default="0.0.0"):
     """Read the version from installed metadata or a source checkout."""
     try:
@@ -1322,7 +1474,7 @@ def generate_search_index(pages_data, output_dir):
         url = page_item["url"]
 
         # Convert markdown to HTML
-        html_content = markdown.markdown(content_md, extensions=[_StrikethroughExtension()])
+        html_content = markdown.markdown(content_md, extensions=_gfm_extensions())
 
         # Strip HTML tags to get plain text
         soup = BeautifulSoup(html_content, "html.parser")
@@ -1470,22 +1622,16 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     html = markdown.markdown(
         md,
         extensions=[
-            "fenced_code",
-            "codehilite", 
+            "codehilite",
             "nl2br",           # Newlines to <br>
             "sane_lists",     # Better list handling
             "smarty",         # Smart quotes, dashes, etc
             "attr_list",     # {: .class} style attributes
-            "def_list",      # Definition lists
-            "footnotes",     # [^1] style footnotes
             "md_in_html",    # Markdown inside HTML
             "toc",           # [TOC] generation
-            "admonition",    # !!! note style admonitions
-            "tables",        # Must be after admonition for nested tables
             LinkRewriterExtension(),
-            _StrikethroughExtension(),
             "wingtip.latex_extension"
-        ] + plugin_extensions,
+        ] + _gfm_extensions() + plugin_extensions,
         output_format="html5"
     )
     
