@@ -22,16 +22,16 @@
 
   <meta property="og:title" content="$og_title">
   <meta property="og:description" content="$og_description">
-  <meta property="og:url" content="$page_url">
+  $og_url_meta
   <meta property="og:type" content="$og_type">
-  <meta property="og:image" content="$og_image_url">
+  $og_image_meta
   <meta property="og:site_name" content="$project">
   <meta property="og:locale" content="$og_locale">
 
-  <meta name="twitter:card" content="summary_large_image">
+  $twitter_card_meta
   <meta name="twitter:title" content="$twitter_title">
   <meta name="twitter:description" content="$twitter_description">
-  <meta name="twitter:image" content="$twitter_image_url">
+  $twitter_image_meta
 
   <meta name="author" content="$author">
 
@@ -106,6 +106,38 @@
       color: #ffbe85;
     }
     
+    /* Breadcrumb trail. fit-content so the box never covers the
+       right-aligned source buttons sharing the row; no opacity on the
+       container — it would dim link contrast below AA. */
+    .breadcrumbs {
+      padding-top: 3.5em;
+      margin-bottom: -3em;
+      font-size: 0.85em;
+      width: fit-content;
+    }
+    .breadcrumbs ol {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35em;
+      margin: 0;
+      padding: 0;
+    }
+    .breadcrumbs li + li::before {
+      content: "›";
+      margin-right: 0.35em;
+      opacity: 0.6;
+    }
+    .breadcrumbs a {
+      text-decoration: none;
+    }
+    .breadcrumbs a:hover {
+      text-decoration: underline;
+    }
+    .breadcrumbs li[aria-current] {
+      font-weight: 600;
+    }
+
     /* Respect OS-level reduced-motion preference (WCAG 2.3.3) */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -1178,6 +1210,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
             <button id="view-source-btn" type="button" title="View raw Markdown source">View Markdown</button>
             <button id="copy-source-btn" type="button" title="Copy raw Markdown source to clipboard">Copy Markdown</button>
       </div>
+      $breadcrumbs
       $date_meta
       $content
       <nav id='toc' aria-label='Table of contents'></nav>
@@ -1284,6 +1317,14 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
         if (child.tagName === 'H2') return; // skip the "Documentation" title
         slideoutLinks.appendChild(child.cloneNode(true));
       });
+      // Keep the current page visible in a long pinned sidebar.
+      const activeLink = slideoutLinks.querySelector('a.active');
+      if (activeLink && navPinned.matches) {
+        const linkTop = activeLink.getBoundingClientRect().top - slideoutNav.getBoundingClientRect().top;
+        if (linkTop > slideoutNav.clientHeight - 80) {
+          slideoutNav.scrollTop = linkTop - slideoutNav.clientHeight / 2;
+        }
+      }
     } else {
       navToggle.style.display = 'none';
     }

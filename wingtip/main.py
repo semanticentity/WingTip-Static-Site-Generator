@@ -1284,6 +1284,28 @@ def _sorted_nav_groups(children, parent_rel, docs_dir):
         return (order is None, order or 0, dirname.lower())
     return sorted(children, key=key)
 
+def build_breadcrumbs(rel_out, title, category, page_root, docs_dir='docs'):
+    """Visible breadcrumb trail: Home › directory groups (or frontmatter
+    category) › page. The home page gets none. Directory crumbs use the
+    _category.json display name when one exists; they are plain text until
+    section hub pages give them a destination."""
+    if rel_out == 'index.html':
+        return ''
+    parts = ['<nav class="breadcrumbs" aria-label="Breadcrumb"><ol>',
+             f'<li><a href="{page_root}/index.html">Home</a></li>']
+    dirs = rel_out.split('/')[:-1]
+    rel = ''
+    for d in dirs:
+        rel = os.path.join(rel, d)
+        meta = _load_category_meta(os.path.join(docs_dir, rel))
+        name = meta.get('name') or d.replace('-', ' ').replace('_', ' ').title()
+        parts.append(f'<li>{html_module.escape(str(name))}</li>')
+    if not dirs and category:
+        parts.append(f'<li>{html_module.escape(str(category))}</li>')
+    parts.append(f'<li aria-current="page">{html_module.escape(str(title))}</li>')
+    parts.append('</ol></nav>')
+    return ''.join(parts)
+
 def build_navigation(current_file: str) -> str:
     """Build the sidebar navigation HTML: root pages, frontmatter category
     groups, and nested directory groups with collapsible sections."""
@@ -1838,6 +1860,20 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     else:
         twitter_image_url = og_image_url
 
+    # The OpenGraph spec requires full URLs for og:url/og:image; scrapers
+    # ignore relative values. Zero-config builds have no absolute base, so
+    # emit these tags (and the card type that depends on the image) only
+    # when they can be absolute.
+    def _social_meta(tag, attr, value):
+        if not str(value).startswith(('http://', 'https://')):
+            return ''
+        return f'<meta {attr}="{tag}" content="{html_module.escape(str(value))}">'
+    og_url_meta = _social_meta('og:url', 'property', page_url)
+    og_image_meta = _social_meta('og:image', 'property', og_image_url)
+    twitter_image_meta = _social_meta('twitter:image', 'name', twitter_image_url)
+    twitter_card_meta = ('<meta name="twitter:card" content="summary_large_image">'
+                         if twitter_image_meta else '')
+
     author = str(front_matter.get('author') or CONFIG.get("author", "")).strip()
 
     # Per-page date metadata (date / lastmod frontmatter)
@@ -1935,6 +1971,8 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     # Properly construct the markdown alternate URL to avoid .md extension applied to the root domain
     markdown_alternate_url = f"{page_root}/{rel_out}.md"
 
+    breadcrumbs_html = build_breadcrumbs(rel_out, title, category, page_root)
+
     page = TEMPLATE.substitute(
         title=title,
         canonical_url=canonical_url,
@@ -1954,10 +1992,13 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
         author=author,
         og_title=og_title,
         og_description=og_description,
-        og_image_url=og_image_url,
+        og_url_meta=og_url_meta,
+        og_image_meta=og_image_meta,
         twitter_title=twitter_title,
         twitter_description=twitter_description,
-        twitter_image_url=twitter_image_url,
+        twitter_card_meta=twitter_card_meta,
+        twitter_image_meta=twitter_image_meta,
+        breadcrumbs=breadcrumbs_html,
         twitter_handle=CONFIG.get("twitter_handle", ""),
         version=CONFIG["version"],
         year=datetime.now().year,
