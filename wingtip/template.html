@@ -130,10 +130,10 @@
     #slideout-nav h2 {
       margin: 0 0 1em;
       font-size: 1.2em;
-      color: white !important;
+      color: var(--nav-text, #fff) !important;
     }
     #slideout-nav a {
-      color: white !important;
+      color: var(--nav-text, #fff) !important;
       text-decoration: none;
       opacity: 0.8;
       transition: opacity 0.2s;
@@ -181,17 +181,24 @@
       margin-bottom: 8px;
     }
 
-    /* Nested directory groups */
-    .navigation .nav-group > details > summary {
+    /* Nested directory groups (page-bottom nav and slideout clone) */
+    .navigation .nav-group > details > summary,
+    #slideout-links .nav-group > details > summary {
       cursor: pointer;
       font-weight: 600;
       margin-bottom: 8px;
       list-style-position: outside;
     }
 
-    .navigation .nav-group > details > ul {
+    .navigation .nav-group > details > ul,
+    #slideout-links .nav-group > details > ul {
       padding-left: 16px;
       margin-bottom: 4px;
+    }
+
+    #slideout-links summary {
+      color: var(--nav-text, #fff) !important;
+      opacity: 0.9;
     }
 
     /* Search styles */
@@ -362,6 +369,28 @@
       color: #fff;
       text-decoration: none;
     }
+    /* Site-nav toggle (always present, works with or without a logo) */
+    #nav-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 4px;
+      margin-right: 0.25em;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    #nav-toggle span {
+      display: block;
+      width: 20px;
+      height: 2px;
+      margin: 2.5px 0;
+      background: var(--nav-text, #fff);
+      border-radius: 2px;
+      transition: 0.3s;
+    }
+
     /* Hamburger styles */
     #toc-hamburger {
       position: fixed;
@@ -691,6 +720,7 @@
     }
     :root {
       --nav-background: #161f27;
+      --nav-text: #ffffff;
     }
     /* KaTeX Dark Mode */
     .katex {
@@ -703,6 +733,7 @@
     @media (prefers-color-scheme: light) {
       :root {
         --nav-background: #ffffff;
+        --nav-text: #000000;
       }
       .nav-container {
         color: #000;
@@ -998,10 +1029,15 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
 <body>
   <div id="nav-container" class="nav-container">
     <div class="nav-links">
+      <button id="nav-toggle" aria-label="Toggle navigation" aria-controls="slideout-nav" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
       <div class="brand">
         <a href="${base_url}/index.html" style="text-decoration: none;">
           ${nav_logo}
-          <span style="color: white !important; font-size: 1.5em; font-weight: 500;">$project</span>
+          <span style="color: var(--nav-text, #fff) !important; font-size: 1.5em; font-weight: 500;">$project</span>
         </a>
       </div>
       <div style="display:none;"> 
@@ -1087,43 +1123,54 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
       document.body.style.overflow = '';
     }
     
-    // Toggle slideout on logo click (only when a nav logo is present)
+    const navToggle = document.getElementById('nav-toggle');
+
+    function setSlideout(open) {
+      slideoutNav.classList.toggle('active', open);
+      document.body.style.overflow = open ? 'hidden' : '';
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    function toggleSlideout() {
+      setSlideout(!slideoutNav.classList.contains('active'));
+    }
+
+    // The hamburger always toggles; the logo, when present, toggles too.
+    navToggle.addEventListener('click', toggleSlideout);
     if (navLogo) {
       navLogo.addEventListener('click', (e) => {
         e.preventDefault();
-        slideoutNav.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        toggleSlideout();
       });
       navLogo.style.cursor = 'pointer';
     }
 
     // Close slideout on button click
-    closeBtn.addEventListener('click', () => {
-      slideoutNav.classList.remove('active');
-      document.body.style.overflow = '';
-    });
+    closeBtn.addEventListener('click', () => setSlideout(false));
 
     // Close slideout on ESC
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && slideoutNav.classList.contains('active')) {
-        slideoutNav.classList.remove('active');
-        document.body.style.overflow = '';
+        setSlideout(false);
       }
     });
 
     // Close slideout on outside click
     document.addEventListener('click', (e) => {
-      if (slideoutNav.classList.contains('active') && 
-          !slideoutNav.contains(e.target) && 
+      if (slideoutNav.classList.contains('active') &&
+          !slideoutNav.contains(e.target) &&
+          !navToggle.contains(e.target) &&
           (!navLogo || !navLogo.contains(e.target))) {
-        slideoutNav.classList.remove('active');
-        document.body.style.overflow = '';
+        setSlideout(false);
       }
     });
 
-    // Populate slideout nav
-    const navLinks = document.querySelector('.navigation ul').cloneNode(true);
-    slideoutLinks.appendChild(navLinks);
+    // Populate slideout nav; a site with no page navigation gets no toggle.
+    const navSource = document.querySelector('.navigation ul');
+    if (navSource) {
+      slideoutLinks.appendChild(navSource.cloneNode(true));
+    } else {
+      navToggle.style.display = 'none';
+    }
     
     // Close on ESC
     document.addEventListener('keydown', (e) => {
