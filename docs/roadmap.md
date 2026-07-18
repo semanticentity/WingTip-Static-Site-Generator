@@ -2,13 +2,13 @@
 
 ## Objective
 
-Make WingTip the easiest credible exit from a hosted documentation platform: migrate an existing repository, preserve its information architecture and URLs, generate portable static output, and prove the result with automated search, performance, and integrity audits.
+Make WingTip the most reliable way to move a documentation project from a hosted platform to portable static output: migrate an existing repository, preserve its information architecture and URLs, and prove the result with automated search, performance, and integrity audits.
 
 WingTip will not try to reproduce every hosted collaboration feature. It will compete on ownership, migration quality, technical discovery, build transparency, portability, and zero mandatory platform cost.
 
 ## Current position
 
-Status reflects the repository as of July 16, 2026. Competitor capabilities change; any public comparison must be generated from a reproducible fixture rather than unsupported marketing claims.
+Status reflects the repository as of July 17, 2026. Competitor capabilities change; any public comparison must be generated from a reproducible fixture rather than unsupported marketing claims.
 
 | Capability | WingTip now | Competitive status | Priority |
 | --- | --- | --- | --- |
@@ -27,34 +27,21 @@ Status reflects the repository as of July 16, 2026. Competitor capabilities chan
 | Configurable analytics, head snippets, and CSP | Yes | Strong parity | Validate policies |
 | Plugin hooks and Markdown extensions | Yes | Extensibility base | Formalize API |
 | Post-build integrity/branding audit | Yes | Leadership target | Expand |
-| Recursive content trees | No | Parity blocker | P0 |
-| Grouped, nested, tabbed navigation | No | Parity blocker | P0 |
-| Redirect migration and static-host outputs | No | Migration blocker | P0 |
-| Hosted-platform configuration import | No | Acquisition blocker | P0 |
-| MDX compatibility analysis | No | Migration blocker | P0 |
+| Recursive content trees | Yes | Parity | Maintain |
+| Grouped, collapsible navigation | Yes | Tabs, versions, languages pending | P1 |
+| Redirect migration and static-host outputs | Partial | Redirects reported; static redirect pages pending | P0 |
+| Hosted-platform configuration import | Yes | Differentiator | Expand |
+| MDX compatibility analysis | Yes | Differentiator | Expand |
 | OpenAPI reference generation | No | Major parity blocker | P1 |
 | API playground | No | Major parity blocker | P1 |
-| Agent `skill.md` discovery | No | Emerging parity gap | P1 |
+| Agent `skill.md` discovery | Yes | Emerging differentiator | Maintain |
 | Preview deployments and visual review | No | Workflow gap | P2 |
 | Authentication and private docs | No | Enterprise gap | P3/partner |
 | Hosted collaborative editor | No | Intentionally not core | Ecosystem |
 
 ## Delivery plan
 
-### Phase 0 — Capture the switching window
-
-Ship the acquisition surface before broad feature work:
-
-- ~~Publish an open-source hosted-platform migration guide~~ (Implemented July 17, 2026)
-- ~~Offer migration concierge intake through a dedicated GitHub issue template~~ (Implemented July 17, 2026)
-- Create a sanitized real-world hosted-platform fixture for regression testing
-- Record a repository-to-deployed-site migration demo
-- Document output ownership, supported hosts, and unsupported constructs plainly
-- Do not use founder controversy in product copy; meet newly receptive users with a concrete exit path
-
-**Exit criteria:** A hosted-platform user can submit a repository and receive a repeatable migration report rather than an informal promise.
-
-### Phase 1 — Migration wedge (P0)
+### Phase 1 — Migration quality (P0)
 
 #### Content and navigation model
 
@@ -108,7 +95,15 @@ Still pending:
 - Broken links and missing assets detection at migrate time (the post-build audit covers this after `wingtip` runs)
 - File/line locations for component occurrences
 
-**Exit criteria:** Representative hosted-platform repositories build without lost pages, URLs, metadata, or unreported incompatibilities.
+#### Migration documentation and evidence
+
+- ✅ Open-source hosted-platform migration guide (July 17, 2026)
+- ✅ Migration intake through a dedicated GitHub issue template (July 17, 2026)
+- Create a sanitized real-world hosted-docs fixture for regression testing
+- Record a repository-to-deployed-site migration demo
+- Document output ownership, supported hosts, and unsupported constructs plainly
+
+**Exit criteria:** Representative hosted-platform repositories build without lost pages, URLs, metadata, or unreported incompatibilities, and a prospective user can verify that from the published guide, fixture, and demo.
 
 ### Phase 2 — Documentation parity (P1)
 
@@ -207,4 +202,3 @@ These services must not make existing static generation, SEO metadata, auditing,
 - Mandatory cloud hosting
 - Recreating every collaborative editor feature before migration quality is excellent
 - Generating large volumes of low-quality programmatic content
-- Using competitor controversies as product marketing
