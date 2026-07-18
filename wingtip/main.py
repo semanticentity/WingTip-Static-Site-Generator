@@ -1777,14 +1777,15 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     else:
         csp_meta = ''
 
-    # Determine raw markdown content to pass to template
+    # Determine raw markdown content to pass to template. Read it for every
+    # page — the .html.md sibling the template links to must exist even on
+    # pages without an edit link (the 404 page shipped a dead alternate).
     raw_markdown_for_template = ""
-    if add_edit_link: # Only try to read if it's a page that would have source
-        try:
-            with open(input_path, 'r', encoding='utf8') as f:
-                raw_markdown_for_template = f.read()
-        except Exception as e:
-            print(f"Warning: Could not read raw markdown from {input_path}: {e}")
+    try:
+        with open(input_path, 'r', encoding='utf8') as f:
+            raw_markdown_for_template = f.read()
+    except Exception as e:
+        print(f"Warning: Could not read raw markdown from {input_path}: {e}")
 
     # Generate custom theme CSS
     custom_theme_variables_style = generate_theme_css(THEME_CONFIG)
@@ -2265,8 +2266,25 @@ def main():
             json.dump(versions_data, f, indent=2)
         print(f"Generated versions index: {versions_json_path}")
 
-    # Process 404.md if it exists
+    # Process 404.md; projects without one get a default so broken URLs
+    # land on a styled page instead of the host's bare 404 (add a root
+    # 404.md to customize).
     fourofour_md_path = pathlib.Path("404.md")
+    if not fourofour_md_path.exists():
+        import tempfile
+        fourofour_md_path = pathlib.Path(tempfile.gettempdir()) / "wingtip_default_404.md"
+        fourofour_md_path.write_text(
+            "---\n"
+            "permalink: /404.html\n"
+            "---\n\n"
+            "# Page Not Found\n\n"
+            "Oops! The page you're looking for doesn't exist.\n\n"
+            "## What can you do now?\n\n"
+            "- [Return to the homepage](index.html)\n"
+            "- Check the URL for typos\n"
+            "- Use the navigation menu to find what you're looking for\n",
+            encoding="utf8",
+        )
     if fourofour_md_path.exists():
         fourofour_html_path = pathlib.Path(OUTPUT_DIR) / "404.html"
         # Title will be extracted by convert_markdown_file from H1 or default to filename
