@@ -176,6 +176,22 @@ def main():
     # of pages x links. Verdict: None = fine, str = error message suffix.
     resolution_cache = {}
 
+    # Configured-base sites emit absolute self URLs; resolve those against
+    # the local build instead of skipping them as external (a skipped check
+    # once hid a dead 404 Markdown alternate on the demo site). The site's
+    # own base comes from the index page's canonical link.
+    own_base = None
+    index_html = site / "index.html"
+    if index_html.exists():
+        m = re.search(
+            r'<link rel="canonical" href="(https?://[^"]+)"',
+            index_html.read_text(encoding="utf8"),
+        )
+        if m:
+            own_base = m.group(1).rstrip("/")
+            if own_base.endswith("/index.html"):
+                own_base = own_base[: -len("/index.html")]
+
     for html in site.rglob("*.html"):
         text = html.read_text(encoding="utf8")
         # lxml drops content appended after </html>; strip the closers so
@@ -210,6 +226,13 @@ def main():
                 origin = origin.split(":")[0]
                 if origin in CDN_ORIGINS:
                     verdict = f"references CDN {url}"
+                elif own_base and (url == own_base or url.startswith(own_base + "/")):
+                    # Same-origin absolute URL: check the local file.
+                    rel = url[len(own_base):].split("#")[0].split("?")[0].lstrip("/")
+                    if not rel or rel.endswith("/"):
+                        rel += "index.html"
+                    if not (site / rel).exists():
+                        verdict = f"references missing file: {url}"
             elif parsed.scheme:
                 # Any other scheme (mailto:, tel:, cursor:, vscode:, data:,
                 # javascript:, ...) is not a local file reference.
