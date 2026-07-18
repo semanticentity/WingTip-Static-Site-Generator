@@ -99,6 +99,17 @@ support. Generated output can be hosted on any static file server.
 """
     print(show_help.__doc__)
 
+class _StrikethroughExtension(markdown.Extension):
+    """GFM strikethrough: ~~text~~ renders as <del>text</del>.
+
+    python-markdown has no built-in support, so source written for
+    GitHub-flavored rendering would otherwise show literal tildes.
+    """
+    def extendMarkdown(self, md):
+        from markdown.inlinepatterns import SimpleTagInlineProcessor
+        md.inlinePatterns.register(SimpleTagInlineProcessor(r"()~~(.+?)~~", "del"), "del", 105)
+
+
 def _package_version(default="0.0.0"):
     """Read the version from installed metadata or a source checkout."""
     try:
@@ -1311,7 +1322,7 @@ def generate_search_index(pages_data, output_dir):
         url = page_item["url"]
 
         # Convert markdown to HTML
-        html_content = markdown.markdown(content_md)
+        html_content = markdown.markdown(content_md, extensions=[_StrikethroughExtension()])
 
         # Strip HTML tags to get plain text
         soup = BeautifulSoup(html_content, "html.parser")
@@ -1472,6 +1483,7 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
             "admonition",    # !!! note style admonitions
             "tables",        # Must be after admonition for nested tables
             LinkRewriterExtension(),
+            _StrikethroughExtension(),
             "wingtip.latex_extension"
         ] + plugin_extensions,
         output_format="html5"
