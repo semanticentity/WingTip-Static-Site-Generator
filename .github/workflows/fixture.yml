@@ -81,9 +81,11 @@ jobs:
 
     - name: Accessibility gate (axe-core)
       run: |
-        cd /tmp/fixture_project
+        # Install where the script lives so node resolves the modules
+        cd $GITHUB_WORKSPACE
         npm install --no-save playwright axe-core
         npx playwright install --with-deps chromium
+        cd /tmp/fixture_project
         node $GITHUB_WORKSPACE/audit_a11y.js --output docs/site
 
         # Negative test: the gate must fail on a deliberately inaccessible page
