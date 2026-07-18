@@ -756,7 +756,7 @@
         margin-left: 0;
         padding-left: 1rem;
         padding-right: 10px;
-        width: calc(100vw - 240px);
+        width: calc(100vw - 240px - var(--sidebar-width, 0px));
       }
     }
     pre code.hljs {
@@ -772,6 +772,7 @@
     :root {
       --nav-background: #161f27;
       --nav-text: #ffffff;
+      --sidebar-width: 0px;
     }
     /* Manual theme toggle must win over the OS preference */
     html.dark {
@@ -781,6 +782,37 @@
     html.light {
       --nav-background: #ffffff;
       --nav-text: #000000;
+    }
+    /* Wide desktop: pin the site nav open as a left sidebar. Late in the
+       sheet so it outranks the base slideout/toggle/variable rules. */
+    @media (min-width: 1200px) {
+      :root {
+        --sidebar-width: 240px;
+      }
+      #slideout-nav {
+        visibility: visible;
+        transform: translateX(240px);
+      }
+      #nav-toggle {
+        display: none;
+      }
+      /* The vendor stylesheet centers a max-width body; with a pinned
+         sidebar that pushes content under the right TOC. Span the body
+         and center main between the two sidebars instead. */
+      body {
+        max-width: none;
+      }
+      #content-wrapper {
+        margin-left: var(--sidebar-width);
+        margin-right: 240px;
+      }
+      main {
+        width: auto;
+        max-width: 900px;
+        margin: 0 auto;
+        padding-left: 2rem;
+        padding-right: 2rem;
+      }
     }
     /* KaTeX Dark Mode */
     .katex {
@@ -1192,8 +1224,10 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     });
     
     const navToggle = document.getElementById('nav-toggle');
+    const navPinned = window.matchMedia('(min-width: 1200px)');
 
     function setSlideout(open) {
+      if (navPinned.matches) return; // pinned open as a sidebar; nothing to toggle
       slideoutNav.classList.toggle('active', open);
       document.body.style.overflow = open ? 'hidden' : '';
       navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -1214,6 +1248,7 @@ html.dark #search-results-container li.active-search-result .search-result-snipp
     navToggle.addEventListener('click', toggleSlideout);
     if (navLogo) {
       navLogo.addEventListener('click', (e) => {
+        if (navPinned.matches) return; // sidebar is pinned; logo is just the home link
         e.preventDefault();
         toggleSlideout();
       });
