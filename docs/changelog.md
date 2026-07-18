@@ -1,5 +1,23 @@
 # WingTip Changelog
 
+## [v0.6.4] - 2026-07-18
+
+### Navigation
+
+- Wide desktop (≥1200px) pins the site nav open as a persistent left sidebar: no interaction needed, the hamburger hides, and the logo reverts to a plain home link. Below 1200px the toggle behavior is unchanged. Content centers between the left nav and the right table of contents with a 900px reading measure.
+- Visible breadcrumb trail on every non-home page — Home › directory groups (named via `_category.json`) or frontmatter category › page title — alongside the existing JSON-LD breadcrumbs.
+- The pinned sidebar scrolls the active page into view when it sits below the fold.
+- Sidebar groups already auto-collapse to the active branch; now documented behavior.
+
+### Section hub pages
+
+- `_category.json` accepts `"index": true`: the directory gets a generated landing page listing its pages (with frontmatter descriptions) and nested groups. A source `index.md` always wins. Hubs appear in the sitemap, search index, and AI artifacts, gain an **Overview** link in their nav group, and breadcrumb directory crumbs link to them.
+
+### SEO
+
+- `og:url`, `og:image`, and `twitter:image` (plus the card type that depends on the image) are emitted only when absolute, as the OpenGraph spec requires — zero-config builds previously shipped relative values that scrapers ignore. Configured-`base_url` sites are unchanged.
+- The post-build audit now resolves same-origin absolute URLs against the local build instead of skipping them as external, closing the blind spot that let a dead reference survive on configured-base sites.
+
 ## [v0.6.3] - 2026-07-17
 
 ### GitHub-flavored Markdown
