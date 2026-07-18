@@ -8,7 +8,7 @@ WingTip will not try to reproduce every hosted collaboration feature. It will co
 
 ## Current position
 
-Status reflects the repository as of July 17, 2026. Competitor capabilities change; any public comparison must be generated from a reproducible fixture rather than unsupported marketing claims.
+Status reflects the repository as of July 18, 2026. Competitor capabilities change; any public comparison must be generated from a reproducible fixture rather than unsupported marketing claims.
 
 | Capability | WingTip now | Competitive status | Priority |
 | --- | --- | --- | --- |
@@ -29,7 +29,7 @@ Status reflects the repository as of July 17, 2026. Competitor capabilities chan
 | Post-build integrity/branding audit | Yes | Leadership target | Expand |
 | Recursive content trees | Yes | Parity | Maintain |
 | Grouped, collapsible navigation | Yes | Tabs, versions, languages pending | P1 |
-| Redirect migration and static-host outputs | Partial | Redirects reported; static redirect pages pending | P0 |
+| Redirect migration and static-host outputs | Yes | Static redirect pages + `_redirects` emitted from config; migrate carries platform rules | Expand (redirect-chain validation) |
 | Hosted-platform configuration import | Yes | Differentiator | Expand |
 | MDX compatibility analysis | Yes | Differentiator | Expand |
 | OpenAPI reference generation | No | Major parity blocker | P1 |
@@ -50,8 +50,11 @@ Status reflects the repository as of July 17, 2026. Competitor capabilities chan
 - ✅ Ordered navigation groups: `_category.json` (`name`, `order`) per directory, `order`/`nav_order` frontmatter per page
 - ✅ Render grouped/collapsible navigation from the directory tree
 - ✅ Detect duplicate output paths (collisions are warned and skipped)
-- Introduce tabs, products, versions, and languages in the navigation model
-- Render breadcrumb navigation in the page body (JSON-LD breadcrumbs already ship)
+- ✅ GFM fidelity: task lists, GitHub alerts, strikethrough, bare-URL autolinks (July 18, 2026)
+- ✅ Visible breadcrumb navigation in the page body, matching the JSON-LD trail (July 18, 2026)
+- ✅ Section hub pages: `_category.json` `"index": true` generates a landing page per directory, with an Overview nav link and linked breadcrumbs (July 18, 2026)
+- ✅ Pinned left sidebar on wide desktop (≥1200px); hamburger/slideout below (July 18, 2026)
+- Introduce tabs, products, versions, and languages in the navigation model — design decided July 18, 2026: locale/version become first-class dimensions (one nav tree definition, per-dimension instances, scoped search, hreflang/canonical mechanics per dimension) and this moves AHEAD of generic nav sharding, because dimensions both shrink the scaling problem and unblock migration fidelity for platform configs that use them
 - Detect orphaned navigation entries
 
 #### Hosted-platform importer
@@ -71,7 +74,7 @@ Shipped (read-only — the source project is never modified):
 - ✅ Approximate common MDX components (callouts → blockquotes, titled sections → labels, `Card` → link, `src`-bearing components → images) with JSX dedenting
 - ✅ Rewrite links in raw `href`/`src` attributes with page-relative → site-root → case-insensitive resolution
 - ✅ Stub dynamic link expressions and report suspected broken links in the source
-- ✅ Report redirects for host-level configuration
+- ✅ Carry platform redirects into `config.json`; every build emits static redirect pages plus a Netlify/Cloudflare `_redirects` file with wildcard→splat translation (July 18, 2026)
 - ✅ Never silently discard unsupported configuration or content — everything unhandled is listed in the report
 - ✅ Validated against real public hosted-docs repositories (46 → 5,387 pages)
 
@@ -79,7 +82,6 @@ Still pending:
 
 - Resolve local JSON `$ref` configuration
 - Convert tabs, products, versions, and languages beyond flat group mapping
-- Emit static redirect pages plus host-specific `_redirects` files
 - Preserve OpenAPI references for Phase 2 endpoint rendering
 - Unique-basename fallback for bare links that the source platform resolved via navigation context (found at the 5,000-page tail)
 - Treat `snippets/` include-partials as includes (inline where referenced, or skip and report) instead of standalone pages
@@ -113,10 +115,11 @@ Prioritize capabilities that block real migrations:
 - API operation navigation, parameter/schema tables, examples, and code samples
 - Optional static-first API playground enhancement
 - AsyncAPI inventory and design
+- Tags: `tags:` frontmatter → generated per-tag index pages and a tags hub; related-pages block per page (tag overlap + directory siblings, computed at build time)
 - Search weighting/boost frontmatter and section-level result anchors
 - Visible version, product, and language switchers
 - Redirect validation and redirect-chain detection
-- Mermaid diagrams
+- Mermaid diagrams — approach decided July 18, 2026: vendor `mermaid.min.js` locally (no CDN), lazy-loaded only on pages containing diagrams; build-time SVG rejected (would add a Node dependency to a Python tool)
 - Common hosted-platform MDX compatibility components: cards, columns, tabs, accordions, steps, callouts, frames, and code groups
 - Reusable snippets/includes and content variables
 - Navigation banners, badges, deprecation labels, and hidden-page controls
@@ -129,14 +132,14 @@ Prioritize capabilities that block real migrations:
 Turn the existing auditor into a differentiated discovery system:
 
 - Validate titles, descriptions, canonicals, robots directives, OG/Twitter metadata, and JSON-LD
-- Decide zero-config social metadata: without `base_url`, og:url/og:image are emitted as relative URLs, which the OpenGraph spec does not allow (scrapers ignore them) — either omit them on zero-config builds or document that social previews require `base_url` (canonicals deliberately stay relative-self-resolving)
+- ✅ Zero-config social metadata decided and shipped: og:url/og:image/twitter:image are emitted only when absolute, per the OpenGraph spec; canonicals deliberately stay relative-self-resolving (July 18, 2026)
 - Detect canonical conflicts, duplicate metadata, orphan pages, broken fragments, redirect chains, and accidental noindex
 - Validate hreflang reciprocity, language codes, canonicals, and `x-default` clusters
 - Audit internal-link depth and surface pages with weak contextual connectivity
 - Add configurable HTML, CSS, JavaScript, image, request-count, and font performance budgets
-- Shard or lazy-load sidebar navigation for very large sites: per-page full navigation makes total output size quadratic in page count (measured: a 5,387-page site emits a ~5,300-entry sidebar on every page, ~3.9GB total). Migration and build times scale linearly; navigation weight is the limit
+- Shard or lazy-load sidebar navigation for very large sites: per-page full navigation makes total output size quadratic in page count (measured: a 5,387-page site emits a ~5,300-entry sidebar on every page, ~3.9GB total). Design decided July 18, 2026 — "context window" nav: each page inlines ancestors + siblings + children server-side (crawlable, bounded), full tree in a shared `nav.json` hydrating the slideout on demand; hub pages keep every page within ~3 clicks. Search-index and `llms-full` sharding follow the same per-section pattern. Sequenced after the dimension model (see Phase 1)
 - Audit at scale: parallelize the post-build audit per file (it is embarrassingly parallel) and add incremental auditing keyed on content hash so CI re-audits only changed pages. At the 5,387-page tail the full audit takes tens of minutes — a gate that slow gets skipped, and a skipped gate protects nothing. (Typical 50–300 page sites audit in seconds.)
-- Resolve same-origin absolute URLs against the local build: the audit treats every absolute URL as external, so configured-`base_url` sites skip the missing-file check that catches dead references on zero-config builds (this hid a dead 404 Markdown alternate on the demo site)
+- ✅ Same-origin absolute URLs resolve against the local build (base detected from the index canonical), closing the blind spot that hid a dead 404 Markdown alternate on the demo site (July 18, 2026)
 - Emit machine-readable audit output for CI annotations
 - Generate a crawl graph and diff it between builds
 - Add optional answer-first/content-structure linting without making ranking promises
