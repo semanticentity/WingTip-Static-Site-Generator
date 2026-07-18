@@ -1264,6 +1264,10 @@ def _render_nav_group(dirname, rel_dir, node, docs_dir, active_html, prefix):
     is_open = ' open' if active_html.startswith(group_prefix) else ''
 
     parts = [f'<li class="nav-group"><details{is_open}><summary>{html_module.escape(str(name))}</summary><ul>']
+    if meta.get('index'):
+        overview_href = group_prefix + 'index.html'
+        active_class = ' class="active"' if overview_href == active_html else ''
+        parts.append(f'<li><a href="{prefix}{overview_href}"{active_class}>Overview</a></li>')
     for page in _sorted_nav_pages(node['pages']):
         active_class = ' class="active"' if page['href'] == active_html else ''
         parts.append(f'<li><a href="{prefix}{page["href"]}"{active_class}>{html_module.escape(page["title"])}</a></li>')
@@ -1284,6 +1288,62 @@ def _sorted_nav_groups(children, parent_rel, docs_dir):
         return (order is None, order or 0, dirname.lower())
     return sorted(children, key=key)
 
+def _generate_section_hubs(docs_dir, seen_outputs, nav_pages, search_data_for_index):
+    """Synthesize a landing page for each directory whose _category.json
+    sets "index": true and that has no source index.md of its own. The hub
+    lists the section's pages (with frontmatter descriptions) and nested
+    groups, and flows through the normal page pipeline like any other page."""
+    import tempfile
+    tree, _ = _collect_nav_data(docs_dir)
+
+    def render_entries(node, rel, indent=''):
+        lines = []
+        for page in _sorted_nav_pages(node['pages']):
+            href = page['href']
+            link = os.path.relpath(href, rel).replace(os.sep, '/')
+            desc = ''
+            src = os.path.join(docs_dir, href[:-len('.html')] + '.md')
+            if os.path.exists(src):
+                try:
+                    d = parse_frontmatter(pathlib.Path(src).read_text(encoding='utf8')).get('description')
+                    desc = f" — {str(d).strip()}" if d else ''
+                except Exception:
+                    pass
+            lines.append(f"{indent}- [{page['title']}]({link}){desc}")
+        for child in _sorted_nav_groups(node['children'], rel, docs_dir):
+            meta = _load_category_meta(os.path.join(docs_dir, rel, child))
+            child_name = meta.get('name') or child.replace('-', ' ').replace('_', ' ').title()
+            lines.append(f"{indent}- **{child_name}**")
+            lines.extend(render_entries(node['children'][child], os.path.join(rel, child), indent + '    '))
+        return lines
+
+    def walk(node, rel):
+        for child, sub in node['children'].items():
+            child_rel = os.path.join(rel, child) if rel else child
+            meta = _load_category_meta(os.path.join(docs_dir, child_rel))
+            html_filename = child_rel.replace(os.sep, '/') + '/index.html'
+            if meta.get('index') and html_filename not in seen_outputs:
+                name = meta.get('name') or child.replace('-', ' ').replace('_', ' ').title()
+                desc = str(meta.get('description') or '').strip()
+                lines = [f"# {name}", ""]
+                if desc:
+                    lines += [desc, ""]
+                lines.extend(render_entries(sub, child_rel))
+                content = "\n".join(lines) + "\n"
+                tmp = pathlib.Path(tempfile.gettempdir()) / f"wingtip_hub_{child_rel.replace(os.sep, '_')}.md"
+                tmp.write_text(content, encoding='utf8')
+                seen_outputs[html_filename] = str(tmp)
+                nav_pages.append((name, html_filename, str(tmp),
+                                  {'description': desc, '_wingtip_synthetic': True}))
+                search_data_for_index.append({
+                    "title": name, "content_md": content, "url": html_filename,
+                })
+                print(f"Generated section hub: {html_filename}")
+            walk(sub, child_rel)
+
+    walk(tree, '')
+
+
 def build_breadcrumbs(rel_out, title, category, page_root, docs_dir='docs'):
     """Visible breadcrumb trail: Home › directory groups (or frontmatter
     category) › page. The home page gets none. Directory crumbs use the
@@ -1299,18 +1359,24 @@ def build_breadcrumbs(rel_out, title, category, page_root, docs_dir='docs'):
         rel = os.path.join(rel, d)
         meta = _load_category_meta(os.path.join(docs_dir, rel))
         name = meta.get('name') or d.replace('-', ' ').replace('_', ' ').title()
-        parts.append(f'<li>{html_module.escape(str(name))}</li>')
+        hub = rel.replace(os.sep, '/') + '/index.html'
+        if hub == rel_out:
+            continue  # this page IS the section index; the title crumb covers it
+        if meta.get('index'):
+            parts.append(f'<li><a href="{page_root}/{hub}">{html_module.escape(str(name))}</a></li>')
+        else:
+            parts.append(f'<li>{html_module.escape(str(name))}</li>')
     if not dirs and category:
         parts.append(f'<li>{html_module.escape(str(category))}</li>')
     parts.append(f'<li aria-current="page">{html_module.escape(str(title))}</li>')
     parts.append('</ol></nav>')
     return ''.join(parts)
 
-def build_navigation(current_file: str) -> str:
+def build_navigation(active_html: str) -> str:
     """Build the sidebar navigation HTML: root pages, frontmatter category
-    groups, and nested directory groups with collapsible sections."""
+    groups, and nested directory groups with collapsible sections.
+    active_html is the page's site-root-relative output filename."""
     docs_dir = 'docs'
-    active_html = _doc_html_filename(current_file, docs_dir)
     # Links are emitted relative to the current page's depth so they work on
     # any hosting setup, including file:// and zero-config local previews.
     prefix = '../' * active_html.count('/')
@@ -1728,8 +1794,9 @@ def convert_markdown_file(input_path, output_filename, add_edit_link=False, prev
     else:
         page_root = BASE_URL
 
-    # Get navigation links
-    nav_links = build_navigation(input_path)
+    # Get navigation links (keyed on the output path, so synthesized pages
+    # like section hubs get correct depth-relative links)
+    nav_links = build_navigation(rel_out)
 
     # Build prev/next links (relative to this page's directory)
     prev_link = f'<a href="{_rel_href(rel_out, prev_page[1])}" class="prev">← {prev_page[0]}</a>' if prev_page else ''
@@ -2285,14 +2352,18 @@ def main():
                 "version": version_val
             })
         nav_pages.append((title, html_filename, md_path, front))
-    
+
+    # Section hub pages (_category.json "index": true)
+    _generate_section_hubs(docs_dir, seen_outputs, nav_pages, search_data_for_index)
+
     # Convert all files with prev/next navigation
     for i, (title, html_file, md_path, front) in enumerate(nav_pages):
         prev_page = nav_pages[i-1][:2] if i > 0 else None
         next_page = nav_pages[i+1][:2] if i < len(nav_pages)-1 else None
-        
+
+        synthetic = isinstance(front, dict) and front.get('_wingtip_synthetic')
         output_path = os.path.join(OUTPUT_DIR, html_file)
-        front = convert_markdown_file(md_path, output_path, add_edit_link=True,
+        front = convert_markdown_file(md_path, output_path, add_edit_link=not synthetic,
                             prev_page=prev_page, next_page=next_page)
         pages.append((f"{OUTPUT_DIR}/{html_file}", md_path))
         if not _is_noindex(front) and os.path.basename(output_path) != "404.html":
