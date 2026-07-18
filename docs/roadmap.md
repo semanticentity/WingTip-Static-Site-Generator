@@ -166,7 +166,7 @@ Publish raw outputs and rerunnable automation. Do not claim leadership where the
 - Preview-deployment recipes for GitHub, Netlify, Cloudflare Pages, and Vercel
 - PR annotations for audit regressions and visual changes
 - Theme packages and template overrides
-- WCAG 2.2 AA audit and regression checks
+- WCAG 2.2 AA audit and regression checks (✅ automated axe-core gate over every generated page in both color schemes, in CI with a negative test, July 17, 2026; expert manual audit still open)
 - Contributor guide, extension examples, and stable fixtures
 - Dependency, package-integrity, and generated-CSP checks
 
