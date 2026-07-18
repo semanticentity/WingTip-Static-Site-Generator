@@ -106,6 +106,16 @@
       color: #ffbe85;
     }
     
+    /* Respect OS-level reduced-motion preference (WCAG 2.3.3) */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     /* Content links carry a non-color cue (WCAG 1.4.1) */
     main p a, main li a, main td a, main dd a {
       text-decoration: underline;
@@ -535,7 +545,7 @@
     .codehilite .s { color: #e6db74 !important; } /* String */
     .codehilite .k { color: #f92672 !important; } /* Keyword */
     .codehilite .c1 { color: #a29a83 !important; } /* Comment (AA on #161f27) */
-    .light .codehilite .nv { color: #0086b3 !important; }
+    .light .codehilite .nv { color: #00627f !important; }
     .light .codehilite .s { color: #d14 !important; }
     .light .codehilite .k { color: #a71d5d !important; }
     .light .codehilite .c1 { color: #57606a !important; }
